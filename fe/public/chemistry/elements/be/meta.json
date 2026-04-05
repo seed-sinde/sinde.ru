@@ -1,0 +1,42 @@
+{
+  "name": "Beryllium",
+  "appearance": "бело-серый металлик",
+  "atomic_mass": 9.01218315,
+  "boil": 2742,
+  "category": "alkaline earth metal",
+  "density": 1.85,
+  "discovered_by": "Louis Nicolas Vauquelin",
+  "melt": 1560,
+  "molar_heat": 16.443,
+  "named_by": null,
+  "number": 4,
+  "period": 2,
+  "group": 2,
+  "phase": "Solid",
+  "source": "https://en.wikipedia.org/wiki/Beryllium",
+  "bohr_model_image": "/chemistry/elements/be/004-be-beryllium-bohr.png",
+  "spectral_img": "/chemistry/elements/be/004-be-beryllium-spectral.png",
+  "summary": "В природе бериллий связан с редкими минералами и выступает сравнительно редким, но важным компонентом земной коры. Для него характерны жёсткие ковалентные связи и высокая химическая стойкость в ряде условий. Это делает бериллий ценным для жёстких сплавов, точной техники, рентгеновских окон и конструкций с особыми требованиями к стабильности.",
+  "symbol": "Be",
+  "xpos": 2,
+  "ypos": 2,
+  "wxpos": 2,
+  "wypos": 2,
+  "shells": [
+    2,
+    2
+  ],
+  "electron_configuration": "1s2 2s2",
+  "electron_configuration_semantic": "[He] 2s2",
+  "electron_affinity": -48,
+  "electronegativity_pauling": 1.57,
+  "ionization_energies": [
+    899.5,
+    1757.1,
+    14848.7,
+    21006.6
+  ],
+  "cpk-hex": "c2ff00",
+  "block": "s",
+  "russian_name": "Бериллий"
+}

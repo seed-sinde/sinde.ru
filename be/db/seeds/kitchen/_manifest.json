@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "files": [
+    { "file": "kitchen_categories.csv", "table": "kitchen_categories", "order": 10, "mode": "truncate" },
+    { "file": "kitchen_filter_options.csv", "table": "kitchen_filter_options", "order": 20, "mode": "truncate" },
+    {
+      "file": "kitchen_ingredients_catalog.csv",
+      "table": "kitchen_ingredients_catalog",
+      "order": 30,
+      "mode": "truncate"
+    }
+  ]
+}

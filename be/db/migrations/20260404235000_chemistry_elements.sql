@@ -1,0 +1,54 @@
+-- +goose Up
+CREATE TABLE IF NOT EXISTS chemistry_elements(
+  number integer PRIMARY KEY,
+  symbol text NOT NULL,
+  name text NOT NULL,
+  russian_name text NOT NULL,
+  appearance text,
+  atomic_mass numeric,
+  boil numeric,
+  category text NOT NULL,
+  density numeric,
+  discovered_by text,
+  melt numeric,
+  molar_heat numeric,
+  named_by text,
+  period integer,
+  group_number integer,
+  phase text,
+  source text,
+  bohr_model_image text,
+  spectral_img text,
+  summary text NOT NULL DEFAULT '',
+  xpos integer NOT NULL,
+  ypos integer NOT NULL,
+  wxpos integer,
+  wypos integer,
+  shells integer[] NOT NULL DEFAULT '{}',
+  electron_configuration text,
+  electron_configuration_semantic text,
+  electron_affinity numeric,
+  electronegativity_pauling numeric,
+  ionization_energies numeric[] NOT NULL DEFAULT '{}',
+  cpk_hex text,
+  block text,
+  CONSTRAINT chemistry_elements_number_positive CHECK (number > 0),
+  CONSTRAINT chemistry_elements_symbol_not_blank CHECK (btrim(symbol) <> ''),
+  CONSTRAINT chemistry_elements_name_not_blank CHECK (btrim(name) <> ''),
+  CONSTRAINT chemistry_elements_russian_name_not_blank CHECK (btrim(russian_name) <> ''),
+  CONSTRAINT chemistry_elements_category_not_blank CHECK (btrim(category) <> ''),
+  CONSTRAINT chemistry_elements_summary_not_blank CHECK (btrim(summary) <> '')
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_chemistry_elements_symbol_unique ON chemistry_elements(symbol);
+
+CREATE INDEX IF NOT EXISTS idx_chemistry_elements_category ON chemistry_elements(category);
+
+CREATE INDEX IF NOT EXISTS idx_chemistry_elements_period ON chemistry_elements(period);
+
+CREATE INDEX IF NOT EXISTS idx_chemistry_elements_group_number ON chemistry_elements(group_number);
+
+CREATE INDEX IF NOT EXISTS idx_chemistry_elements_block ON chemistry_elements(block);
+
+-- +goose Down
+DROP TABLE IF EXISTS chemistry_elements;

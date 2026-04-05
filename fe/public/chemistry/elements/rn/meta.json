@@ -1,0 +1,43 @@
+{
+  "name": "Radon",
+  "appearance": "бесцветный газ, иногда светится зеленым или красным в газоразрядных трубках",
+  "atomic_mass": 222,
+  "boil": 211.5,
+  "category": "noble gas",
+  "density": 9.73,
+  "discovered_by": "Friedrich Ernst Dorn",
+  "melt": 202,
+  "molar_heat": null,
+  "named_by": null,
+  "number": 86,
+  "period": 6,
+  "group": 18,
+  "phase": "Gas",
+  "source": "https://en.wikipedia.org/wiki/Radon",
+  "bohr_model_image": "/chemistry/elements/rn/086-rn-radon-bohr.png",
+  "spectral_img": "/chemistry/elements/rn/086-rn-radon-spectral.png",
+  "summary": "В природе радон возникает в горных породах как продукт распада тяжёлых элементов и легко мигрирует через трещины и почвы. Химически он сравнительно инертен, но радиационно активен и потому значим в среде обитания. Поэтому радон важен для геомониторинга, оценки рисков в зданиях, гидрогеологии и радиационной экологии.",
+  "symbol": "Rn",
+  "xpos": 18,
+  "ypos": 6,
+  "wxpos": 32,
+  "wypos": 6,
+  "shells": [
+    2,
+    8,
+    18,
+    32,
+    18,
+    8
+  ],
+  "electron_configuration": "1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 5s2 4d10 5p6 6s2 4f14 5d10 6p6",
+  "electron_configuration_semantic": "[Xe] 4f14 5d10 6s2 6p6",
+  "electron_affinity": -68,
+  "electronegativity_pauling": 2.2,
+  "ionization_energies": [
+    1037
+  ],
+  "cpk-hex": "428296",
+  "block": "p",
+  "russian_name": "Радон"
+}

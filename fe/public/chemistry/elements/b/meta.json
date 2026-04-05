@@ -1,0 +1,43 @@
+{
+  "name": "Boron",
+  "appearance": "черно-коричневый",
+  "atomic_mass": 10.81,
+  "boil": 4200,
+  "category": "metalloid",
+  "density": 2.08,
+  "discovered_by": "Joseph Louis Gay-Lussac",
+  "melt": 2349,
+  "molar_heat": 11.087,
+  "named_by": null,
+  "number": 5,
+  "period": 2,
+  "group": 13,
+  "phase": "Solid",
+  "source": "https://en.wikipedia.org/wiki/Boron",
+  "bohr_model_image": "/chemistry/elements/b/005-b-boron-bohr.png",
+  "spectral_img": "/chemistry/elements/b/005-b-boron-spectral.png",
+  "summary": "В природе бор участвует в геохимии солёных вод, минералов и жизненных процессов растений. Он образует прочные ковалентные сетки и соединения с необычной электронной недостаточностью. Поэтому бор важен для стекла, керамики, композитов, нейтронопоглощающих материалов и для нормального развития клеточных структур у живых организмов.",
+  "symbol": "B",
+  "xpos": 13,
+  "ypos": 2,
+  "wxpos": 27,
+  "wypos": 2,
+  "shells": [
+    2,
+    3
+  ],
+  "electron_configuration": "1s2 2s2 2p1",
+  "electron_configuration_semantic": "[He] 2s2 2p1",
+  "electron_affinity": 26.989,
+  "electronegativity_pauling": 2.04,
+  "ionization_energies": [
+    800.6,
+    2427.1,
+    3659.7,
+    25025.8,
+    32826.7
+  ],
+  "cpk-hex": "ffb5b5",
+  "block": "p",
+  "russian_name": "Бор"
+}

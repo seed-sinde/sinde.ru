@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "file": "elements.csv",
+      "table": "chemistry_elements",
+      "order": 10
+    },
+    {
+      "file": "minerals.csv",
+      "table": "minerals",
+      "order": 20
+    }
+  ]
+}

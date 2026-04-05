@@ -1,0 +1,10 @@
+**/.env
+**/.env.local
+be/main
+be/seeds-import
+be/storage/
+fe/node_modules/
+fe/.nuxt/
+fe/.output/
+.runtime-cache
+.vscode

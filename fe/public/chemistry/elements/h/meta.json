@@ -1,0 +1,38 @@
+{
+  "name": "Hydrogen",
+  "appearance": "бесцветный газ",
+  "atomic_mass": 1.008,
+  "boil": 20.271,
+  "category": "diatomic nonmetal",
+  "density": 0.08988,
+  "discovered_by": "Henry Cavendish",
+  "melt": 13.99,
+  "molar_heat": 28.836,
+  "named_by": "Antoine Lavoisier",
+  "number": 1,
+  "period": 1,
+  "group": 1,
+  "phase": "Gas",
+  "source": "https://en.wikipedia.org/wiki/Hydrogen",
+  "bohr_model_image": "/chemistry/elements/h/001-h-hydrogen-bohr.png",
+  "spectral_img": "/chemistry/elements/h/001-h-hydrogen-spectral.png",
+  "summary": "Во Вселенной водород служит главным строительным материалом звёзд, межзвёздных облаков и большинства известных молекул. Он легко образует связи и переносит энергию в реакциях горения, восстановления и синтеза. Поэтому водород важен и для происхождения воды, и для современной энергетики, и для понимания эволюции космоса.",
+  "symbol": "H",
+  "xpos": 1,
+  "ypos": 1,
+  "wxpos": 1,
+  "wypos": 1,
+  "shells": [
+    1
+  ],
+  "electron_configuration": "1s1",
+  "electron_configuration_semantic": "1s1",
+  "electron_affinity": 72.769,
+  "electronegativity_pauling": 2.2,
+  "ionization_energies": [
+    1312
+  ],
+  "cpk-hex": "ffffff",
+  "block": "s",
+  "russian_name": "Водород"
+}

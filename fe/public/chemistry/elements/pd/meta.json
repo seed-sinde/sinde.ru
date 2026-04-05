@@ -1,0 +1,43 @@
+{
+  "name": "Palladium",
+  "appearance": "серебристо-белый",
+  "atomic_mass": 106.421,
+  "boil": 3236,
+  "category": "transition metal",
+  "density": 12.023,
+  "discovered_by": "William Hyde Wollaston",
+  "melt": 1828.05,
+  "molar_heat": 25.98,
+  "named_by": null,
+  "number": 46,
+  "period": 5,
+  "group": 10,
+  "phase": "Solid",
+  "source": "https://en.wikipedia.org/wiki/Palladium",
+  "bohr_model_image": "/chemistry/elements/pd/046-pd-palladium-bohr.png",
+  "spectral_img": "/chemistry/elements/pd/046-pd-palladium-spectral.png",
+  "summary": "В природе палладий относится к редким металлам платиновой группы и часто сопровождает никелевые и платиновые руды. Он легко связывает водород и проявляет сильную каталитическую активность на поверхности. Поэтому палладий важен для катализаторов, электроники, водородных технологий, очистки газов и прецизионных контактных материалов.",
+  "symbol": "Pd",
+  "xpos": 10,
+  "ypos": 5,
+  "wxpos": 24,
+  "wypos": 5,
+  "shells": [
+    2,
+    8,
+    18,
+    18
+  ],
+  "electron_configuration": "1s2 2s2 2p6 3s2 3p6 4s2 3d10 4p6 4d10",
+  "electron_configuration_semantic": "[Kr] 4d10",
+  "electron_affinity": 54.24,
+  "electronegativity_pauling": 2.2,
+  "ionization_energies": [
+    804.4,
+    1870,
+    3177
+  ],
+  "cpk-hex": "006985",
+  "block": "d",
+  "russian_name": "Палладий"
+}

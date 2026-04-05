@@ -1,0 +1,40 @@
+{
+  "name": "fe",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "typecheck": "nuxt typecheck",
+    "build": "nuxt build",
+    "check": "bun run typecheck && bun run build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "start": "bun run .output/server/index.mjs",
+    "package-upd": "bunx npm-check-updates -u"
+  },
+  "dependencies": {
+    "@nuxt/fonts": "0.14.0",
+    "@nuxt/icon": "2.2.1",
+    "@pinia/nuxt": "0.11.3",
+    "@tailwindcss/vite": "^4.2.2",
+    "@vite-pwa/nuxt": "1.1.1",
+    "cropperjs": "1.6.2",
+    "highlight.js": "^11.11.1",
+    "highlightjs-vue": "^1.0.0",
+    "nuxt": "^4.4.2",
+    "nuxt-security": "2.5.1",
+    "pinia": "^3.0.4",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2",
+    "vue": "^3.5.31"
+  },
+  "devDependencies": {
+    "@iconify-json/ic": "^1.2.4",
+    "@vue/language-core": "^3.2.6"
+  },
+  "trustedDependencies": [
+    "@parcel/watcher",
+    "esbuild"
+  ]
+}
