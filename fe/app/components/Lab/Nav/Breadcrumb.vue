@@ -22,13 +22,13 @@
         <template v-else>
           <Icon :name="separatorIcon" :class="separatorClass" aria-hidden="true" />
         </template>
-        <NuxtLink v-if="item.to && !item.current" :to="item.to" :class="itemClasses(item, false)">
+        <NuxtLink v-if="item.to && !item.current" :to="item.to" :class="itemClasses(false)">
           <span class="inline-flex min-w-0 items-center gap-2">
             <span v-if="item.label">{{ item.label }}</span>
             <LabBaseBadge v-if="item.badge" variant="info" size="xs">{{ item.badge }}</LabBaseBadge>
           </span>
         </NuxtLink>
-        <span v-else :class="itemClasses(item, true)" :aria-current="item.current ? 'page' : undefined">
+        <span v-else :class="itemClasses(true)" :aria-current="item.current ? 'page' : undefined">
           <span class="inline-flex min-w-0 items-center gap-2">
             <span v-if="item.label">{{ item.label }}</span>
             <LabBaseBadge v-if="item.badge" variant="info" size="xs">{{ item.badge }}</LabBaseBadge>
@@ -89,9 +89,11 @@
   const routeSectionItem = computed(() => {
     const path = String(route.path || '')
     if (!path || path === '/') return null
-    return translatedSidebarItems.value
-      .filter(item => path === item.to || path.startsWith(`${item.to}/`))
-      .sort((left, right) => right.to.length - left.to.length)[0] || null
+    return (
+      translatedSidebarItems.value
+        .filter(item => path === item.to || path.startsWith(`${item.to}/`))
+        .sort((left, right) => right.to.length - left.to.length)[0] || null
+    )
   })
   const matchedSidebarItem = computed(() => {
     const firstPath = firstItemPath.value
@@ -113,7 +115,7 @@
     }
     return ['h-4 w-4 shrink-0', matchedSidebarItem.value?.iconColor || 'text-(--lab-text-muted)']
   })
-  const itemClasses = (item: { current?: boolean }, isCurrent: boolean) => {
+  const itemClasses = (isCurrent: boolean) => {
     return [
       'inline-flex min-w-0 items-center wrap-break-word',
       isCurrent ? 'text-(--lab-text-primary)' : 'text-(--lab-text-muted) hover:text-(--lab-text-primary)'

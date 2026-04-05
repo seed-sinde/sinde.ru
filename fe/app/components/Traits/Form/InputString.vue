@@ -9,9 +9,7 @@
 <script setup lang="ts">
   const props = withDefaults(defineProps<{ label?: string; placeholder?: string; id?: string; meta?: unknown }>(), {
     label: 'Значение',
-    placeholder: 'Значение',
-    id: undefined,
-    meta: undefined
+    placeholder: 'Значение'
   })
   const model = defineModel<string>({ required: true })
   const inputId = computed(() => props.id || 'TraitInputString')

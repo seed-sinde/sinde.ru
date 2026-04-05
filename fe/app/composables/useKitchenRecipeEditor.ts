@@ -91,6 +91,10 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
     if (!/^\d+(?:\.\d+)?$/.test(compact)) return null
     return compact
   }
+  const normalizeFormStep = (step: { text: string; image_key?: string | null }): KitchenFormStep => {
+    const imageKey = String(step.image_key || '').trim()
+    return imageKey ? { text: step.text, image_key: imageKey } : { text: step.text }
+  }
   const sanitizeIngredientAmountDraft = () => {
     const raw = String(ingredientDraft.amount || '')
     let next = raw.replace(/,/g, '.').replace(/[^\d.]/g, '')
@@ -191,8 +195,10 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
   const addFormStep = () => {
     const text = stepDraft.text.trim()
     if (!text) return
-    const imageKey = String(stepDraft.image_key || '').trim()
-    const nextStep: KitchenFormStep = imageKey ? { text, image_key: imageKey } : { text }
+    const nextStep = normalizeFormStep({
+      text,
+      image_key: stepDraft.image_key
+    })
     formSteps.value = [...formSteps.value, nextStep]
     resetStepDraft()
   }
@@ -274,7 +280,7 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
     coverImageDraft.image_url = buildMediaFileUrl(recipe.cover_image_key)
     formIngredients.value = recipe.ingredients.map(item => ({ ...item }))
     cancelIngredientEditing()
-    formSteps.value = recipe.steps.map(step => ({ text: step.text, image_key: step.image_key }))
+    formSteps.value = recipe.steps.map(step => normalizeFormStep(step))
     formTagsText.value = recipe.tags.join(', ')
     resetStepDraft()
     editingRecipeModerationStatus.value = recipe.moderation_status
@@ -315,24 +321,36 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
       .filter(Boolean)
     createPending.value = true
     try {
+      const recipeId = editRecipeId.value ? '' : createRecipeId.value
+      const coverImageKey = String(coverImageDraft.image_key || '').trim()
+      const cookingMethod = options.normalizeCookingMethodInput(form.cooking_method) || ''
+      const dietType = options.normalizeDietTypeInput(form.diet_type) || ''
       const payload: KitchenRecipeCreateInput = {
-        recipe_id: editRecipeId.value ? undefined : createRecipeId.value,
         title: form.title.trim(),
         description: form.description.trim(),
-        cover_image_key: String(coverImageDraft.image_key || '').trim() || undefined,
         kcal: Number(form.kcal || 0),
         prep_minutes: Number(form.prep_minutes || 0),
         cook_minutes: Number(form.cook_minutes || 0),
         servings: Number(form.servings || 1),
         difficulty: form.difficulty || options.defaultRecipeDifficulty.value,
         meal_type: options.normalizeMealTypeInput(form.meal_type) || 'other',
-        cooking_method: options.normalizeCookingMethodInput(form.cooking_method) || undefined,
         cuisine: form.cuisine.trim(),
-        diet_type: options.normalizeDietTypeInput(form.diet_type) || undefined,
         ingredients: formIngredients.value,
-        steps: formSteps.value,
+        steps: formSteps.value.map(step => normalizeFormStep(step)),
         tags,
         is_public: form.is_public
+      }
+      if (recipeId) {
+        payload.recipe_id = recipeId
+      }
+      if (coverImageKey) {
+        payload.cover_image_key = coverImageKey
+      }
+      if (cookingMethod) {
+        payload.cooking_method = cookingMethod
+      }
+      if (dietType) {
+        payload.diet_type = dietType
       }
       if (editRecipeId.value) {
         await updateKitchenRecipe(editRecipeId.value, payload)

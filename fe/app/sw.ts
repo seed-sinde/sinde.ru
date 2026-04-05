@@ -2,6 +2,7 @@
 import { cacheNames, clientsClaim, setCacheNameDetails } from 'workbox-core'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
+import type { WorkboxPlugin } from 'workbox-core/types.js'
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { StaleWhileRevalidate } from 'workbox-strategies'
@@ -16,6 +17,16 @@ const OBSOLETE_CACHE_PATTERNS = [
   /^html-pages$/i,
   /^workbox-precache/i,
   /^sinde-(?:precache|runtime|ui-icons)-/i
+]
+const ICON_CACHE_PLUGINS: WorkboxPlugin[] = [
+  new CacheableResponsePlugin({
+    statuses: [0, 200]
+  }) as WorkboxPlugin,
+  new ExpirationPlugin({
+    maxEntries: 64,
+    maxAgeSeconds: 60 * 60 * 24 * 30,
+    purgeOnQuotaError: true
+  }) as WorkboxPlugin
 ]
 setCacheNameDetails({
   prefix: 'sinde',
@@ -35,16 +46,7 @@ registerRoute(
   ({ url }) => url.origin === self.location.origin && url.pathname.startsWith('/_nuxt_icon'),
   new StaleWhileRevalidate({
     cacheName: ICON_CACHE_NAME,
-    plugins: [
-      new CacheableResponsePlugin({
-        statuses: [0, 200]
-      }),
-      new ExpirationPlugin({
-        maxEntries: 64,
-        maxAgeSeconds: 60 * 60 * 24 * 30,
-        purgeOnQuotaError: true
-      })
-    ]
+    plugins: ICON_CACHE_PLUGINS
   })
 )
 self.addEventListener('activate', event => {

@@ -45,7 +45,8 @@
             v-for="trait in traits"
             :key="trait.t_uuid"
             :trait="trait"
-            v-model:selected="selectedUuids[trait.t_uuid]" />
+            :selected="Boolean(selectedUuids[trait.t_uuid])"
+            @update:selected="selectedUuids[trait.t_uuid] = $event" />
         </div>
         <div
           v-if="traits.length === 0"

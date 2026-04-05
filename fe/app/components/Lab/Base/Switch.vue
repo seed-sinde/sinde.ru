@@ -54,7 +54,7 @@
       partialLabel?: string
       disabled?: boolean
       tone?: ToggleTone
-      visualState?: ToggleVisualState
+      visualState?: ToggleVisualState | undefined
       containerClass?: string
       labelClass?: string
       stateClass?: string
@@ -70,7 +70,6 @@
       partialLabel: '',
       disabled: false,
       tone: 'cyan',
-      visualState: undefined,
       containerClass: '',
       labelClass: '',
       stateClass: '',

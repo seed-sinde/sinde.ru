@@ -51,8 +51,8 @@
     }>(),
     {
       modelValue: '',
-      id: undefined,
-      name: undefined,
+      id: '',
+      name: '',
       label: '',
       hint: '',
       ariaLabel: '',

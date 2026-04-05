@@ -15,7 +15,6 @@
 <script setup lang="ts">
   import { useId } from 'vue'
   const props = withDefaults(defineProps<{ meta: { options?: string[] }; id?: string; label?: string }>(), {
-    id: undefined,
     label: 'Значение'
   })
   const model = defineModel<string>({ required: true })

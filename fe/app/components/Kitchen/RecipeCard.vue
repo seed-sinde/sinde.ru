@@ -48,7 +48,6 @@
         :aria-label="
           favorite ? `Убрать рецепт ${recipe.title} из избранного` : `Добавить рецепт ${recipe.title} в избранное`
         "
-        :label="favorite ? 'Убрать из избранного' : 'Добавить в избранное'"
         :disabled="favoritePending"
         :icon="favorite ? 'ic:round-favorite' : 'ic:round-favorite-border'"
         icon-class="relative z-1 h-4.5 w-4.5"
@@ -72,7 +71,6 @@
         :aria-label="
           favorite ? `Убрать рецепт ${recipe.title} из избранного` : `Добавить рецепт ${recipe.title} в избранное`
         "
-        :label="favorite ? 'Убрать из избранного' : 'Добавить в избранное'"
         :disabled="favoritePending"
         :icon="favorite ? 'ic:round-favorite' : 'ic:round-favorite-border'"
         icon-class="h-4.5 w-4.5"

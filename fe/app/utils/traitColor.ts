@@ -1,28 +1,17 @@
-import type { KeyMeta, TraitColorPreviewInfo } from '../../shared/types/traits'
-import TraitsInputString from '~/components/Traits/Form/InputString.vue'
-import TraitsInputNumber from '~/components/Traits/Form/InputNumber.vue'
-import TraitsInputBoolean from '~/components/Traits/Form/InputBoolean.vue'
-import TraitsInputDatetime from '~/components/Traits/Form/InputDatetime.vue'
-import TraitsInputDateRange from '~/components/Traits/Form/InputDateRange.vue'
-import TraitsInputInterval from '~/components/Traits/Form/InputInterval.vue'
-import TraitsInputSchedule from '~/components/Traits/Form/InputSchedule.vue'
-import TraitsInputGeoPoint from '~/components/Traits/Form/InputGeoPoint.vue'
-import TraitsInputEnum from '~/components/Traits/Form/InputEnum.vue'
-import TraitsInputValidity from '~/components/Traits/Form/InputValidity.vue'
-import TraitsInputColor from '~/components/Traits/Form/InputColor.vue'
+import type { DataType, KeyMeta, TraitColorPreviewInfo } from '../../shared/types/traits'
 export const VALUE_COMPONENTS = {
-  string: TraitsInputString,
-  number: TraitsInputNumber,
-  boolean: TraitsInputBoolean,
-  datetime: TraitsInputDatetime,
-  'datetime-range': TraitsInputDateRange,
-  interval: TraitsInputInterval,
-  schedule: TraitsInputSchedule,
-  'geo-point': TraitsInputGeoPoint,
-  enum: TraitsInputEnum,
-  validity: TraitsInputValidity,
-  color: TraitsInputColor
-} as const
+  string: 'TraitsFormInputString',
+  number: 'TraitsFormInputNumber',
+  boolean: 'TraitsFormInputBoolean',
+  datetime: 'TraitsFormInputDatetime',
+  'datetime-range': 'TraitsFormInputDateRange',
+  interval: 'TraitsFormInputInterval',
+  schedule: 'TraitsFormInputSchedule',
+  'geo-point': 'TraitsFormInputGeoPoint',
+  enum: 'TraitsFormInputEnum',
+  validity: 'TraitsFormInputValidity',
+  color: 'TraitsFormInputColor'
+} as const satisfies Record<DataType, string>
 export const COLOR_SPECTRUM_OPTIONS = [
   'red',
   'orange',

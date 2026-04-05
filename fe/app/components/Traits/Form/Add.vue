@@ -42,7 +42,6 @@
   </form>
 </template>
 <script setup lang="ts">
-  import LabTraitsFormInputString from '~/components/Traits/Form/InputString.vue'
   const emit = defineEmits<{ (e: 'add', trait: TraitInput): void }>()
   const key = ref('')
   const meta = ref<KeyMeta>(defaultKeyMeta('string'))
@@ -56,7 +55,7 @@
       value.value = next as any
     }
   })
-  const valueComponent = computed(() => VALUE_COMPONENTS[meta.value.dataType] || LabTraitsFormInputString)
+  const valueComponent = computed(() => VALUE_COMPONENTS[meta.value.dataType] || 'TraitsFormInputString')
   const valueComponentHasLabel = computed(() => {
     return ['enum', 'boolean', 'datetime-range', 'interval', 'schedule', 'geo-point', 'validity', 'color'].includes(
       meta.value.dataType as any

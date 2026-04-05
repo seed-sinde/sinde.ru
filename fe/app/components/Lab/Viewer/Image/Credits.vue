@@ -31,11 +31,11 @@
 <script setup lang="ts">
   const props = defineProps<{
     title?: string | null
-    author?: string | null
-    attribution?: string | null
-    sourceUrl?: string | null
-    licenseUrl?: string | null
-    license?: string | null
+    author?: string | null | undefined
+    attribution?: string | null | undefined
+    sourceUrl?: string | null | undefined
+    licenseUrl?: string | null | undefined
+    license?: string | null | undefined
   }>()
   const hasContent = computed(() =>
     Boolean(props.title || props.author || props.attribution || props.sourceUrl || props.license)

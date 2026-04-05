@@ -169,14 +169,29 @@ export const parseEnumOptionsRaw = (raw: string): string[] => {
 /**
  * Creates the default meta configuration for a trait data type.
  */
-export const defaultKeyMeta = (dataType: DataType = 'string'): KeyMeta => ({
-  dataType,
-  optionType: dataType === 'enum' ? 'string' : undefined,
-  mode: dataType === 'color' ? 'hex' : undefined,
-  options: dataType === 'enum' ? [] : undefined,
-  unitCategory: dataType === 'number' ? 'unitless' : undefined,
-  unit: dataType === 'number' ? '' : undefined
-})
+export const defaultKeyMeta = (dataType: DataType = 'string'): KeyMeta => {
+  switch (dataType) {
+    case 'enum':
+      return {
+        dataType: 'enum',
+        optionType: 'string',
+        options: []
+      }
+    case 'color':
+      return {
+        dataType: 'color',
+        mode: 'hex'
+      }
+    case 'number':
+      return {
+        dataType: 'number',
+        unitCategory: 'unitless',
+        unit: ''
+      }
+    default:
+      return { dataType }
+  }
+}
 /**
  * Resolves the effective color mode from key meta.
  */
@@ -214,11 +229,14 @@ export const normalizeKeyMeta = (meta?: KeyMeta | null, enumOptionsRaw?: string)
       enumOptionsRaw !== undefined
         ? parseEnumOptionsRaw(enumOptionsRaw)
         : normalizeStringList(Array.isArray(base.options) ? base.options : [])
-    return {
+    const normalized: KeyMeta = {
       dataType: 'enum',
-      optionType: base.optionType || 'string',
-      options: options.length ? options : undefined
+      optionType: base.optionType || 'string'
     }
+    if (options.length) {
+      normalized.options = options
+    }
+    return normalized
   }
   if (DATE_DATA_TYPES.includes(dataType)) {
     return { dataType }
@@ -248,12 +266,15 @@ export const normalizeKeyMeta = (meta?: KeyMeta | null, enumOptionsRaw?: string)
 export const normalizeMetaForEquality = (meta?: KeyMeta | null): KeyMeta => {
   const normalized = normalizeKeyMeta(meta)
   const base = defaultKeyMeta(normalized.dataType || 'string')
-  return {
+  const next: KeyMeta = {
     ...base,
-    ...normalized,
-    unitCategory: normalized.dataType === 'number' ? normalized.unitCategory || 'unitless' : undefined,
-    unit: normalized.dataType === 'number' ? normalized.unit || '' : undefined
+    ...normalized
   }
+  if (normalized.dataType === 'number') {
+    next.unitCategory = normalized.unitCategory || 'unitless'
+    next.unit = normalized.unit || ''
+  }
+  return next
 }
 /**
  * Compares two meta objects after canonical normalization.

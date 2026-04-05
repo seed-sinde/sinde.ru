@@ -2,10 +2,10 @@
   const props = withDefaults(
     defineProps<{
       title: string
-      viewerTitle?: string
-      modelSrc?: string | null
-      modelSizeLabel?: string | null
-      rotationPerSecond?: string | null
+      viewerTitle?: string | undefined
+      modelSrc?: string | null | undefined
+      modelSizeLabel?: string | null | undefined
+      rotationPerSecond?: string | null | undefined
       hint?: string
       compact?: boolean
     }>(),

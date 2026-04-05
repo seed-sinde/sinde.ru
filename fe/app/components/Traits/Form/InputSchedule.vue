@@ -46,7 +46,7 @@
       labelToTime?: string
       meta?: unknown
     }>(),
-    { meta: undefined }
+    {}
   )
   const weekDays = [
     { value: '1', label: 'Понедельник' },

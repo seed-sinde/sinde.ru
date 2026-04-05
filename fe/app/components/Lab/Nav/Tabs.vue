@@ -70,11 +70,9 @@
       noSelect: false,
       renderPanels: true,
       routeQueryKey: '',
-      routeDefaultValue: undefined,
       routePath: '',
       routePersistDefault: false,
-      routeActiveValue: null,
-      routeToMap: undefined
+      routeActiveValue: null
     }
   )
   const emit = defineEmits<{
@@ -137,15 +135,22 @@
   const tabToMapResolved = computed(() => {
     const out = new Map<LabTabValue, RouteLocationRaw | undefined>()
     for (const item of props.items) {
+      const routeOptions: BuildTabRouteOptions = {
+        defaultValue: fallbackValue.value,
+        persistDefault: props.routePersistDefault
+      }
+      if (props.routeQueryKey) {
+        routeOptions.queryKey = props.routeQueryKey
+      }
+      if (props.routePath) {
+        routeOptions.path = props.routePath
+      }
+      if (props.routeToMap) {
+        routeOptions.targetMap = props.routeToMap
+      }
       out.set(
         item.value,
-        buildTabRouteLocation(route, item.value, {
-          queryKey: props.routeQueryKey || undefined,
-          defaultValue: fallbackValue.value,
-          path: props.routePath || undefined,
-          persistDefault: props.routePersistDefault,
-          targetMap: props.routeToMap
-        })
+        buildTabRouteLocation(route, item.value, routeOptions)
       )
     }
     return out

@@ -12,7 +12,7 @@
 </template>
 <script setup lang="ts">
   import { normalizeGeoPoint, parseGeoCoordinate, GEO_MIN_DECIMALS } from '../../../utils/traitValueCodec'
-  const props = withDefaults(defineProps<{ id?: string; meta?: unknown }>(), { meta: undefined })
+  const props = defineProps<{ id?: string; meta?: unknown }>()
   const model = defineModel<TraitGeoPointModel>({ required: true })
   const inputId = computed(() => (props.id ? `${props.id}-geo` : 'TraitGeoPoint'))
   const raw = ref('')

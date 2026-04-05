@@ -39,16 +39,10 @@ CREATE TABLE IF NOT EXISTS chemistry_elements(
   CONSTRAINT chemistry_elements_category_not_blank CHECK (btrim(category) <> ''),
   CONSTRAINT chemistry_elements_summary_not_blank CHECK (btrim(summary) <> '')
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_chemistry_elements_symbol_unique ON chemistry_elements(symbol);
-
 CREATE INDEX IF NOT EXISTS idx_chemistry_elements_category ON chemistry_elements(category);
-
 CREATE INDEX IF NOT EXISTS idx_chemistry_elements_period ON chemistry_elements(period);
-
 CREATE INDEX IF NOT EXISTS idx_chemistry_elements_group_number ON chemistry_elements(group_number);
-
 CREATE INDEX IF NOT EXISTS idx_chemistry_elements_block ON chemistry_elements(block);
-
 -- +goose Down
 DROP TABLE IF EXISTS chemistry_elements;

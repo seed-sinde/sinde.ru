@@ -193,43 +193,7 @@
   const fromUnitKey = ref('meter')
   const toUnitKey = ref('kilometer')
   const decimalPlaces = ref(6)
-  const showOnlyCommon = ref(false)
-  const commonUnitKeys = new Set([
-    'millimeter',
-    'centimeter',
-    'meter',
-    'kilometer',
-    'gram',
-    'kilogram',
-    'celsius',
-    'fahrenheit',
-    'kelvin',
-    'liter',
-    'milliliter',
-    'kilometer-per-hour',
-    'meter-per-second',
-    'second',
-    'minute',
-    'hour',
-    'pascal',
-    'bar',
-    'atmosphere',
-    'joule',
-    'kilowatt-hour',
-    'watt',
-    'kilowatt'
-  ])
   const selectedCategory = computed(() => unitCatalog[selectedCategoryKey.value])
-  const categoryUnits = computed(() => {
-    const units = selectedCategory.value.units
-    return units.filter(unit => {
-      if (showOnlyCommon.value && !commonUnitKeys.has(unit.key)) return false
-      if (!searchQuery.value.trim()) return true
-      const needle = searchQuery.value.trim().toLowerCase()
-      const haystack = [unit.label, unit.symbol, ...(unit.aliases || [])].join(' ').toLowerCase()
-      return haystack.includes(needle)
-    })
-  })
   const fromUnit = computed(() => {
     const units = selectedCategory.value.units
     return units.find(unit => unit.key === fromUnitKey.value) ?? units[0] ?? null
@@ -318,12 +282,6 @@
   }
   const setCategory = (key: MathUnitCategoryKey) => {
     selectedCategoryKey.value = key
-  }
-  const applyPreset = (categoryKey: MathUnitCategoryKey, sourceKey: string, targetKey: string, value: string) => {
-    selectedCategoryKey.value = categoryKey
-    amountInput.value = value
-    fromUnitKey.value = sourceKey
-    toUnitKey.value = targetKey
   }
 </script>
 <template>

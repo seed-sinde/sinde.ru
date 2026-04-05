@@ -21,15 +21,17 @@ export const readAuthAvatarPayload = (user?: AuthUser | null): AuthAvatarPayload
 }
 const normalizeAvatarGalleryItem = (value: unknown, fallbackId: string): AuthAvatarGalleryItem | null => {
   if (!isRecord(value)) return null
+  const createdAt = toKey(value.created_at)
+  const updatedAt = toKey(value.updated_at)
   const item: AuthAvatarGalleryItem = {
     id: toKey(value.id) || fallbackId,
     icon_image_key: toKey(value.icon_image_key),
     profile_image_key: toKey(value.profile_image_key),
     original_image_key: toKey(value.original_image_key),
-    icon_size: Number.isFinite(Number(value.icon_size)) ? Number(value.icon_size) : null,
-    created_at: toKey(value.created_at) || undefined,
-    updated_at: toKey(value.updated_at) || undefined
+    icon_size: Number.isFinite(Number(value.icon_size)) ? Number(value.icon_size) : null
   }
+  if (createdAt) item.created_at = createdAt
+  if (updatedAt) item.updated_at = updatedAt
   if (!item.icon_image_key && !item.profile_image_key && !item.original_image_key) return null
   return item
 }

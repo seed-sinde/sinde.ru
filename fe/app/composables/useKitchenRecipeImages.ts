@@ -1,4 +1,4 @@
-import { computed, reactive, ref, type ComputedRef, type Ref } from 'vue'
+import { reactive, ref, type ComputedRef, type Ref } from 'vue'
 import { uploadMediaFile } from '~/composables/useMediaUpload'
 import { buildMediaFileUrl } from '~/utils/mediaUrl'
 import type { KitchenRecipeImageDraft, KitchenRecipeStepDraft } from './useKitchenRecipeEditor'
@@ -35,7 +35,8 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
   const stepImageTargetIndex = ref<number | null>(null)
   const buildStepImageUrl = (imageKey?: string) => buildMediaFileUrl(imageKey)
   const stepImageSrc = (step: { image_key?: string }) => buildStepImageUrl(step.image_key)
-  const resolveUploadedImageKey = (response: any) => String(response?.data?.image_key || response?.image_key || '').trim()
+  const resolveUploadedImageKey = (response: any) =>
+    String(response?.data?.image_key || response?.image_key || '').trim()
   const openImageCropDialog = (file: File, target: ImageCropTarget) => {
     if (!file) return
     imageCropDialog.target = target
@@ -94,11 +95,20 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
       stepImageUploading.value = true
     }
     try {
-      const response = await uploadMediaFile(file, {
-        section: 'kitchen',
-        collection: 'recipes',
-        recipeId: String(options.activeRecipeUploadId.value || '').trim() || undefined
-      })
+      const recipeId = String(options.activeRecipeUploadId.value || '').trim()
+      const response = await uploadMediaFile(
+        file,
+        recipeId
+          ? {
+              section: 'kitchen',
+              collection: 'recipes',
+              recipeId
+            }
+          : {
+              section: 'kitchen',
+              collection: 'recipes'
+            }
+      )
       const imageKey = resolveUploadedImageKey(response)
       if (!imageKey) {
         throw new Error('Сервер не вернул ключ изображения.')

@@ -132,7 +132,7 @@
       window.history.scrollRestoration = 'manual'
     }
     window.addEventListener('popstate', onPopState)
-    removeBeforeEach = router.beforeEach((to, from) => {
+    removeBeforeEach = router.beforeEach((_, from) => {
       if (from.fullPath) {
         saveScrollPosition(from.fullPath)
       }

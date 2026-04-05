@@ -40,7 +40,7 @@
   }
   const props = withDefaults(
     defineProps<{
-      modelValue?: string | number | null
+      modelValue?: string | number | null | undefined
       id?: string
       name?: string
       type?: string
@@ -52,12 +52,12 @@
     }>(),
     {
       modelValue: '',
-      id: undefined,
-      name: undefined,
+      id: '',
+      name: '',
       type: 'text',
-      placeholder: undefined,
+      placeholder: '',
       disabled: false,
-      ariaLabel: undefined,
+      ariaLabel: '',
       invalid: false,
       inputClass: ''
     }

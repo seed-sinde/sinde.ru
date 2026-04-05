@@ -14,7 +14,6 @@
       matchTriggerWidth?: boolean
     }>(),
     {
-      modelValue: undefined,
       align: 'right',
       side: 'bottom',
       widthClass: 'w-56',

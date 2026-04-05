@@ -76,23 +76,23 @@
       { label: labels[adminTab.value as Exclude<AdminTab, 'users'>], current: true, kind: 'tab' }
     ]
   })
-  const adminTabItems = computed<LabTabItem[]>(() => [
-    { value: 'users', label: 'Пользователи', badge: usersTotal.value || undefined },
-    {
-      value: 'moderation',
-      label: 'Модерация рецептов',
-      badge: moderationStatusTotals.value.pending || undefined
-    },
-    { value: 'keys', label: 'Ключи', badge: keys.value.length || undefined },
-    {
-      value: 'analysis',
-      label: 'Аналитика',
-      badge: summary.value?.has_unread
-        ? Number(summary.value.new_users_since_last_login || 0) +
-          Number(summary.value.new_pending_recipes_since_last_login || 0)
-        : undefined
+  const adminTabItems = computed<LabTabItem[]>(() => {
+    const items: LabTabItem[] = [
+      { value: 'users', label: 'Пользователи' },
+      { value: 'moderation', label: 'Модерация рецептов' },
+      { value: 'keys', label: 'Ключи' },
+      { value: 'analysis', label: 'Аналитика' }
+    ]
+    if (usersTotal.value) items[0]!.badge = usersTotal.value
+    if (moderationStatusTotals.value.pending) items[1]!.badge = moderationStatusTotals.value.pending
+    if (keys.value.length) items[2]!.badge = keys.value.length
+    if (summary.value?.has_unread) {
+      items[3]!.badge =
+        Number(summary.value.new_users_since_last_login || 0) +
+        Number(summary.value.new_pending_recipes_since_last_login || 0)
     }
-  ])
+    return items
+  })
   const adminSectionClass = 'space-y-4 border border-white/8 bg-zinc-950/80 p-4 sm:p-5'
   const adminSubsectionClass = 'space-y-3 border border-white/8 bg-zinc-900/70 p-3 sm:p-4'
   const adminStatCardClass = 'space-y-1 border border-white/8 bg-zinc-900/70 p-3'

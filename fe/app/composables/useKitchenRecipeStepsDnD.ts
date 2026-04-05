@@ -75,13 +75,18 @@ export const useKitchenRecipeStepsDnD = (options: UseKitchenRecipeStepsDnDOption
     const previewWidth = sourceRect
       ? Math.min(Math.max(sourceRect.width, 280), window.innerWidth - 24)
       : Math.min(420, window.innerWidth - 24)
+    const previewStep: KitchenFormStep = step.image_key
+      ? {
+          text: step.text,
+          image_key: step.image_key
+        }
+      : {
+          text: step.text
+        }
     activeStepPointerId = event.pointerId
     draggingStepIndex.value = index
     stepDragPreview.value = {
-      step: {
-        text: step.text,
-        image_key: step.image_key
-      },
+      step: previewStep,
       stepNumber: index + 1,
       imageUrl: options.buildStepImageUrl(step.image_key),
       width: previewWidth,

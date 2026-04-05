@@ -27,7 +27,7 @@
     }>(),
     {
       label: '',
-      forId: undefined,
+      forId: '',
       hint: '',
       error: '',
       fieldClass: '',

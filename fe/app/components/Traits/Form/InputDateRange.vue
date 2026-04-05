@@ -42,7 +42,7 @@ const props = withDefaults(
     labelEnd?: string
     meta?: unknown
   }>(),
-  { meta: undefined }
+  {}
 )
 const startId = computed(() => props.id ? `${props.id}-start` : 'TraitInputDatetimeStart')
 const endId = computed(() => props.id ? `${props.id}-end` : 'TraitInputDatetimeEnd')

@@ -313,34 +313,40 @@ export const ASTRONOMY_GALACTIC_CONTEXT = {
   solarSystemOrbitalPeriodMillionYears: 230,
   solarSystemOrbitalSpeedKmS: 220
 }
+const toAstronomyBody = ({
+  id,
+  symbol,
+  name,
+  kind,
+  diameterKm,
+  color,
+  description,
+  modelSrc,
+  modelSizeLabel,
+  modelRotationPerSecond
+}: AstronomyPlanet | AstronomyMoon): AstronomyBody => {
+  const body: AstronomyBody = {
+    id,
+    symbol,
+    name,
+    kind,
+    diameterKm,
+    color,
+    description
+  }
+  if (modelSrc !== undefined) {
+    body.modelSrc = modelSrc
+  }
+  if (modelSizeLabel !== undefined) {
+    body.modelSizeLabel = modelSizeLabel
+  }
+  if (modelRotationPerSecond !== undefined) {
+    body.modelRotationPerSecond = modelRotationPerSecond
+  }
+  return body
+}
 export const ASTRONOMY_SIZE_BODIES: AstronomyBody[] = [
   ASTRONOMY_SUN,
-  ...ASTRONOMY_PLANETS.map(
-    ({ id, symbol, name, kind, diameterKm, color, description, modelSrc, modelSizeLabel, modelRotationPerSecond }) => ({
-    id,
-    symbol,
-    name,
-    kind,
-    diameterKm,
-    color,
-    description,
-    modelSrc,
-      modelSizeLabel,
-      modelRotationPerSecond
-    })
-  ),
-  ...ASTRONOMY_MOONS.map(
-    ({ id, symbol, name, kind, diameterKm, color, description, modelSrc, modelSizeLabel, modelRotationPerSecond }) => ({
-    id,
-    symbol,
-    name,
-    kind,
-    diameterKm,
-    color,
-    description,
-      modelSrc,
-      modelSizeLabel,
-      modelRotationPerSecond
-    })
-  )
+  ...ASTRONOMY_PLANETS.map(toAstronomyBody),
+  ...ASTRONOMY_MOONS.map(toAstronomyBody)
 ].sort((left, right) => right.diameterKm - left.diameterKm)

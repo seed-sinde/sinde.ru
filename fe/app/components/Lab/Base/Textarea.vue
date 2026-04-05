@@ -16,7 +16,7 @@
   defineOptions({ inheritAttrs: false })
   const props = withDefaults(
     defineProps<{
-      modelValue?: string | null
+      modelValue?: string | null | undefined
       id?: string
       name?: string
       rows?: number | string
@@ -28,12 +28,12 @@
     }>(),
     {
       modelValue: '',
-      id: undefined,
-      name: undefined,
+      id: '',
+      name: '',
       rows: 3,
       disabled: false,
-      placeholder: undefined,
-      ariaLabel: undefined,
+      placeholder: '',
+      ariaLabel: '',
       invalid: false,
       textareaClass: ''
     }

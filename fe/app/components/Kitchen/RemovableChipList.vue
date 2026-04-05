@@ -7,7 +7,7 @@
       icon="ic:round-delete-outline"
       icon-class="pointer-events-none absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
       :style="resolveItemStyle(item)"
-      :disabled="item.disabled"
+      :disabled="Boolean(item.disabled)"
       :title="resolveItemTitle(item)"
       :aria-label="resolveItemAriaLabel(item)"
       size="xs"

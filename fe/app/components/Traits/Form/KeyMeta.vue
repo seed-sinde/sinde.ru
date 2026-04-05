@@ -139,16 +139,24 @@
   watch(
     () => form.meta.dataType,
     nextType => {
-      if (nextType !== 'enum') {
+      if (nextType === 'enum') {
+        form.meta.optionType = form.meta.optionType || 'string'
+      } else {
         enumRaw.value = ''
+        delete form.meta.optionType
       }
-      if (nextType !== 'color') {
-        form.meta.mode = createMeta('color').mode
+      if (nextType === 'color') {
+        form.meta.mode = resolveColorMode(form.meta) || 'hex'
+      } else {
+        delete form.meta.mode
       }
-      if (nextType !== 'number') {
+      if (nextType === 'number') {
         const numberDefaults = createMeta('number')
-        form.meta.unitCategory = numberDefaults.unitCategory
-        form.meta.unit = numberDefaults.unit
+        form.meta.unitCategory = form.meta.unitCategory || numberDefaults.unitCategory || 'unitless'
+        form.meta.unit = form.meta.unit || numberDefaults.unit || ''
+      } else {
+        delete form.meta.unitCategory
+        delete form.meta.unit
       }
     }
   )

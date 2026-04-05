@@ -285,7 +285,6 @@
     height: 0
   })
   const viewportRef = ref<HTMLElement | null>(null)
-  const stageRef = ref<HTMLElement | null>(null)
   const imageRef = ref<HTMLImageElement | null>(null)
   const VIEWER_TRANSITION_MS = 300
   const viewportSize = reactive({

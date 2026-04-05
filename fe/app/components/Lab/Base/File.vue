@@ -26,8 +26,8 @@
       size?: LabButtonSize
     }>(),
     {
-      id: undefined,
-      name: undefined,
+      id: '',
+      name: '',
       accept: '',
       label: 'Выбрать файл',
       disabled: false,

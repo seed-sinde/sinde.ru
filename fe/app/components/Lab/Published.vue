@@ -50,6 +50,19 @@
     if (props.compact) return 'lab-text-muted tabular-nums'
     return 'lab-text-muted tabular-nums'
   })
+  const absoluteDateProps = computed(() => {
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    } as const
+    if (!props.showTime) return options
+    return {
+      ...options,
+      hour: '2-digit',
+      minute: '2-digit'
+    } as const
+  })
 </script>
 <template>
   <div :class="rootClass">
@@ -65,11 +78,7 @@
         v-else
         :datetime="date"
         :locale="locale"
-        day="2-digit"
-        month="2-digit"
-        year="numeric"
-        :hour="showTime ? '2-digit' : undefined"
-        :minute="showTime ? '2-digit' : undefined" />
+        v-bind="absoluteDateProps" />
     </time>
     <span v-else class="lab-text-soft">дата не указана</span>
   </div>

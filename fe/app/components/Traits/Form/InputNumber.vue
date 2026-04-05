@@ -16,9 +16,7 @@
 </template>
 <script setup lang="ts">
   const props = withDefaults(defineProps<{ id?: string; label?: string; meta?: { unit?: string } }>(), {
-    id: undefined,
-    label: 'Число',
-    meta: undefined
+    label: 'Число'
   })
   const model = defineModel<number | string>({ required: true })
   const inputId = computed(() => props.id || 'TraitInputNumber')

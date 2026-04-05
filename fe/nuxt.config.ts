@@ -9,6 +9,21 @@ export default defineNuxtConfig({
     server: 'hidden',
     client: 'hidden'
   },
+  typescript: {
+    typeCheck: true,
+    strict: true,
+    tsConfig: {
+      compilerOptions: {
+        noUnusedLocals: true,
+        noUnusedParameters: true,
+        noUncheckedIndexedAccess: true,
+        exactOptionalPropertyTypes: true,
+        useUnknownInCatchVariables: true,
+        noFallthroughCasesInSwitch: true,
+        noImplicitOverride: true
+      }
+    }
+  },
   experimental: {
     payloadExtraction: !isDev
   },
@@ -33,7 +48,20 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
-    preset: 'bun'
+    preset: 'bun',
+    typescript: {
+      strict: true,
+      tsConfig: {
+        compilerOptions: {
+          noUnusedLocals: true,
+          noUnusedParameters: true,
+          noUncheckedIndexedAccess: true,
+          exactOptionalPropertyTypes: true,
+          useUnknownInCatchVariables: true,
+          noFallthroughCasesInSwitch: true
+        }
+      }
+    }
   },
   runtimeConfig,
   css: ['~/assets/css/main.css'],

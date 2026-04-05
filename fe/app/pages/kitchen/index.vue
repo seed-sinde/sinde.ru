@@ -73,9 +73,8 @@
       const key = `${item.category}:${item.name.toLowerCase()}`
       if (seen.has(key)) continue
       seen.add(key)
-      merged.push({
+      const customItem: KitchenCatalogItem = {
         id: `custom:${item.ingredient_id}`,
-        ingredient_id: undefined,
         name: item.name,
         category: item.category,
         description: '',
@@ -83,7 +82,8 @@
         fat_g: null,
         carbs_g: null,
         kcal: null
-      })
+      }
+      merged.push(customItem)
     }
     return merged
   })
@@ -137,7 +137,6 @@
     normalizeTag,
     getIngredientSuggestions,
     addSearchIngredientFromInput,
-    addExcludedIngredient,
     addExcludedIngredientFromInput,
     removeEffectiveSelectedIngredient,
     removeEffectiveExcludedIngredient,
@@ -395,11 +394,6 @@
       ids.add(id)
     }
     return Array.from(ids)
-  })
-  const recipeManageTitle = computed(() => {
-    if (activeKitchenTab.value === 'edit') return 'Редактирование рецепта'
-    if (activeKitchenTab.value === 'create') return 'Новый рецепт'
-    return 'Сохранённые рецепты'
   })
   const kitchenBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
     const root =

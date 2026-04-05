@@ -44,7 +44,6 @@
       inlineToggle?: boolean
     }>(),
     {
-      modelValue: undefined,
       defaultExpanded: false,
       showLabel: 'Показать',
       hideLabel: 'Свернуть',

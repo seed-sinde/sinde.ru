@@ -77,7 +77,7 @@
   defineOptions({ inheritAttrs: false })
   const props = withDefaults(
     defineProps<{
-      modelValue?: string | number | null
+      modelValue?: string | number | null | undefined
       options?: SelectOptionInput[]
       id?: string
       name?: string
@@ -93,10 +93,10 @@
     {
       modelValue: '',
       options: () => [],
-      id: undefined,
-      name: undefined,
+      id: '',
+      name: '',
       disabled: false,
-      ariaLabel: undefined,
+      ariaLabel: '',
       invalid: false,
       selectClass: '',
       placeholder: 'Выберите значение',
@@ -134,13 +134,16 @@
   const normalizedOptions = computed<NormalizedSelectOption[]>(() =>
     (props.options || []).map(option => {
       const normalizedValue = option.value === null || option.value === undefined ? '' : String(option.value)
-      return {
+      const normalizedOption: NormalizedSelectOption = {
         key: normalizedValue || option.label,
         value: normalizedValue,
         label: option.label,
-        disabled: Boolean(option.disabled),
-        swatchColor: option.swatchColor
+        disabled: Boolean(option.disabled)
       }
+      if (option.swatchColor) {
+        normalizedOption.swatchColor = option.swatchColor
+      }
+      return normalizedOption
     })
   )
   const enabledOptions = computed(() => normalizedOptions.value.filter(option => !option.disabled))

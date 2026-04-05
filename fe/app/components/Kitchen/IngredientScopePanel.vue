@@ -61,13 +61,11 @@
       emptyText: '',
       favoriteEmptyText: '',
       showFavoriteEmptyText: false,
-      toggleId: undefined,
-      toggleName: undefined,
+      toggleId: '',
+      toggleName: '',
       toggleValue: false,
       toggleLabel: '',
       toggleTone: 'cyan',
-      toggleVisualState: undefined,
-      itemStyle: undefined,
       itemTitle: '',
       itemAriaLabel: ''
     }

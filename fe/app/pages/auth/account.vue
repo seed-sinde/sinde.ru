@@ -7,7 +7,7 @@
   const router = useRouter()
   const runtimeConfig = useRuntimeConfig()
   const uiPreferences = useUiPreferencesStore()
-  const { t, localeOptions, themeOptions, readThemePreferenceFromSettings } = useInterfacePreferences()
+  const { t, readThemePreferenceFromSettings } = useInterfacePreferences()
   const { saveInterfacePreferences: syncInterfacePreferences } = useInterfacePreferencesSync()
   const {
     user,

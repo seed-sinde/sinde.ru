@@ -29,10 +29,10 @@
     }>(),
     {
       mode: 'datetime',
-      id: undefined,
-      name: undefined,
-      placeholder: undefined,
-      ariaLabel: undefined,
+      id: '',
+      name: '',
+      placeholder: '',
+      ariaLabel: '',
       invalid: false
     }
   )

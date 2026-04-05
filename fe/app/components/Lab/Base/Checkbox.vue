@@ -39,8 +39,8 @@ const props = withDefaults(
   }>(),
   {
     modelValue: false,
-    id: undefined,
-    name: undefined,
+    id: '',
+    name: '',
     label: '',
     bare: false,
     disabled: false,

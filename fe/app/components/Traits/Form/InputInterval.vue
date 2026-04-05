@@ -41,7 +41,7 @@
       labelUnit?: string
       meta?: unknown
     }>(),
-    { meta: undefined }
+    {}
   )
   const intervalUnits: Array<{ value: TraitIntervalUnit; label: string; ms: number; short: string }> = [
     { value: 'seconds', label: 'Секунды', ms: 1000, short: 'сек' },

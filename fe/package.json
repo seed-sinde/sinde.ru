@@ -31,7 +31,9 @@
   },
   "devDependencies": {
     "@iconify-json/ic": "^1.2.4",
-    "@vue/language-core": "^3.2.6"
+    "@vue/language-core": "^3.2.6",
+    "typescript": "^6.0.2",
+    "vue-tsc": "^3.2.6"
   },
   "trustedDependencies": [
     "@parcel/watcher",

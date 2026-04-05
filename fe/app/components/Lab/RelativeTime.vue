@@ -52,6 +52,20 @@ const titleText = computed(() => {
     : { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' },
   ).format(date.value)
 })
+const absoluteDateProps = computed(() => {
+  const options = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  } as const
+  if (!props.showTime) return options
+  return {
+    ...options,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  } as const
+})
 let nowTimer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   nowTs.value = Date.now()
@@ -73,12 +87,7 @@ onBeforeUnmount(() => {
       v-else
       :datetime="date"
       :locale="locale"
-      day="2-digit"
-      month="2-digit"
-      year="numeric"
-      :hour="showTime ? '2-digit' : undefined"
-      :minute="showTime ? '2-digit' : undefined"
-      :second="showTime ? '2-digit' : undefined" />
+      v-bind="absoluteDateProps" />
   </span>
   <span v-else :class="rootClass">{{ fallback }}</span>
 </template>

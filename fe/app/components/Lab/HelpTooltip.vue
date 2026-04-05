@@ -13,7 +13,6 @@
     }>(),
     {
       side: 'right',
-      align: undefined,
       maxWidthClass: 'max-w-xs',
       minWidthClass: 'min-w-52'
     }

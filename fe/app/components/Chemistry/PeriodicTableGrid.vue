@@ -45,7 +45,6 @@
     elementClick: [element: PeriodicTableElement, event: MouseEvent]
   }>()
   const periodicTableGroups = PERIODIC_TABLE_GROUPS
-  const periodicTableRows = PERIODIC_TABLE_ROWS
   const groupHeaders = Array.from({ length: periodicTableGroups }, (_, index) => index + 1)
   const hasVisibleHeaders = computed(() => props.showGroupHeaders || props.showPeriodHeaders)
   const visiblePeriodRows = computed(() => {

@@ -17,9 +17,7 @@ const model = defineModel<string>({ required: true })
 const props = withDefaults(
   defineProps<{ min?: string; max?: string; id?: string; label?: string; meta?: unknown }>(),
   {
-    label: 'Дата/время',
-    id: undefined,
-    meta: undefined
+    label: 'Дата/время'
   }
 )
 const placeholder = computed(() => datePlaceholder('datetime'))
