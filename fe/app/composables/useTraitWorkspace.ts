@@ -1,4 +1,5 @@
 import { keyMetaEquals, normalizeMetaForEquality } from '../utils/traitMeta'
+import type { Ref } from 'vue'
 import type { Trait, TraitInput, KeyMeta, TraitKey, TraitResolveLockOwner, TraitResolveLockState } from '../../shared/types/traits'
 const SKIP_FETCH_UUID_STATE_KEY = 'skip-fetch-uuid'
 const TRAIT_RESOLVE_LOCK_STATE_KEY = 'traits-resolve-lock'
@@ -151,10 +152,20 @@ export const useTraitTypes = () => {
     isValidValue
   }
 }
+type TraitLoaderResult = {
+  data: Ref<Trait[] | undefined>
+  pending: Ref<boolean>
+  error: Ref<unknown>
+  refresh: () => Promise<void>
+}
+
 /**
  * Loads a full trait list for the current uuid while reusing SSR or in-memory state when possible.
  */
-export const useTraitLoader = async (uuid: Ref<string | undefined>, skipFetchUuid: Ref<string | null>) => {
+export const useTraitLoader = async (
+  uuid: Ref<string | undefined>,
+  skipFetchUuid: Ref<string | null>
+): Promise<TraitLoaderResult> => {
   const lock = useTraitResolveLock()
   const store = useTraitsStore()
   const key = computed(() => `traits:${uuid.value || ''}`)

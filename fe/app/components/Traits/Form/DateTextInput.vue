@@ -17,10 +17,11 @@
     @paste="onPaste" />
 </template>
 <script setup lang="ts">
+  type InputDateTextMode = 'date' | 'time' | 'datetime'
   const model = defineModel<string>({ required: true })
   const props = withDefaults(
     defineProps<{
-      mode?: DateTextMode
+      mode?: InputDateTextMode
       id?: string
       name?: string
       placeholder?: string
@@ -36,17 +37,17 @@
       invalid: false
     }
   )
-  const resolvedMode = computed<DateTextMode>(() => props.mode || 'datetime')
+  const resolvedMode = computed<InputDateTextMode>(() => props.mode || 'datetime')
   const resolvedPlaceholder = computed(() => props.placeholder || datePlaceholder(resolvedMode.value))
   const maxLength = computed(() => dateTextMaxLength(resolvedMode.value))
   const isFocused = ref(false)
   const displayValue = ref(maskDateText(model.value || '', resolvedMode.value))
-  const maskSpec = (mode: DateTextMode): DateTextMaskSpec => {
+  const maskSpec = (mode: InputDateTextMode): DateTextMaskSpec => {
     if (mode === 'time') return { template: '__:__', slots: [0, 1, 3, 4] }
     if (mode === 'date') return { template: '__.__.____', slots: [0, 1, 3, 4, 6, 7, 8, 9] }
     return { template: '__.__.____ __:__', slots: [0, 1, 3, 4, 6, 7, 8, 9, 11, 12, 14, 15] }
   }
-  const toSlots = (value: string, mode: DateTextMode): string[] => {
+  const toSlots = (value: string, mode: InputDateTextMode): string[] => {
     const digits = String(value || '').replace(/\D/g, '')
     const { slots } = maskSpec(mode)
     return slots.map((_, idx) => digits[idx] || '')
@@ -54,7 +55,7 @@
   const fromSlots = (slotsValue: string[]): string => {
     return slotsValue.join('')
   }
-  const renderSlots = (slotsValue: string[], mode: DateTextMode): string => {
+  const renderSlots = (slotsValue: string[], mode: InputDateTextMode): string => {
     const spec = maskSpec(mode)
     const chars = spec.template.split('')
     spec.slots.forEach((pos, idx) => {
@@ -62,12 +63,12 @@
     })
     return chars.join('')
   }
-  const findSlotAtOrAfter = (caret: number, mode: DateTextMode): number => {
+  const findSlotAtOrAfter = (caret: number, mode: InputDateTextMode): number => {
     const positions = maskSpec(mode).slots
     const index = positions.findIndex(pos => pos >= caret)
     return index >= 0 ? index : positions.length - 1
   }
-  const findSlotAtOrBefore = (caret: number, mode: DateTextMode): number => {
+  const findSlotAtOrBefore = (caret: number, mode: InputDateTextMode): number => {
     const positions = maskSpec(mode).slots
     for (let idx = positions.length - 1; idx >= 0; idx -= 1) {
       const pos = positions[idx]
@@ -84,7 +85,7 @@
       }
     })
   }
-  const setCaretBySlot = (input: HTMLInputElement, slotIndex: number, mode: DateTextMode) => {
+  const setCaretBySlot = (input: HTMLInputElement, slotIndex: number, mode: InputDateTextMode) => {
     const positions = maskSpec(mode).slots
     const templateLen = maskSpec(mode).template.length
     if (slotIndex >= positions.length) {
@@ -95,7 +96,7 @@
     const caret = positions[safeIndex] ?? positions[positions.length - 1] ?? 0
     setCaret(input, caret)
   }
-  const syncModelFromSlots = (slotsValue: string[], mode: DateTextMode) => {
+  const syncModelFromSlots = (slotsValue: string[], mode: InputDateTextMode) => {
     model.value = maskDateText(fromSlots(slotsValue), mode)
   }
   const onInputValue = (raw: string) => {

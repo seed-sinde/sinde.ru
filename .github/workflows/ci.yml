@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: be/go.mod
+          cache-dependency-path: be/go.sum
+
+      - name: Run backend tests
+        working-directory: be
+        run: |
+          go test ./...
+          go build -buildvcs=true -trimpath -o ./main ./cmd/app
+          go build -buildvcs=true -trimpath -o ./seeds-import ./cmd/seeds-import
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
+      - name: Install frontend dependencies
+        working-directory: fe
+        run: bun install --frozen-lockfile
+
+      - name: Run frontend checks
+        working-directory: fe
+        run: bun run check

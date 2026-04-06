@@ -49,12 +49,12 @@
           </div>
           <NuxtLink
             :to="detailLinkTo"
-            class="traits-card-link inline-flex h-7 w-7 shrink-0 items-center justify-center focus-visible:outline-none"
+            class="traits-card-link shrink-0 text-xs uppercase tracking-[0.14em] focus-visible:outline-none"
             :aria-label="`Открыть особенность ${trait.t_key}`"
             title="Открыть отдельную особенность"
             @click.stop
             @keydown.stop>
-            <Icon name="ic:round-open-in-new" class="h-4 w-4" />
+            Открыть
           </NuxtLink>
         </div>
       </div>

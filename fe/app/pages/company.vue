@@ -8,28 +8,20 @@
     label: string
     value: string
     href?: string
-    icon: string
-    iconClass: string
   }> = [
     {
       label: 'Контактное лицо',
-      value: 'Дмитрий В. Воротников',
-      icon: 'ic:round-badge',
-      iconClass: 'text-(--lab-accent)'
+      value: 'Дмитрий В. Воротников'
     },
     {
       label: 'Email',
       value: 'bank@sinde.ru',
-      href: 'mailto:bank@sinde.ru',
-      icon: 'ic:round-alternate-email',
-      iconClass: 'text-(--lab-info)'
+      href: 'mailto:bank@sinde.ru'
     },
     {
       label: 'Телефон',
       value: '+7 932 007-35-24',
-      href: 'tel:+79320073524',
-      icon: 'ic:round-call',
-      iconClass: 'text-(--lab-success)'
+      href: 'tel:+79320073524'
     }
   ]
   const requisites: Array<{
@@ -87,26 +79,19 @@
           <div class="text-(--lab-text-muted) mb-3 text-sm uppercase tracking-[0.18em]">Контакты</div>
           <div class="divide-y divide-(--lab-border)">
             <article v-for="item in contacts" :key="item.label" class="py-3">
-              <div class="flex items-start gap-3">
-                <span
-                  class="inline-flex h-10 w-10 shrink-0 items-center justify-center"
-                  :class="item.iconClass">
-                  <Icon :name="item.icon" class="h-5 w-5" />
-                </span>
-                <div class="min-w-0">
-                  <p class="text-(--lab-text-muted) text-xs uppercase tracking-[0.16em]">
-                    {{ item.label }}
-                  </p>
-                  <a
-                    v-if="item.href"
-                    :href="item.href"
-                    class="text-(--lab-text-primary) mt-2 inline-flex min-w-0 items-center gap-2 text-sm ring-1 ring-transparent transition hover:text-(--lab-accent) focus-visible:outline-none focus-visible:ring-2 sm:text-base">
-                    <span class="wrap-break-word">{{ item.value }}</span>
-                  </a>
-                  <p v-else class="text-(--lab-text-primary) mt-2 text-sm sm:text-base">
-                    {{ item.value }}
-                  </p>
-                </div>
+              <div class="min-w-0">
+                <p class="text-(--lab-text-muted) text-xs uppercase tracking-[0.16em]">
+                  {{ item.label }}
+                </p>
+                <a
+                  v-if="item.href"
+                  :href="item.href"
+                  class="text-(--lab-text-primary) mt-2 inline-flex min-w-0 text-sm ring-1 ring-transparent transition focus-visible:outline-none focus-visible:ring-2 sm:text-base">
+                  <span class="wrap-break-word">{{ item.value }}</span>
+                </a>
+                <p v-else class="text-(--lab-text-primary) mt-2 text-sm sm:text-base">
+                  {{ item.value }}
+                </p>
               </div>
             </article>
           </div>

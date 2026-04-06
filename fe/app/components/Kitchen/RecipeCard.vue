@@ -4,7 +4,10 @@
       recipe: KitchenRecipe
       to: string
       coverSrc?: string
-      metaItems?: KitchenRecipeMetaItem[]
+      metaItems?: Array<{
+        label: string
+        value: string | number
+      }>
       canManage?: boolean
       showFavorite?: boolean
       favorite?: boolean
@@ -77,11 +80,8 @@
         icon-only
         @click="emit('toggleFavorite')" />
       <div class="min-w-0 flex-1 space-y-1">
-        <NuxtLink
-          :to="to"
-          class="flex min-w-0 items-start gap-1 text-base font-semibold text-zinc-100 hover:text-zinc-50">
-          <span class="min-w-0 flex-1 truncate">{{ recipe.title }}</span>
-          <Icon name="ic:round-open-in-new" class="h-4 w-4 shrink-0 text-zinc-400" />
+        <NuxtLink :to="to" class="block min-w-0 text-base font-semibold text-zinc-100 hover:text-zinc-50">
+          <span class="block min-w-0 truncate">{{ recipe.title }}</span>
         </NuxtLink>
         <p v-if="showModeration && moderationText" class="text-[11px] text-zinc-500">{{ moderationText }}</p>
         <p v-if="showModeration && moderationNote" class="text-[11px] text-amber-300/90">

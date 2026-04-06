@@ -1,3 +1,5 @@
+import type { ComputedRef, Ref } from 'vue'
+
 type SeoValue = string | null | undefined
 type SeoInput = SeoValue | Ref<SeoValue> | ComputedRef<SeoValue> | (() => SeoValue)
 type UsePageSeoInput = {

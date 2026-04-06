@@ -98,10 +98,7 @@
           </svg>
         </div>
       </div>
-      <div class="wiki-tool-card__footer mt-auto inline-flex items-center gap-1.5 text-sm font-medium">
-        <span>Открыть раздел</span>
-        <Icon name="ic:round-arrow-forward" class="h-4 w-4" />
-      </div>
+      <div class="wiki-tool-card__footer mt-auto inline-flex items-center text-sm font-medium">Открыть раздел</div>
     </div>
   </NuxtLink>
 </template>

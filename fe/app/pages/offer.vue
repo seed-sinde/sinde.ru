@@ -8,7 +8,6 @@
   const sections = [
     {
       title: 'Общие положения',
-      icon: 'ic:round-gavel',
       tone: 'accent',
       items: [
         'Исполнитель: ИП Воротников Дмитрий Владимирович.',
@@ -18,7 +17,6 @@
     },
     {
       title: 'Предмет договора',
-      icon: 'ic:round-description',
       tone: 'info',
       items: [
         'Пользователю предоставляется неисключительная лицензия и ограниченный доступ к цифровому контенту и информационной системе.',
@@ -28,7 +26,6 @@
     },
     {
       title: 'Условия оплаты',
-      icon: 'ic:round-payments',
       tone: 'warning',
       items: [
         'Стоимость указывается в актуальных тарифах и платёжной форме до момента оплаты.',
@@ -39,7 +36,6 @@
     },
     {
       title: 'Порядок оформления заказа',
-      icon: 'ic:round-shopping-cart',
       tone: 'success',
       items: [
         'Пользователь выбирает тариф и оформляет заказ через интерфейс сайта.',
@@ -49,7 +45,6 @@
     },
     {
       title: 'Условия возврата',
-      icon: 'ic:round-assignment-return',
       tone: 'danger',
       items: [
         'После предоставления доступа возврат денежных средств не предусмотрен.',
@@ -58,7 +53,6 @@
     },
     {
       title: 'Доступ и ограничения',
-      icon: 'ic:round-lock-open',
       tone: 'info',
       items: [
         'Доступ предоставляется через аккаунт пользователя и не может передаваться третьим лицам без согласия исполнителя.',
@@ -67,7 +61,6 @@
     },
     {
       title: 'Ответственность',
-      icon: 'ic:round-policy',
       tone: 'warning',
       items: [
         'Сервис предоставляется по модели «как есть».',
@@ -77,7 +70,6 @@
     },
     {
       title: 'Персональные данные',
-      icon: 'ic:round-admin-panel-settings',
       tone: 'accent',
       items: [
         'Обработка персональных данных выполняется в объёме, необходимом для регистрации, оплаты, предоставления доступа и поддержки пользователей.',
@@ -86,7 +78,6 @@
     },
     {
       title: 'Порядок акцепта',
-      icon: 'ic:round-task-alt',
       tone: 'success',
       items: [
         'Договор считается заключённым с момента оплаты доступа.',
@@ -143,34 +134,28 @@
           :key="section.title"
           class="offer-section border p-4 sm:p-5"
           :class="`offer-section-${section.tone}`">
-          <div class="flex items-start gap-3">
-            <span class="offer-section-icon inline-flex h-10 w-10 shrink-0 items-center justify-center border">
-              <Icon :name="section.icon" class="h-5 w-5" />
-            </span>
-            <div class="min-w-0 space-y-3">
-              <div class="flex items-center gap-2">
-                <span class="text-(--lab-text-muted) text-sm tabular-nums">{{ index + 1 }}.</span>
-                <h2 class="text-(--lab-text-primary) text-lg font-semibold sm:text-xl">
-                  {{ section.title }}
-                </h2>
-              </div>
-              <ul class="space-y-2.5">
-                <li
-                  v-for="item in section.items"
-                  :key="item"
-                  class="flex items-start gap-3 text-sm leading-6 sm:text-[0.95rem]">
-                  <span class="offer-list-dot mt-2 h-1.5 w-1.5 shrink-0"></span>
-                  <span class="text-(--lab-text-secondary)">{{ item }}</span>
-                </li>
-              </ul>
-              <NuxtLink
-                v-if="section.title === 'Персональные данные'"
-                :to="privacyHref"
-                class="border-(--lab-border) text-(--lab-text-primary) inline-flex items-center gap-2 border px-3 py-2 text-sm ring-1 ring-transparent transition focus-visible:outline-none focus-visible:ring-2">
-                <Icon name="ic:round-open-in-new" class="h-4 w-4" />
-                <span>Политика конфиденциальности</span>
-              </NuxtLink>
+          <div class="min-w-0 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-(--lab-text-muted) text-sm tabular-nums">{{ index + 1 }}.</span>
+              <h2 class="text-(--lab-text-primary) text-lg font-semibold sm:text-xl">
+                {{ section.title }}
+              </h2>
             </div>
+            <ul class="space-y-2.5">
+              <li
+                v-for="item in section.items"
+                :key="item"
+                class="flex items-start gap-3 text-sm leading-6 sm:text-[0.95rem]">
+                <span class="offer-list-dot mt-2 h-1.5 w-1.5 shrink-0"></span>
+                <span class="text-(--lab-text-secondary)">{{ item }}</span>
+              </li>
+            </ul>
+            <NuxtLink
+              v-if="section.title === 'Персональные данные'"
+              :to="privacyHref"
+              class="border-(--lab-border) text-(--lab-text-primary) inline-flex items-center border px-3 py-2 text-sm ring-1 ring-transparent transition focus-visible:outline-none focus-visible:ring-2">
+              <span>Политика конфиденциальности</span>
+            </NuxtLink>
           </div>
         </article>
       </section>
