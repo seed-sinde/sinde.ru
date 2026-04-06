@@ -1,10 +1,12 @@
 package store
+
 import (
 	"fmt"
-	"strings"
 	"github.com/google/uuid"
 	"sinde.ru/internal/models"
+	"strings"
 )
+
 func joinChilds(childs []uuid.UUID) string {
 	if len(childs) == 0 {
 		return ""
@@ -22,6 +24,7 @@ func GetSet(id uuid.UUID) (*models.Set, bool) {
 	st, ok := s.Sets[id]
 	return st, ok
 }
+
 // SyncSet синхронизирует набор из Postgres в in-memory store.
 func SyncSet(set *models.Set) *models.Set {
 	if set == nil || set.SUUID == uuid.Nil {
@@ -37,6 +40,7 @@ func SyncSet(set *models.Set) *models.Set {
 	}
 	return s.Sets[copySet.SUUID]
 }
+
 // Создаёт или находит набор РОВНО из двух потомков.
 // Возвращает: s_uuid, (nil, так как здесь особенность не создаётся), *models.Set при создании нового набора, ошибка.
 func CreateOrFindSet(children []any) (uuid.UUID, *models.Trait, *models.Set, error) {
@@ -61,6 +65,7 @@ func CreateOrFindSet(children []any) (uuid.UUID, *models.Trait, *models.Set, err
 	s.SetChildsToSUUID[key] = suuid
 	return suuid, nil, st, nil
 }
+
 // Лево-ассоциированная цепочка из произвольного списка UUID.
 // Возвращает верхний s_uuid и список НОВЫХ наборов для асинхронной персистентности.
 func FindOrBuildSetChain(childs []uuid.UUID) (uuid.UUID, []*models.Set, error) {

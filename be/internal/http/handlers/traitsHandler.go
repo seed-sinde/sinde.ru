@@ -1,21 +1,23 @@
 package handlers
+
 import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"log"
-	"strconv"
-	"strings"
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"log"
 	"sinde.ru/db/services"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/models"
 	"sinde.ru/internal/store"
 	"sinde.ru/utils"
+	"strconv"
+	"strings"
 )
+
 // MemoryTraitHandler возвращает особенность по UUID.
 //
 // Маршрут:
@@ -50,6 +52,7 @@ func MemoryTraitHandler() fiber.Handler {
 		return c.JSON(resp)
 	}
 }
+
 // MemoryAddTraitHandler добавляет особенность или возвращает существующую.
 //
 // Маршрут:
@@ -97,6 +100,7 @@ func MemoryAddTraitHandler() fiber.Handler {
 		return c.SendString(resp.TUUID.String())
 	}
 }
+
 // MemoryResolveUUIDHandler разрешает UUID в особенность или набор.
 //
 // Маршрут:
@@ -172,6 +176,7 @@ func MemoryResolveUUIDHandler() fiber.Handler {
 		return nil
 	}
 }
+
 // CollectAllTraits обходит все особенности в наборе, включая вложенные s_uuid.
 //
 // Параметры:

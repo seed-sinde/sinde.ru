@@ -1,8 +1,11 @@
 package models
+
 import (
-	"time"
+	"encoding/json"
 	"github.com/google/uuid"
+	"time"
 )
+
 type KitchenIngredient struct {
 	Name   string `json:"name"`
 	Amount string `json:"amount,omitempty"`
@@ -14,16 +17,26 @@ type KitchenStep struct {
 	Text     string `json:"text"`
 	ImageKey string `json:"image_key,omitempty"`
 }
+type KitchenRecipeStep struct {
+	StepID      uuid.UUID       `json:"step_id"`
+	RecipeID    uuid.UUID       `json:"recipe_id"`
+	StepOrder   int             `json:"step_order"`
+	Title       string          `json:"title"`
+	Description string          `json:"description"`
+	Metadata    json.RawMessage `json:"metadata,omitempty"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+}
 type KitchenRecipe struct {
-	ID                uuid.UUID           `json:"id"`
-	OwnerUserID       *uuid.UUID          `json:"owner_user_id,omitempty"`
-	Title             string              `json:"title"`
-	Description       string              `json:"description"`
-	CoverImageKey     string              `json:"cover_image_key,omitempty"`
-	Kcal              int                 `json:"kcal"`
-	PrepMinutes       int                 `json:"prep_minutes"`
-	CookMinutes       int                 `json:"cook_minutes"`
-	Servings          int                 `json:"servings"`
+	ID            uuid.UUID  `json:"id"`
+	OwnerUserID   *uuid.UUID `json:"owner_user_id,omitempty"`
+	Title         string     `json:"title"`
+	Description   string     `json:"description"`
+	CoverImageKey string     `json:"cover_image_key,omitempty"`
+	Kcal          int        `json:"kcal"`
+	PrepMinutes   int        `json:"prep_minutes"`
+	CookMinutes   int        `json:"cook_minutes"`
+	Servings      int        `json:"servings"`
 	// Difficulty stores a catalog code from kitchen_filter_options(kind='difficulty'), not a fixed numeric level.
 	Difficulty        string              `json:"difficulty"`
 	MealType          string              `json:"meal_type"`

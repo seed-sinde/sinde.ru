@@ -1,15 +1,17 @@
 package middleware
+
 import (
 	"bytes"
 	"errors"
+	"github.com/gofiber/fiber/v3"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"sinde.ru/internal/http/responses"
 	"strings"
 	"testing"
-	"github.com/gofiber/fiber/v3"
-	"sinde.ru/internal/http/responses"
 )
+
 func TestFormatResponseSize(t *testing.T) {
 	cases := []struct {
 		name  string

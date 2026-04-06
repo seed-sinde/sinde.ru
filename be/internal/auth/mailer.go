@@ -1,4 +1,5 @@
 package auth
+
 import (
 	"bytes"
 	"crypto/tls"
@@ -13,9 +14,11 @@ import (
 	"strings"
 	"time"
 )
+
 type Mailer interface {
 	Send(to string, subject string, textBody string, htmlBody string) error
 }
+
 func NewMailer(cfg Config) Mailer {
 	if strings.EqualFold(strings.TrimSpace(cfg.MailerDriver), "smtp") && strings.TrimSpace(cfg.SMTPHost) != "" {
 		return SMTPMailer{
@@ -30,11 +33,14 @@ func NewMailer(cfg Config) Mailer {
 	}
 	return LogMailer{}
 }
+
 type LogMailer struct{}
+
 func (LogMailer) Send(to string, subject string, textBody string, htmlBody string) error {
 	log.Printf("[auth-mail] получатель=%s тема=%q текст=%s html=%s", to, subject, textBody, htmlBody)
 	return nil
 }
+
 type SMTPMailer struct {
 	Host     string
 	Port     int
@@ -44,8 +50,10 @@ type SMTPMailer struct {
 	TLSMode  string
 	HELO     string
 }
+
 const smtpDialTimeout = 10 * time.Second
 const smtpSessionTimeout = 20 * time.Second
+
 func (m SMTPMailer) Send(to string, subject string, textBody string, htmlBody string) error {
 	from := strings.TrimSpace(m.From)
 	if from == "" {

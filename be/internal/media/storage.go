@@ -1,8 +1,11 @@
 package media
+
 import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,19 +14,20 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 )
+
 type StorageObject struct {
 	Body        io.ReadCloser
 	ContentType string
 	Size        int64
 }
+
 var (
 	minioClientOnce sync.Once
 	minioClient     *minio.Client
 	minioClientErr  error
 )
+
 func MinIOEnabled() bool {
 	return strings.TrimSpace(os.Getenv("MINIO_ENDPOINT")) != ""
 }

@@ -1,12 +1,14 @@
 package responses
+
 import (
 	"encoding/json"
+	"github.com/gofiber/fiber/v3"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
-	"github.com/gofiber/fiber/v3"
 )
+
 func TestErrorLocalizesMessageAndStoresLocals(t *testing.T) {
 	app := fiber.New()
 	var gotMessage string

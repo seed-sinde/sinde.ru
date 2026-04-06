@@ -5,12 +5,16 @@
   const route = useRoute()
   const router = useRouter()
   const { t } = useInterfacePreferences()
+  const { data: periodicTableElementsData, error: chemistryElementsError } = await useChemistryElements()
+  if (chemistryElementsError.value) {
+    throw createError({ statusCode: 500, statusMessage: 'Не удалось загрузить элементы' })
+  }
   const isMediumViewport = ref(false)
   const isExtraLargeViewport = ref(false)
   const preferencesStore = useUiPreferencesStore()
   preferencesStore.restorePersisted()
   const state = reactive(toRefs(preferencesStore.mineralsFilters))
-  const periodicTableElements = PERIODIC_TABLE_ELEMENTS
+  const periodicTableElements = computed(() => periodicTableElementsData.value || [])
   const crystalSystemOptions: Array<{ value: MineralCrystalSystem; label: string }> = [
     { value: 'cubic', label: 'minerals.crystal_system.cubic' },
     { value: 'hexagonal', label: 'minerals.crystal_system.hexagonal' },
@@ -23,12 +27,12 @@
   const mineralCrystalSystems = new Set<MineralCrystalSystem>(crystalSystemOptions.map(item => item.value))
   const hiddenMineralElementNumbers = computed(() =>
     !hasChemistryAvailability.value
-      ? PERIODIC_TABLE_ELEMENTS.filter(element => {
+      ? periodicTableElements.value.filter(element => {
           if (element.number === 90 || element.number === 92) return false
           if (element.category === 'noble gas' || element.category === 'unknown, predicted to be noble gas') return true
           return element.ypos === 10
         }).map(element => element.number)
-      : PERIODIC_TABLE_ELEMENTS.filter(element => {
+      : periodicTableElements.value.filter(element => {
           const isSelected = Boolean(selectedBucketByElement.value[element.symbol])
           if (isSelected) return false
           if (element.number === 90 || element.number === 92) return false
@@ -37,72 +41,20 @@
           return Number(chemistryAvailability.value[element.symbol] || 0) <= 0
         }).map(element => element.number)
   )
-  const elementOrder = new Map(PERIODIC_TABLE_ELEMENTS.map((element, index) => [element.symbol, index]))
-  const allElementSymbols = PERIODIC_TABLE_ELEMENTS.slice()
-    .sort((left, right) => left.number - right.number)
-    .map(element => element.symbol)
+  const elementOrder = computed(() => new Map(periodicTableElements.value.map((element, index) => [element.symbol, index])))
+  const allElementSymbols = computed(() =>
+    periodicTableElements.value
+      .slice()
+      .sort((left, right) => left.number - right.number)
+      .map(element => element.symbol)
+  )
   const compareElementOrder = (left: string, right: string) => {
-    const leftOrder = elementOrder.get(left) ?? Number.MAX_SAFE_INTEGER
-    const rightOrder = elementOrder.get(right) ?? Number.MAX_SAFE_INTEGER
+    const leftOrder = elementOrder.value.get(left) ?? Number.MAX_SAFE_INTEGER
+    const rightOrder = elementOrder.value.get(right) ?? Number.MAX_SAFE_INTEGER
     return leftOrder - rightOrder
   }
-  const normalizeElementSymbol = (value: unknown) => formatPeriodicTableSymbol(value)
-  const uniqueElementSymbols = (values: string[]) =>
-    Array.from(new Set(values.map(normalizeElementSymbol).filter(Boolean)))
-  const sortElements = (values: string[]) => uniqueElementSymbols(values).sort(compareElementOrder)
-  const parseQueryStringValue = (value: unknown) => {
-    if (Array.isArray(value)) return String(value[0] || '').trim()
-    return String(value || '').trim()
-  }
-  const parseQueryElementList = (value: unknown) =>
-    sortElements(
-      parseQueryStringValue(value)
-        .split(',')
-        .map(item => normalizeElementSymbol(item))
-        .filter(Boolean)
-    )
-  const parseQueryCrystalSystems = (value: unknown): MineralCrystalSystem[] =>
-    parseQueryStringValue(value)
-      .split(',')
-      .map(item => item.trim() as MineralCrystalSystem)
-      .filter(item => mineralCrystalSystems.has(item))
-  const parseQueryCrystalSystemMode = (value: unknown): MineralCrystalSystemMode =>
-    parseQueryStringValue(value) === 'all' ? 'all' : 'any'
-  const parseQueryLimit = (value: unknown) => {
-    const parsed = Number.parseInt(parseQueryStringValue(value), 10)
-    if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_LIMIT
-    return Math.min(parsed, 100)
-  }
-  const parseQueryOffset = (value: unknown) => {
-    const parsed = Number.parseInt(parseQueryStringValue(value), 10)
-    if (!Number.isFinite(parsed) || parsed < 0) return 0
-    return parsed
-  }
-  const parseQuerySort = (value: unknown) => {
-    const parsed = parseQueryStringValue(value)
-    return parsed === 'name_desc' ? 'name_desc' : 'name_asc'
-  }
-  const parseQueryOnlyWithImages = (value: unknown) => {
-    const parsed = parseQueryStringValue(value).toLowerCase()
-    return parsed === '1' || parsed === 'true' || parsed === 'yes' || parsed === 'on'
-  }
-  const hasQueryValues = (query: Record<string, unknown>) =>
-    Object.values(query).some(value => {
-      if (Array.isArray(value)) return value.some(item => String(item || '').trim())
-      return String(value || '').trim() !== ''
-    })
-  const readRouteState = (query: Record<string, unknown>): MineralsRouteState => ({
-    q: parseQueryStringValue(query.q),
-    sort: parseQuerySort(query.sort),
-    limit: parseQueryLimit(query.limit),
-    offset: parseQueryOffset(query.offset),
-    onlyWithImages: parseQueryOnlyWithImages(query.onlyWithImages),
-    crystalSystems: parseQueryCrystalSystems(query.crystalSystem),
-    crystalSystemMode: parseQueryCrystalSystemMode(query.crystalSystemMode),
-    chemistryAll: parseQueryElementList(query.chemistryAll),
-    chemistryAny: parseQueryElementList(query.chemistryAny),
-    chemistryNone: parseQueryElementList(query.chemistryNone)
-  })
+  const normalizeElementSymbol = (value: unknown) => normalizeMineralElementSymbol(value)
+  const sortElements = (values: string[]) => sortMineralElementSymbols(values, compareElementOrder)
   const activeChemistryBucket = ref<ChemistryBucket>('all')
   const applyingRouteState = ref(false)
   let mediumViewportQuery: MediaQueryList | null = null
@@ -113,11 +65,15 @@
   }
   const restoreRouteFromStore = ref(
     import.meta.client &&
-      !hasQueryValues(route.query as Record<string, unknown>) &&
+      !hasMineralsRouteQueryValues(route.query as Record<string, unknown>) &&
       preferencesStore.hasActiveMineralsFilters()
   )
   const applyRouteState = (query: Record<string, unknown>) => {
-    const next = readRouteState(query)
+    const next = readMineralsRouteState(query, {
+      defaultLimit: DEFAULT_LIMIT,
+      allowedCrystalSystems: mineralCrystalSystems,
+      compareElementOrder
+    })
     applyingRouteState.value = true
     state.q = next.q
     state.sort = next.sort
@@ -136,13 +92,17 @@
   watch(
     () => route.query,
     query => {
-      if (restoreRouteFromStore.value && !hasQueryValues(query as Record<string, unknown>)) return
+      if (restoreRouteFromStore.value && !hasMineralsRouteQueryValues(query as Record<string, unknown>)) return
       applyRouteState(query as Record<string, unknown>)
     },
     { immediate: true, deep: true }
   )
   const routeMatchesState = () => {
-    const current = readRouteState(route.query as Record<string, unknown>)
+    const current = readMineralsRouteState(route.query as Record<string, unknown>, {
+      defaultLimit: DEFAULT_LIMIT,
+      allowedCrystalSystems: mineralCrystalSystems,
+      compareElementOrder
+    })
     return (
       current.q === state.q.trim() &&
       current.sort === state.sort &&
@@ -156,21 +116,25 @@
       JSON.stringify(current.chemistryNone) === JSON.stringify(sortElements(state.chemistryNone))
     )
   }
-  const buildRouteQuery = () => {
-    const query: Record<string, string> = {}
-    const search = state.q.trim()
-    if (search) query.q = search
-    if (state.sort !== 'name_asc') query.sort = state.sort
-    if (state.limit !== DEFAULT_LIMIT) query.limit = String(state.limit)
-    if (state.offset > 0) query.offset = String(state.offset)
-    if (state.onlyWithImages) query.onlyWithImages = '1'
-    if (state.crystalSystems.length) query.crystalSystem = state.crystalSystems.join(',')
-    if (state.crystalSystemMode !== 'any') query.crystalSystemMode = state.crystalSystemMode
-    if (state.chemistryAll.length) query.chemistryAll = sortElements(state.chemistryAll).join(',')
-    if (state.chemistryAny.length) query.chemistryAny = sortElements(state.chemistryAny).join(',')
-    if (state.chemistryNone.length) query.chemistryNone = sortElements(state.chemistryNone).join(',')
-    return query
-  }
+  const buildRouteQuery = () =>
+    buildMineralsRouteQuery(
+      {
+        q: state.q,
+        sort: state.sort,
+        limit: state.limit,
+        offset: state.offset,
+        onlyWithImages: state.onlyWithImages,
+        crystalSystems: state.crystalSystems,
+        crystalSystemMode: state.crystalSystemMode,
+        chemistryAll: state.chemistryAll,
+        chemistryAny: state.chemistryAny,
+        chemistryNone: state.chemistryNone
+      },
+      {
+        defaultLimit: DEFAULT_LIMIT,
+        sortElements
+      }
+    )
   const syncRouteFromState = async () => {
     if (applyingRouteState.value || routeMatchesState()) return
     await router.replace({
@@ -250,7 +214,7 @@
   }
   const excludeAllNonSelected = async () => {
     const selected = new Set([...state.chemistryAll, ...state.chemistryAny, ...state.chemistryNone])
-    state.chemistryNone = allElementSymbols.filter(symbol => !selected.has(symbol))
+    state.chemistryNone = allElementSymbols.value.filter(symbol => !selected.has(symbol))
     state.offset = 0
     await syncRouteFromState()
   }
@@ -267,7 +231,13 @@
     state.chemistryNone = []
     await syncRouteFromState()
   }
-  const requestParams = computed(() => readRouteState(route.query as Record<string, unknown>))
+  const requestParams = computed(() =>
+    readMineralsRouteState(route.query as Record<string, unknown>, {
+      defaultLimit: DEFAULT_LIMIT,
+      allowedCrystalSystems: mineralCrystalSystems,
+      compareElementOrder
+    })
+  )
   const visibleLimitOptions = computed(() =>
     Array.from(new Set([...LIMIT_OPTIONS, state.limit]))
       .filter(value => value > 0 && value <= 100)
@@ -370,28 +340,28 @@
   }
   const chemistryBucketText = (values: string[]) => values.join(', ')
   const selectedElementNumbers = computed(() =>
-    PERIODIC_TABLE_ELEMENTS.filter(element => Boolean(selectedBucketByElement.value[element.symbol])).map(
+    periodicTableElements.value.filter(element => Boolean(selectedBucketByElement.value[element.symbol])).map(
       element => element.number
     )
   )
   const dimmedElementNumbers = computed(() =>
     !hasChemistryAvailability.value
       ? []
-      : PERIODIC_TABLE_ELEMENTS.filter(element => {
+      : periodicTableElements.value.filter(element => {
           const isSelected = Boolean(selectedBucketByElement.value[element.symbol])
           if (isSelected) return false
           return Number(chemistryAvailability.value[element.symbol] || 0) <= 0
         }).map(element => element.number)
   )
   const selectionToneByNumber = computed(() =>
-    PERIODIC_TABLE_ELEMENTS.reduce<Partial<Record<number, ChemistryBucket>>>((acc, element) => {
+    periodicTableElements.value.reduce<Partial<Record<number, ChemistryBucket>>>((acc, element) => {
       const bucket = selectedBucketByElement.value[element.symbol]
       if (bucket) acc[element.number] = bucket
       return acc
     }, {})
   )
   const chemistryAvailabilityByNumber = computed(() =>
-    PERIODIC_TABLE_ELEMENTS.reduce<Partial<Record<number, number>>>((acc, element) => {
+    periodicTableElements.value.reduce<Partial<Record<number, number>>>((acc, element) => {
       if (Object.prototype.hasOwnProperty.call(chemistryAvailability.value, element.symbol)) {
         acc[element.number] = Number(chemistryAvailability.value[element.symbol] || 0)
       }
@@ -400,7 +370,7 @@
   )
   const mineralsTableCompact = computed(() => !isMediumViewport.value || isExtraLargeViewport.value)
   const preserveCompactCellWidth = computed(() => !isMediumViewport.value)
-  const onPeriodicElementClick = async (element: (typeof PERIODIC_TABLE_ELEMENTS)[number]) => {
+  const onPeriodicElementClick = async (element: PeriodicTableElement) => {
     await toggleElementSelection(element.symbol)
   }
   const crystalSystemLabel = (value: MineralCrystalSystem) =>

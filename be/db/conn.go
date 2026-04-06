@@ -1,13 +1,16 @@
 package db
+
 import (
 	"context"
 	"fmt"
-	"log"
-	"time"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 	"sinde.ru/utils"
+	"time"
 )
+
 var PDB *pgxpool.Pool
+
 func Setup() (*pgxpool.Pool, error) {
 	config := utils.Config
 	if config == nil {

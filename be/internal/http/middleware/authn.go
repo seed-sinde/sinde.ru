@@ -1,15 +1,18 @@
 package middleware
+
 import (
-	"strings"
 	"github.com/gofiber/fiber/v3"
 	"sinde.ru/internal/auth"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/models"
+	"strings"
 )
+
 const (
 	AuthUserLocalKey   = "auth.user"
 	AuthClaimsLocalKey = "auth.claims"
 )
+
 func RequireAuth(service *auth.Service) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		token := strings.TrimSpace(c.Cookies(service.AccessCookieName()))

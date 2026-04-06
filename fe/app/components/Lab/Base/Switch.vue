@@ -25,7 +25,7 @@
       :style="resolvedTrackStyle">
       <span
         :class="[
-          'absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full border transition-transform transition-colors',
+          'absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full border transition-transform',
           resolvedThumbClass,
           thumbClass
         ]"

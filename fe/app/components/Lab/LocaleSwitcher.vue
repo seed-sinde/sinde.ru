@@ -30,7 +30,7 @@
   }
 </script>
 <template>
-  <LabDropdown v-model="open" width-class="w-44" :match-trigger-width="false">
+  <LabDropdown v-model="open" side="top" width-class="w-44" :match-trigger-width="false">
     <template #trigger="{ toggle }">
       <div class="relative inline-flex">
         <LabBaseButton

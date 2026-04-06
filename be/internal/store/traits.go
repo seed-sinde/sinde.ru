@@ -1,14 +1,17 @@
 package store
+
 import (
 	"github.com/google/uuid"
 	"sinde.ru/internal/models"
 )
+
 func GetTrait(id uuid.UUID) (*models.Trait, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	t, ok := s.Traits[id]
 	return t, ok
 }
+
 // GetOrAddTraitByKeyValue ищет особенность по паре (keyID, value) или создаёт новую.
 //
 // Параметры:
@@ -59,6 +62,7 @@ func GetOrAddTraitByKeyValue(keyID int64, value string) *models.TraitResponse {
 	s.TraitResponses[tuuid] = resp
 	return resp
 }
+
 // SyncTrait синхронизирует особенность из Postgres в in-memory store.
 func AddTrait(t *models.Trait) *models.TraitResponse {
 	return SyncTrait(t)

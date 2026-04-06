@@ -1,4 +1,5 @@
 package main
+
 import (
 	"bytes"
 	"context"
@@ -6,20 +7,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
-	"strings"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"sinde.ru/db"
 	"sinde.ru/utils"
+	"sort"
+	"strings"
 )
+
 const DefaultSeedsRoot = "./db/seeds"
+
 var identRE = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
 type Manifest struct {
 	Version int            `json:"version"`
 	Files   []ManifestFile `json:"files"`
@@ -66,6 +70,7 @@ type Importer struct {
 	pool *pgxpool.Pool
 	opts ImportOptions
 }
+
 func main() {
 	if err := Run(context.Background()); err != nil {
 		log.Fatal(err)

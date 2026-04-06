@@ -1,15 +1,18 @@
 package auth
+
 import (
 	"encoding/json"
-	"time"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"sinde.ru/internal/models"
+	"time"
 )
+
 const (
 	TokenTypeAccess  = "access"
 	TokenTypeRefresh = "refresh"
 )
+
 type Config struct {
 	PublicBaseURL           string
 	JWTIssuer               string
@@ -340,6 +343,7 @@ type AdminTraitsSetsAnalysis struct {
 	TraitCoverageInSetsRate float64                         `json:"trait_coverage_in_sets_rate"`
 	TopKeys                 []AdminTraitsSetsAnalysisTopKey `json:"top_keys"`
 }
+
 func ToAuthUser(user *models.User) AuthUser {
 	return AuthUser{
 		UserID:             user.UserID,

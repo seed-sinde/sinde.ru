@@ -1,10 +1,12 @@
 package routes
+
 import (
 	"github.com/gofiber/fiber/v3"
 	"sinde.ru/internal/http/handlers"
 	authhandlers "sinde.ru/internal/http/handlers/auth"
 	"sinde.ru/internal/http/middleware"
 )
+
 func SetupRoutes(app *fiber.App, authHandler *authhandlers.Handler) {
 	registerAPIRoutes(app.Group("/api/v1"), authHandler)
 }
@@ -54,6 +56,7 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler) {
 	api.Get("/kitchen/catalog", handlers.KitchenCatalogHandler())               // Каталог, фильтры и ингредиенты.
 	api.Get("/kitchen/ingredients", handlers.KitchenIngredientsHandler())       // Категории для kitchen.
 	api.Get("/kitchen/recipes/latest", handlers.KitchenLatestRecipesHandler())  // Последние рецепты.
+	api.Get("/chemistry/elements", handlers.ChemistryElementsListHandler())     // Список элементов химии.
 	api.Get("/minerals", handlers.MineralsListHandler())                        // Список, поиск и фильтры минералов.
 	api.Get("/minerals/:database_id", handlers.MineralGetByDatabaseIDHandler()) // Карточка минерала по slug.
 	api.Post("/kitchen/recipes/search", handlers.KitchenSearchRecipesHandler()) // Поиск рецептов.
@@ -76,17 +79,17 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler) {
 	kitchenAuth.Post("/admin/recipes/:id/owner", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenAdminChangeRecipeOwnerHandler())
 	mediaAuth := api.Group("/media", middleware.RequireAuth(authHandler.Service()))
 	mediaAuth.Post("/upload", handlers.MediaUploadHandler())
-	api.Get("/kitchen/recipes/:id", handlers.KitchenGetRecipeHandler()) // Получить рецепт по ID.
-	api.Get("/sets/:uuid", handlers.StoreSetHandler())              // Вернуть список особенностей по UUID набора.
-	api.Get("/sets/:uuid/stream", handlers.StoreSetStreamHandler()) // Стрим особенностей по UUID набора.
-	api.Post("/sets", handlers.CreateSetHandler())                  // Создать набор.
-	api.Post("/sets/find", handlers.FindOrBuildSetHandler())        // Получить набор по произвольному списку особенностей.
+	api.Get("/kitchen/recipes/:id", handlers.KitchenGetRecipeHandler())   // Получить рецепт по ID.
+	api.Get("/sets/:uuid", handlers.StoreSetHandler())                    // Вернуть список особенностей по UUID набора.
+	api.Get("/sets/:uuid/stream", handlers.StoreSetStreamHandler())       // Стрим особенностей по UUID набора.
+	api.Post("/sets", handlers.CreateSetHandler())                        // Создать набор.
+	api.Post("/sets/find", handlers.FindOrBuildSetHandler())              // Получить набор по произвольному списку особенностей.
 	api.Post("/traits", handlers.MemoryAddTraitHandler())                 // Добавить особенность.
 	api.Get("/traits/:uuid", handlers.MemoryTraitHandler())               // Получить особенность.
 	api.Get("/traits/resolve/:uuid", handlers.MemoryResolveUUIDHandler()) // Вернуть особенность или набор по UUID.
-	api.Post("/keys/meta", handlers.KeyMetaHandler())                // Вернуть meta по syn.
-	api.Post("/keys/meta/all", handlers.KeyMetaAllHandler())         // Вернуть все meta по syn.
-	api.Post("/keys/meta/bulk", handlers.KeyMetaBulkHandler())       // Вернуть meta по списку ID.
-	api.Post("/keys/enum/options", handlers.KeyEnumOptionsHandler()) // Вернуть enum-опции по syn.
-	api.Post("/keys/meta/update", handlers.KeyMetaUpdateHandler())   // Обновить meta по ID.
+	api.Post("/keys/meta", handlers.KeyMetaHandler())                     // Вернуть meta по syn.
+	api.Post("/keys/meta/all", handlers.KeyMetaAllHandler())              // Вернуть все meta по syn.
+	api.Post("/keys/meta/bulk", handlers.KeyMetaBulkHandler())            // Вернуть meta по списку ID.
+	api.Post("/keys/enum/options", handlers.KeyEnumOptionsHandler())      // Вернуть enum-опции по syn.
+	api.Post("/keys/meta/update", handlers.KeyMetaUpdateHandler())        // Обновить meta по ID.
 }

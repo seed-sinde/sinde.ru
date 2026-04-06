@@ -1,5 +1,7 @@
 package utils
+
 import "testing"
+
 func TestGetEnvVarReturnsTrimmedConfig(t *testing.T) {
 	t.Setenv("POSTGRES_HOST", " 127.0.0.1 ")
 	t.Setenv("POSTGRES_PORT", " 5432 ")

@@ -1,11 +1,13 @@
 package handlers
+
 import (
-	"strings"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/media"
+	"strings"
 )
+
 func MediaUploadHandler() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		user, authErr := currentKitchenUser(c)

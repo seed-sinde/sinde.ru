@@ -57,7 +57,16 @@ export type MineralsListPayload = {
   meta: MineralsListMeta
   facets: MineralsListFacets
 }
-export type RawPeriodicTableElement = {
+export type ChemistryElementApiSample = {
+  file?: string | null
+  title?: string | null
+  author?: string | null
+  attribution?: string | null
+  source_url?: string | null
+  license_url?: string | null
+  license?: string | null
+}
+export type ChemistryElementApi = {
   name?: string | null
   russian_name?: string | null
   appearance?: string | null
@@ -75,6 +84,7 @@ export type RawPeriodicTableElement = {
   phase?: string | null
   source?: string | null
   bohr_model_image?: string | null
+  bohr_model_3d?: string | null
   spectral_img?: string | null
   summary?: string | null
   symbol?: string | null
@@ -88,8 +98,20 @@ export type RawPeriodicTableElement = {
   electron_affinity?: number | null
   electronegativity_pauling?: number | null
   ionization_energies?: number[] | null
-  'cpk-hex'?: string | null
+  cpk_hex?: string | null
   block?: string | null
+  samples?: ChemistryElementApiSample[] | null
+  sample_fallback?: Partial<PeriodicTableSampleFallback> | null
+}
+export type PeriodicTableSample = {
+  file: string
+  url: string
+  title: string | null
+  author: string | null
+  attribution: string | null
+  sourceUrl: string | null
+  licenseUrl: string | null
+  license: string | null
 }
 type MineralSortOption = 'name_asc' | 'name_desc'
 export type MineralsFiltersSnapshot = {
@@ -117,29 +139,6 @@ export type PeriodicTableSampleFallback = {
   type: PeriodicTableSampleFallbackType
   label: string
   description: string
-}
-export type RawPeriodicTableSample = {
-  file?: string | null
-  title?: string | null
-  author?: string | null
-  attribution?: string | null
-  source_url?: string | null
-  license_url?: string | null
-  license?: string | null
-}
-export type RawPeriodicTableSamplesMeta = {
-  samples?: RawPeriodicTableSample[] | null
-  fallback?: Partial<PeriodicTableSampleFallback> | null
-}
-export type PeriodicTableSample = {
-  file: string
-  url: string
-  title: string | null
-  author: string | null
-  attribution: string | null
-  sourceUrl: string | null
-  licenseUrl: string | null
-  license: string | null
 }
 export type PeriodicTableElement = {
   slug: string

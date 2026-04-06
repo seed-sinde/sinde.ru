@@ -1,5 +1,7 @@
 package auth
+
 import "time"
+
 func BuildActionEmailForTest(
 	purpose string,
 	ttl time.Duration,

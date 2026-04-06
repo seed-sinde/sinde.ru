@@ -1,4 +1,5 @@
 package services
+
 import (
 	"context"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"sinde.ru/internal/store"
 	"sinde.ru/utils"
 )
+
 func PdbTraitExists(ctx context.Context, id uuid.UUID) (bool, error) {
 	var exists bool
 	err := db.PDB.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM traits_v WHERE t_uuid = $1)`, id).Scan(&exists)
@@ -28,6 +30,7 @@ func PdbTraitTargetExists(ctx context.Context, id uuid.UUID) (bool, error) {
 	err := db.PDB.QueryRow(ctx, query, id).Scan(&exists)
 	return exists, err
 }
+
 // Функция PdbInsertTrait сохраняет особенность в базе данных.
 // Если пара (t_key, t_value) уже существует, из-за уникального ограничения это no-op.
 func PdbInsertTrait(conn *pgxpool.Conn, trait *models.Trait) error {
@@ -40,6 +43,7 @@ func PdbInsertTrait(conn *pgxpool.Conn, trait *models.Trait) error {
 	_, err := conn.Exec(context.Background(), query, trait.TUUID, trait.TKey, trait.TValue)
 	return err
 }
+
 // Функция PdbInsertTraitKey сохраняет ключ (id, syn, meta).
 // Если id уже существует, это no-op.
 func PdbInsertTraitKey(conn *pgxpool.Conn, key *models.Key) error {
@@ -78,6 +82,7 @@ func PdbInsertTraitKey(conn *pgxpool.Conn, key *models.Key) error {
 	key.SynID = synID
 	return nil
 }
+
 // Функция PdbGetTraitByUUID возвращает особенность по её UUID.
 func PdbGetTraitByUUID(uuid string) (*models.Trait, error) {
 	defer utils.Benchmark("PdbGetTraitByUUID")()
@@ -135,6 +140,7 @@ func PdbGetOrCreateTraitByKeyValue(ctx context.Context, keyID int64, value strin
 	}
 	return PdbGetTraitByKeyValue(ctx, keyID, value)
 }
+
 // Функция PdbLoadAllData загружает все сущности {ключи, особенности, наборы} из Postgres
 // и инициализирует хранилище в памяти через store.LoadInitialData.
 func PdbLoadAllData() error {

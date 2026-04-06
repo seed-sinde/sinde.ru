@@ -1,12 +1,14 @@
 package auth
+
 import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"golang.org/x/crypto/argon2"
+	"strings"
 )
+
 const (
 	argonMemory      = 64 * 1024
 	argonIterations  = 3
@@ -14,6 +16,7 @@ const (
 	argonSaltLength  = 16
 	argonKeyLength   = 32
 )
+
 func ValidatePasswordPolicy(password string, minLen int, email string) error {
 	trimmed := strings.TrimSpace(password)
 	if len(trimmed) < minLen || len(trimmed) > 128 {

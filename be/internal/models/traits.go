@@ -1,5 +1,7 @@
 package models
+
 import "github.com/google/uuid"
+
 type Trait struct {
 	TUUID  uuid.UUID `json:"t_uuid"`  // UUID
 	TKey   int64     `json:"t_key"`   // foreign key (ID from traits_k)

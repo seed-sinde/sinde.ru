@@ -44,8 +44,8 @@
   const emit = defineEmits<{
     elementClick: [element: PeriodicTableElement, event: MouseEvent]
   }>()
-  const periodicTableGroups = PERIODIC_TABLE_GROUPS
-  const groupHeaders = Array.from({ length: periodicTableGroups }, (_, index) => index + 1)
+  const periodicTableGroups = computed(() => Math.max(...props.elements.map(element => element.xpos), 18))
+  const groupHeaders = computed(() => Array.from({ length: periodicTableGroups.value }, (_, index) => index + 1))
   const hasVisibleHeaders = computed(() => props.showGroupHeaders || props.showPeriodHeaders)
   const visiblePeriodRows = computed(() => {
     if (!isMineralsLayout.value) return [1, 2, 3, 4, 5, 6, 7, 9, 10]
@@ -96,7 +96,7 @@
   )
   const isMineralsLayout = computed(() => props.layout === 'minerals')
   const visibleGroupHeaders = computed(() =>
-    isMineralsLayout.value ? groupHeaders.filter(group => group !== 18) : groupHeaders
+    isMineralsLayout.value ? groupHeaders.value.filter(group => group !== 18) : groupHeaders.value
   )
   const getDisplayRow = (row: number) => {
     const index = visiblePeriodRows.value.indexOf(row)
@@ -104,7 +104,7 @@
   }
   const getDisplayColumn = (column: number) => displayColumnBySourceColumn.value.get(column) ?? column
   const displayColumnBySourceColumn = computed(() => {
-    const visibleGroups = isMineralsLayout.value ? groupHeaders.filter(group => group !== 18) : groupHeaders
+    const visibleGroups = isMineralsLayout.value ? groupHeaders.value.filter(group => group !== 18) : groupHeaders.value
     return new Map<number, number>(visibleGroups.map((group, index) => [group, index + 1]))
   })
   const tableGridStyle = computed(() => ({

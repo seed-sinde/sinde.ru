@@ -1,22 +1,26 @@
 package media
+
 import (
 	"bytes"
 	"errors"
+	"github.com/gen2brain/avif"
+	"github.com/gen2brain/webp"
 	"image"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"net/http"
 	"sync"
-	"github.com/gen2brain/avif"
-	"github.com/gen2brain/webp"
 )
+
 const (
 	storageImageExt         = ".webp"
 	storageImageWebPQuality = 92
 	storageImageWebPMethod  = 6
 )
+
 var initImageCodecsOnce sync.Once
+
 func initImageCodecs() {
 	initImageCodecsOnce.Do(func() {
 		avif.InitDecoder()

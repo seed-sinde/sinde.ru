@@ -1,11 +1,13 @@
 package main
+
 import (
 	"log"
 	"os"
-	"time"
 	authsvc "sinde.ru/internal/auth"
 	"sinde.ru/utils"
+	"time"
 )
+
 func main() {
 	log.SetFlags(0)
 	log.SetPrefix("")

@@ -1,16 +1,18 @@
 package services
+
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"sinde.ru/db"
-	"sinde.ru/internal/media"
 	"sinde.ru/internal/models"
+	"strconv"
+	"strings"
 )
+
 var ErrMineralNotFound = errors.New("mineral not found")
 var allChemicalElementSymbols = []string{
 	"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne",
@@ -28,9 +30,11 @@ var allChemicalElementSymbols = []string{
 	"Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn",
 	"Nh", "Fl", "Mc", "Lv", "Ts", "Og",
 }
+
 type mineralScanner interface {
 	Scan(dest ...any) error
 }
+
 func nullableStringPtr(value pgtype.Text) *string {
 	if !value.Valid {
 		return nil
@@ -154,12 +158,17 @@ func buildMineralsFilterSQL(params models.MineralsListQuery) (string, []any) {
 	clauses := make([]string, 0, 4)
 	args := make([]any, 0, 8)
 	if params.OnlyWithImages {
-		imageDatabaseIDs := media.GetMineralImageDatabaseIDs()
-		if len(imageDatabaseIDs) == 0 {
-			return "WHERE FALSE", args
-		}
-		args = append(args, imageDatabaseIDs)
-		clauses = append(clauses, fmt.Sprintf("database_id = ANY($%d::bigint[])", len(args)))
+		clauses = append(clauses, `
+			EXISTS (
+				SELECT 1
+				FROM storage_object_usages usage
+				WHERE
+					usage.entity_type = 'chemistry_mineral'
+					AND usage.entity_id = chemistry_minerals.database_id::text
+					AND usage.usage_type = 'image'
+					AND usage.field_name = 'gallery'
+			)
+		`)
 	}
 	if pattern := buildMineralsSearchPattern(params.Search); pattern != "" {
 		args = append(args, pattern)
@@ -251,7 +260,7 @@ func PdbGetMineralByDatabaseID(ctx context.Context, databaseID int64) (*models.M
 			paragenetic_modes,
 			created_at,
 			updated_at
-		FROM minerals
+		FROM chemistry_minerals
 		WHERE database_id = $1
 		LIMIT 1
 	`, databaseID)
@@ -263,6 +272,50 @@ func PdbGetMineralByDatabaseIDString(ctx context.Context, raw string) (*models.M
 		return nil, ErrMineralNotFound
 	}
 	return PdbGetMineralByDatabaseID(ctx, databaseID)
+}
+func PdbListMineralImages(ctx context.Context, databaseID int64) ([]models.MineralImage, error) {
+	rows, err := db.PDB.Query(ctx, `
+		SELECT metadata
+		FROM storage_object_usages
+		WHERE
+			entity_type = 'chemistry_mineral'
+			AND entity_id = $1
+			AND usage_type = 'image'
+			AND field_name = 'gallery'
+		ORDER BY sort_order ASC, created_at ASC
+	`, strconv.FormatInt(databaseID, 10))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]models.MineralImage, 0, 8)
+	for rows.Next() {
+		var rawMetadata []byte
+		if scanErr := rows.Scan(&rawMetadata); scanErr != nil {
+			return nil, scanErr
+		}
+		var payload struct {
+			File    string `json:"file"`
+			RRUFFID string `json:"rruff_id"`
+			Order   int    `json:"order"`
+		}
+		if err := json.Unmarshal(rawMetadata, &payload); err != nil {
+			return nil, err
+		}
+		file := strings.TrimSpace(payload.File)
+		if file == "" {
+			continue
+		}
+		items = append(items, models.MineralImage{
+			File:    file,
+			RRUFFID: strings.TrimSpace(payload.RRUFFID),
+			Order:   payload.Order,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 func PdbListMinerals(ctx context.Context, params models.MineralsListQuery) (*models.MineralsListResult, error) {
 	whereSQL, filterArgs := buildMineralsFilterSQL(params)
@@ -282,7 +335,7 @@ func PdbListMinerals(ctx context.Context, params models.MineralsListQuery) (*mod
 	}
 	if err := db.PDB.QueryRow(
 		ctx,
-		fmt.Sprintf(`SELECT COUNT(*)::BIGINT FROM minerals %s`, whereSQL),
+		fmt.Sprintf(`SELECT COUNT(*)::BIGINT FROM chemistry_minerals %s`, whereSQL),
 		filterArgs...,
 	).Scan(&result.Meta.Total); err != nil {
 		return nil, err
@@ -298,7 +351,7 @@ func PdbListMinerals(ctx context.Context, params models.MineralsListQuery) (*mod
 			database_id,
 			mineral_name,
 			crystal_systems
-		FROM minerals
+		FROM chemistry_minerals
 		%s
 		ORDER BY %s
 		LIMIT $%d OFFSET $%d
@@ -325,8 +378,8 @@ func PdbListMinerals(ctx context.Context, params models.MineralsListQuery) (*mod
 	facetRows, err := db.PDB.Query(ctx, fmt.Sprintf(`
 		SELECT element, COUNT(*)::BIGINT
 		FROM (
-			SELECT DISTINCT minerals.id, element
-			FROM minerals
+			SELECT DISTINCT chemistry_minerals.id, element
+			FROM chemistry_minerals
 			CROSS JOIN LATERAL UNNEST(COALESCE(chemistry_elements, ARRAY[]::text[])) AS element
 			%s
 		) AS filtered_elements

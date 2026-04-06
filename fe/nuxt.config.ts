@@ -1,7 +1,15 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { isDev, runtimeConfig } from './config/nuxt-env'
+import { env, isDev, runtimeConfig } from './config/nuxt-env'
 import { pwaConfig } from './config/nuxt-pwa'
 import { viteConfig, viteHooks } from './config/nuxt-vite'
+
+const isVitest = env.VITEST === '1' || env.VITEST === 'true' || env.NODE_ENV === 'test'
+const modules = ['@nuxt/fonts', '@nuxt/icon', '@pinia/nuxt', '@vite-pwa/nuxt']
+
+if (!isVitest) {
+  modules.splice(2, 0, 'nuxt-security')
+}
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
@@ -30,23 +38,25 @@ export default defineNuxtConfig({
   imports: {
     dirs: ['data', 'constants']
   },
-  modules: ['@nuxt/fonts', '@nuxt/icon', 'nuxt-security', '@pinia/nuxt', '@vite-pwa/nuxt'],
+  modules,
   icon: {
     localApiEndpoint: '/_nuxt_icon',
     clientBundle: {
       scan: true
     }
   },
-  security: {
-    hidePoweredBy: true,
-    sri: true,
-    removeLoggers: true,
-    headers: {
-      contentSecurityPolicy: {
-        'img-src': ["'self'", 'data:', 'blob:']
-      }
-    }
-  },
+  security: isVitest
+    ? undefined
+    : {
+        hidePoweredBy: true,
+        sri: true,
+        removeLoggers: true,
+        headers: {
+          contentSecurityPolicy: {
+            'img-src': ["'self'", 'data:', 'blob:']
+          }
+        }
+      },
   nitro: {
     preset: 'bun',
     typescript: {
@@ -66,6 +76,10 @@ export default defineNuxtConfig({
   runtimeConfig,
   css: ['~/assets/css/main.css'],
   pwa: pwaConfig,
-  hooks: viteHooks,
-  vite: viteConfig
+  hooks: isVitest ? {} : viteHooks,
+  vite: isVitest
+    ? {
+        logLevel: 'error'
+      }
+    : viteConfig
 })

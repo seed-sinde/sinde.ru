@@ -1,8 +1,10 @@
 package auth
+
 import (
-	"time"
 	"github.com/gofiber/fiber/v3"
+	"time"
 )
+
 func (s *Service) setAuthCookies(c fiber.Ctx, bundle *TokenBundle) {
 	c.Cookie(&fiber.Cookie{
 		Name:     s.cfg.AccessCookieName,

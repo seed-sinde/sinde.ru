@@ -1,18 +1,20 @@
 package handlers
+
 import (
 	"errors"
-	"strconv"
-	"strings"
 	"github.com/gofiber/fiber/v3"
 	"sinde.ru/db/services"
 	"sinde.ru/internal/http/responses"
-	"sinde.ru/internal/media"
 	"sinde.ru/internal/models"
+	"strconv"
+	"strings"
 )
+
 const (
 	defaultMineralsLimit = 30
 	maxMineralsLimit     = 100
 )
+
 func parseMineralQueryList(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return nil
@@ -67,6 +69,7 @@ func normalizeMineralChemistryQueryList(values []string) []string {
 	}
 	return out
 }
+
 var allowedMineralCrystalSystems = map[string]struct{}{
 	string(models.MineralCrystalSystemCubic):        {},
 	string(models.MineralCrystalSystemHexagonal):    {},
@@ -76,6 +79,7 @@ var allowedMineralCrystalSystems = map[string]struct{}{
 	string(models.MineralCrystalSystemTriclinic):    {},
 	string(models.MineralCrystalSystemUnknown):      {},
 }
+
 func parseMineralsListQuery(c fiber.Ctx) (models.MineralsListQuery, error) {
 	query := models.MineralsListQuery{
 		Search:            strings.TrimSpace(c.Query("q")),
@@ -172,16 +176,12 @@ func MineralGetByDatabaseIDHandler() fiber.Handler {
 			}
 			return responses.Error(c, fiber.StatusInternalServerError, "Не удалось загрузить минерал", err.Error())
 		}
-		mediaItems := media.GetMineralImages(item.DatabaseID)
-		if len(mediaItems) > 0 {
-			item.Images = make([]models.MineralImage, 0, len(mediaItems))
-			for _, image := range mediaItems {
-				item.Images = append(item.Images, models.MineralImage{
-					File:    image.File,
-					RRUFFID: image.RRUFFID,
-					Order:   image.Order,
-				})
-			}
+		images, err := services.PdbListMineralImages(c.Context(), item.DatabaseID)
+		if err != nil {
+			return responses.Error(c, fiber.StatusInternalServerError, "Не удалось загрузить минерал", err.Error())
+		}
+		if len(images) > 0 {
+			item.Images = images
 		}
 		return responses.Success(c, fiber.StatusOK, item)
 	}

@@ -2,6 +2,10 @@
   const route = useRoute()
   const requestEvent = useRequestEvent()
   const { t } = useInterfacePreferences()
+  const { data: periodicTableElementsData, error: chemistryElementsError } = await useChemistryElements()
+  if (chemistryElementsError.value) {
+    throw createError({ statusCode: 500, statusMessage: 'Не удалось загрузить элементы' })
+  }
   const databaseId = computed(() => String(route.params.mineral || '').trim())
   const notFound = ref(false)
   const formatText = (value: unknown) => String(value || '').trim()
@@ -66,8 +70,8 @@
   const mineralImageItems = computed(() =>
     mineralImages.value.map(item => ({
       key: `${item.file}:${item.rruff_id || ''}`,
-      src: buildMediaFileUrl(`minerals/webp/${item.file}`),
-      previewSrc: buildMediaFileUrl(`minerals/preview/${item.file}`),
+      src: buildMediaFileUrl(`chemistry/minerals/webp/${item.file}`),
+      previewSrc: buildMediaFileUrl(`chemistry/minerals/preview/${item.file}`),
       title: item.rruff_id || mineralName.value,
       alt: `${mineralName.value || 'Mineral'} ${item.rruff_id || ''}`.trim()
     }))
@@ -103,12 +107,13 @@
   const spaceGroups = computed(() => mineral.value?.space_groups || [])
   const parageneticModes = computed(() => mineral.value?.paragenetic_modes || [])
   const goToMinerals = () => navigateTo('/edu/chemistry/minerals')
+  const periodicTableElements = computed(() => periodicTableElementsData.value || [])
   const toElementChip = (symbol: string) => {
     const normalizedSymbol = String(symbol || '').trim()
     if (!normalizedSymbol) {
       return { symbol: '', to: null as string | null }
     }
-    const element = resolvePeriodicTableElement(normalizedSymbol)
+    const element = resolvePeriodicTableElement(periodicTableElements.value, normalizedSymbol)
     return {
       symbol: normalizedSymbol,
       to: element ? getPeriodicTableElementRoute(element) : null

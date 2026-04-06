@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "file": "storage_objects.csv",
+      "table": "storage_objects",
+      "order": 10,
+      "columns": [
+        "object_id",
+        "storage_key",
+        "bucket_name",
+        "media_family",
+        "content_type",
+        "byte_size",
+        "file_hash",
+        "source_kind",
+        "metadata"
+      ]
+    },
+    {
+      "file": "storage_object_usages.csv",
+      "table": "storage_object_usages",
+      "order": 20,
+      "columns": [
+        "usage_id",
+        "object_id",
+        "entity_type",
+        "entity_id",
+        "usage_type",
+        "field_name",
+        "sort_order",
+        "is_primary",
+        "metadata"
+      ]
+    }
+  ]
+}

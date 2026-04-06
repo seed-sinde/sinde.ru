@@ -1,4 +1,5 @@
 package auth
+
 import (
 	"crypto/sha256"
 	"encoding/base64"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 )
+
 func LoadConfig() (Config, error) {
 	get := func(key string) string {
 		return strings.TrimSpace(os.Getenv(key))

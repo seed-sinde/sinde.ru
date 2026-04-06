@@ -1,9 +1,11 @@
 package store
+
 import (
 	"encoding/json"
-	"strings"
 	"sinde.ru/internal/models"
+	"strings"
 )
+
 func appendUniqueInt64(items []int64, target int64) []int64 {
 	for _, item := range items {
 		if item == target {
@@ -24,6 +26,7 @@ func removeInt64(items []int64, target int64) []int64 {
 	}
 	return out
 }
+
 // GetTraitValuesByKey возвращает все уникальные значения t_value для указанного keyID.
 //
 // Параметры:
@@ -48,6 +51,7 @@ func GetTraitValuesByKey(keyID int64) []string {
 	}
 	return res
 }
+
 // GetKeys возвращает ключи по одному или нескольким ID.
 //
 // Параметры:
@@ -74,6 +78,7 @@ func GetKeys(ids ...int64) ([]*models.Key, bool) {
 	}
 	return res, true
 }
+
 // SyncKey синхронизирует ключ из Postgres в in-memory store.
 func SyncKey(key *models.Key) *models.Key {
 	if key == nil || key.ID == 0 {
@@ -101,6 +106,7 @@ func SyncKey(key *models.Key) *models.Key {
 	}
 	return s.Keys[key.ID]
 }
+
 // / GetOrAddKeyBySyn возвращает keyID по синониму (без учёта регистра) или создаёт его в памяти.
 // (Запись в БД выполняется асинхронно на уровне service layer.)
 // раньше: func GetOrAddKeyBySyn(syn string) (int, bool)
@@ -142,6 +148,7 @@ func GetOrAddKeyBySyn(syn string) *models.Key {
 	s.SynToKeyIDs[lc] = append(s.SynToKeyIDs[lc], newID)
 	return k
 }
+
 // GetKeyBySyn ищет первый ключ по syn.
 //
 // Параметры:
@@ -175,6 +182,7 @@ func GetKeyBySyn(syn string) (*models.Key, bool) {
 	}
 	return minKey, true
 }
+
 // GetKeysBySyn возвращает все ключи с указанным syn.
 //
 // Параметры:
@@ -206,6 +214,7 @@ func GetKeysBySyn(syn string) ([]*models.Key, bool) {
 	}
 	return res, true
 }
+
 // UpdateKeyMetaByID полностью заменяет meta у ключа по ID.
 //
 // Параметры:

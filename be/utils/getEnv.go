@@ -1,12 +1,14 @@
 package utils
+
 import (
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"github.com/joho/godotenv"
 )
+
 type ConfigT struct {
 	PostgresHost     string
 	PostgresPort     string
@@ -15,7 +17,9 @@ type ConfigT struct {
 	PostgresDB       string
 	PostgresSSL      string
 }
+
 var Config *ConfigT
+
 func loadFirstExisting(baseDir string, names ...string) bool {
 	for _, name := range names {
 		if err := godotenv.Load(filepath.Join(baseDir, name)); err == nil {
@@ -24,6 +28,7 @@ func loadFirstExisting(baseDir string, names ...string) bool {
 	}
 	return false
 }
+
 // Функция tryLoadDotenv пытается загрузить .env сначала из текущей рабочей директории, затем из директории бинарника.
 // Ошибки загрузки не фатальны: переменные окружения могут быть заданы извне.
 func tryLoadDotenv() {
@@ -43,6 +48,7 @@ func tryLoadDotenv() {
 		_ = loadFirstExisting(exeDir, candidates...)
 	}
 }
+
 // Функция GetEnvVar загружает конфигурацию из окружения (после попытки прочитать .env).
 // Возвращает nil и пишет детали в лог, если чего-то не хватает.
 func GetEnvVar() *ConfigT {
@@ -78,6 +84,7 @@ func GetEnvVar() *ConfigT {
 		PostgresSSL:      values["POSTGRES_SSL"],
 	}
 }
+
 // Функция LoadEnv заполняет глобальную конфигурацию или завершает процесс с ошибкой.
 func LoadEnv() {
 	Config = GetEnvVar()

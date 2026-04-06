@@ -1,4 +1,5 @@
 package auth
+
 import (
 	"crypto/aes"
 	"crypto/cipher"
@@ -6,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 )
+
 func encryptString(plaintext string, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

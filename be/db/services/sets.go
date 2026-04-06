@@ -1,4 +1,5 @@
 package services
+
 import (
 	"context"
 	"errors"
@@ -10,11 +11,13 @@ import (
 	"sinde.ru/internal/models"
 	"sinde.ru/utils"
 )
+
 func PdbSetExists(ctx context.Context, setUUID uuid.UUID) (bool, error) {
 	var exists bool
 	err := db.PDB.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sets WHERE s_uuid = $1)`, setUUID).Scan(&exists)
 	return exists, err
 }
+
 // PdbInsertSet вставляет набор без изменения порядка потомков.
 //
 // Параметры:
@@ -109,6 +112,7 @@ func PdbGetOrCreateSet(ctx context.Context, children []uuid.UUID) (*models.Set, 
 	}
 	return PdbGetSetByChildren(ctx, children)
 }
+
 // Функция PdbGetSetTraits
 func PdbGetSetTraits(ctx context.Context, setUUID uuid.UUID) ([]models.Trait, error) {
 	defer utils.Benchmark("PdbGetSetTraits")()

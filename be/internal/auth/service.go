@@ -1,4 +1,5 @@
 package auth
+
 import (
 	"bytes"
 	"context"
@@ -6,13 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"image/png"
-	"net"
-	"net/mail"
-	"net/url"
-	"reflect"
-	"strings"
-	"time"
 	"github.com/boombuler/barcode"
 	"github.com/boombuler/barcode/qr"
 	"github.com/gofiber/fiber/v3"
@@ -20,12 +14,20 @@ import (
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
 	"github.com/redis/go-redis/v9"
+	"image/png"
+	"net"
+	"net/mail"
+	"net/url"
+	"reflect"
 	"sinde.ru/db"
 	dbservices "sinde.ru/db/services"
 	"sinde.ru/internal/media"
 	"sinde.ru/internal/models"
 	"sinde.ru/internal/store"
+	"strings"
+	"time"
 )
+
 type Service struct {
 	cfg        Config
 	repo       *Repository
@@ -40,6 +42,7 @@ type Dependencies struct {
 	Reputation IPReputation
 	Now        func() time.Time
 }
+
 func NewService(repo *Repository, cfg Config, deps Dependencies) (*Service, error) {
 	rdb := deps.Redis
 	if rdb == nil {
@@ -642,7 +645,11 @@ func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, input Upd
 	}
 	beforeAvatarKeys := extractAvatarImageKeys(user.Profile, user.Settings)
 	afterAvatarKeys := extractAvatarImageKeys(profile, settings)
+	primaryAvatarKey := extractPrimaryAvatarImageKey(profile, settings)
 	if err := s.repo.UpdateProfile(ctx, userID, displayName, locale, timezone, profile, settings); err != nil {
+		return nil, err
+	}
+	if err := syncUserAvatarUsage(ctx, userID, primaryAvatarKey); err != nil {
 		return nil, err
 	}
 	for _, key := range diffStringSets(beforeAvatarKeys, afterAvatarKeys) {
@@ -796,6 +803,58 @@ func collectNestedAvatarKeys(keys map[string]struct{}, value any) {
 			collectNestedAvatarKeys(keys, item)
 		}
 	}
+}
+func extractPrimaryAvatarImageKey(profile json.RawMessage, settings json.RawMessage) string {
+	for _, raw := range []json.RawMessage{profile, settings} {
+		key := extractPrimaryAvatarImageKeyFromJSON(raw)
+		if key != "" {
+			return key
+		}
+	}
+	return ""
+}
+func extractPrimaryAvatarImageKeyFromJSON(raw json.RawMessage) string {
+	if len(raw) == 0 || !json.Valid(raw) {
+		return ""
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return ""
+	}
+	avatar, ok := payload["avatar"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	for _, field := range []string{"profile_image_key", "icon_image_key", "original_image_key"} {
+		key := media.NormalizeStorageKey(fmt.Sprint(avatar[field]))
+		if key != "" {
+			return key
+		}
+	}
+	return ""
+}
+func syncUserAvatarUsage(ctx context.Context, userID uuid.UUID, storageKey string) error {
+	if err := dbservices.PdbDeleteStorageObjectUsagesBySelector(ctx, "user", userID.String(), "avatar", "profile"); err != nil {
+		return err
+	}
+	if storageKey == "" {
+		return nil
+	}
+	object, err := dbservices.PdbFindStorageObjectByStorageKey(ctx, storageKey)
+	if err != nil {
+		return err
+	}
+	_, err = dbservices.PdbAttachStorageObjectUsage(ctx, &models.StorageObjectUsage{
+		ObjectID:   object.ObjectID,
+		EntityType: "user",
+		EntityID:   userID.String(),
+		UsageType:  "avatar",
+		FieldName:  "profile",
+		SortOrder:  0,
+		IsPrimary:  true,
+		Metadata:   json.RawMessage(`{}`),
+	})
+	return err
 }
 func diffStringSets(before []string, after []string) []string {
 	afterSet := make(map[string]struct{}, len(after))
@@ -1668,6 +1727,7 @@ func pluralRu(n int, one string, few string, many string) string {
 	}
 	return many
 }
+
 type mfaTicketState struct {
 	UserID          string `json:"user_id"`
 	FingerprintHash string `json:"fingerprint_hash"`
@@ -1679,6 +1739,7 @@ type twoFactorSetupCacheState struct {
 	OTPAuthURL string `json:"otpauth_url"`
 	QRDataURL  string `json:"qr_data_url"`
 }
+
 func (s *Service) issueMFATicket(ctx context.Context, userID uuid.UUID, device DeviceContext) (string, time.Time, error) {
 	token, err := randomToken(32)
 	if err != nil {

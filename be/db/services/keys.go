@@ -1,12 +1,14 @@
 package services
+
 import (
 	"context"
 	"errors"
-	"strings"
 	"github.com/jackc/pgx/v5"
 	"sinde.ru/db"
 	"sinde.ru/internal/models"
+	"strings"
 )
+
 // traits_k: id BIGINT PK, syn_id BIGINT FK -> key_syns, meta JSONB ...
 func PdbGetKeyByID(ctx context.Context, id int64) (*models.Key, error) {
 	const query = `
@@ -79,6 +81,7 @@ func PdbGetOrCreateCanonicalKeyBySyn(ctx context.Context, syn string) (*models.K
 	}
 	return PdbGetCanonicalKeyBySyn(ctx, syn)
 }
+
 // Обновление meta по ID.
 func PDBUpdateKeyMetaByID(ctx context.Context, id int64, metaJSON string) (*models.Key, error) {
 	const query = `

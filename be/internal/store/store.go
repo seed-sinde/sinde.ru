@@ -1,9 +1,11 @@
 package store
+
 import (
-	"sync"
 	"github.com/google/uuid"
 	"sinde.ru/internal/models"
+	"sync"
 )
+
 type store struct {
 	mu sync.RWMutex
 	// основные данные
@@ -19,6 +21,7 @@ type store struct {
 	// быстрый поиск по паре (t_key, t_value)
 	TraitKVToUUID map[string]uuid.UUID
 }
+
 var s = &store{
 	Keys:             make(map[int64]*models.Key),
 	Traits:           make(map[uuid.UUID]*models.Trait),
@@ -28,6 +31,7 @@ var s = &store{
 	TraitResponses:   make(map[uuid.UUID]*models.TraitResponse),
 	TraitKVToUUID:    make(map[string]uuid.UUID),
 }
+
 // Функция GenerateFreeUUID возвращает уникальный UUID, который не конфликтует с особенностями или наборами.
 func (st *store) GenerateFreeUUID() uuid.UUID {
 	st.mu.Lock()

@@ -1,13 +1,21 @@
 <script setup lang="ts">
   const title = 'Периодическая система химических элементов'
   const { effectiveTheme } = useInterfacePreferences()
+  const { data: periodicTableElementsData, error: chemistryElementsError } = await useChemistryElements()
+  if (chemistryElementsError.value) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Не удалось загрузить элементы'
+    })
+  }
   const pageHeaderRef = ref<HTMLElement | null>(null)
   const pageHeaderHeight = ref(0)
   const isDesktopViewport = ref(false)
   const isMobileViewport = ref(false)
   const searchQuery = ref('')
   const selectedCategory = ref('')
-  const periodicTableElements = PERIODIC_TABLE_ELEMENTS
+  const periodicTableElements = computed(() => periodicTableElementsData.value || [])
+  const periodicTableCategoryCounts = computed(() => buildPeriodicTableCategoryCounts(periodicTableElements.value))
   let pageHeaderResizeObserver: ResizeObserver | null = null
   let desktopMediaQuery: MediaQueryList | null = null
   let mobileMediaQuery: MediaQueryList | null = null
@@ -18,7 +26,7 @@
   }))
   const categoryOptions = computed(() => [
     { value: '', label: 'Все категории' },
-    ...PERIODIC_TABLE_CATEGORY_COUNTS.map(entry => ({
+    ...periodicTableCategoryCounts.value.map(entry => ({
       value: entry.category,
       label: `${entry.label} · ${entry.count}`
     }))
@@ -27,14 +35,14 @@
   const visibleElementIds = computed(() => {
     const query = normalizedSearchQuery.value
     if (!query) {
-      return new Set(periodicTableElements.map(element => element.number))
+      return new Set(periodicTableElements.value.map(element => element.number))
     }
     return new Set(
-      periodicTableElements.filter(element => element.searchText.includes(query)).map(element => element.number)
+      periodicTableElements.value.filter(element => element.searchText.includes(query)).map(element => element.number)
     )
   })
   const selectedCategoryEntry = computed(() => {
-    return PERIODIC_TABLE_CATEGORY_COUNTS.find(entry => entry.category === selectedCategory.value) || null
+    return periodicTableCategoryCounts.value.find(entry => entry.category === selectedCategory.value) || null
   })
   const categoryPanelDescription = computed(() => {
     return (
@@ -112,12 +120,12 @@
     return Boolean(normalizedSearchQuery.value)
   }
   const dimmedElementNumbers = computed(() =>
-    periodicTableElements
+    periodicTableElements.value
       .filter(element => isElementDimmed(element.number, element.category))
       .map(element => element.number)
   )
   const highlightedElementNumbers = computed(() =>
-    periodicTableElements
+    periodicTableElements.value
       .filter(element => isElementHighlighted(element.number, element.category))
       .map(element => element.number)
   )

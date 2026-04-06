@@ -1,10 +1,12 @@
 package utils
+
 import (
 	"fmt"
 	"log"
 	"strings"
 	"time"
 )
+
 func Benchmark(label string) func() {
 	start := time.Now()
 	return func() {

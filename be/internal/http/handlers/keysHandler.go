@@ -1,16 +1,19 @@
 package handlers
+
 import (
-	"sort"
-	"strings"
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"sinde.ru/db/services"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/store"
+	"sort"
+	"strings"
 )
+
 type KeyMetaRequest struct {
 	Syn string `json:"syn"`
 }
+
 // KeyMetaHandler возвращает метаданные ключа по `syn`.
 //
 // Маршрут:
@@ -48,6 +51,7 @@ func KeyMetaHandler() fiber.Handler {
 		})
 	}
 }
+
 // KeyMetaAllHandler возвращает все уникальные метаданные для указанного `syn`.
 //
 // Маршрут:
@@ -112,9 +116,11 @@ func KeyMetaAllHandler() fiber.Handler {
 		})
 	}
 }
+
 type KeyMetaBulkRequest struct {
 	IDs []int64 `json:"ids"`
 }
+
 // KeyMetaBulkHandler возвращает метаданные по списку ID с дедупликацией на стороне сервера.
 //
 // Маршрут:
@@ -171,6 +177,7 @@ func KeyMetaBulkHandler() fiber.Handler {
 		return responses.Success(c, fiber.StatusOK, fiber.Map{"items": items})
 	}
 }
+
 type KeyMetaUpdateRequest struct {
 	ID   int64          `json:"id"`
 	Meta map[string]any `json:"meta"`
@@ -178,6 +185,7 @@ type KeyMetaUpdateRequest struct {
 type KeyEnumOptionsRequest struct {
 	Syn string `json:"syn"`
 }
+
 // KeyEnumOptionsHandler возвращает уникальные enum-значения для `syn`,
 // объединяя значения по всем ключам с этим синонимом.
 //
@@ -222,6 +230,7 @@ func KeyEnumOptionsHandler() fiber.Handler {
 		return responses.Success(c, fiber.StatusOK, fiber.Map{"options": out})
 	}
 }
+
 // KeyMetaUpdateHandler обновляет метаданные ключа по его ID.
 //
 // Маршрут:

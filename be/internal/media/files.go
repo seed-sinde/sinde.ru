@@ -1,29 +1,33 @@
 package media
+
 import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sinde.ru/db"
 	"strconv"
 	"strings"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"sinde.ru/db"
 )
+
 type Section string
 type Collection string
+
 const (
-	SectionUsers   Section = "users"
-	SectionKitchen Section = "kitchen"
+	SectionUsers      Section    = "users"
+	SectionKitchen    Section    = "kitchen"
 	CollectionAvatars Collection = "avatars"
 	CollectionRecipes Collection = "recipes"
 )
+
 type UploadTarget struct {
 	Section    Section
 	Collection Collection
@@ -36,7 +40,9 @@ type StoredFile struct {
 	FileHash string
 	Reused   bool
 }
+
 var storageKeyPattern = regexp.MustCompile(`^[a-zA-Z0-9/_\.-]+$`)
+
 func RootDir() string {
 	if raw := strings.TrimSpace(os.Getenv("MEDIA_FILES_DIR")); raw != "" {
 		return raw
@@ -199,10 +205,17 @@ func DeleteIfUnreferenced(ctx context.Context, storageKey string) error {
 	if referenced {
 		return nil
 	}
+	objectID, err := findObjectIDByStorageKey(ctx, key)
+	if err != nil {
+		return err
+	}
 	if err := DeleteObject(ctx, key); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	_, err = db.PDB.Exec(ctx, `DELETE FROM media_files WHERE image_key = $1`, key)
+	if objectID == uuid.Nil {
+		return nil
+	}
+	_, err = db.PDB.Exec(ctx, `DELETE FROM storage_objects WHERE object_id = $1`, objectID)
 	return err
 }
 func buildStorageKey(target UploadTarget, ext string) (string, error) {
@@ -228,77 +241,145 @@ func sha256Hex(data []byte) string {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
 }
+func mediaFamilyForTarget(target UploadTarget) (string, error) {
+	switch {
+	case target.Section == SectionUsers && target.Collection == CollectionAvatars:
+		return "users-avatars", nil
+	case target.Section == SectionKitchen && target.Collection == CollectionRecipes:
+		return "kitchen-recipes", nil
+	default:
+		return "", errors.New("media target is invalid")
+	}
+}
 func findByHash(ctx context.Context, fileHash string, section Section, collection Collection) (string, error) {
-	var imageKey string
-	err := db.PDB.QueryRow(ctx, `
-		SELECT image_key
-		FROM media_files
+	mediaFamily, err := mediaFamilyForTarget(UploadTarget{
+		Section:    section,
+		Collection: collection,
+	})
+	if err != nil {
+		return "", err
+	}
+	var storageKey string
+	err = db.PDB.QueryRow(ctx, `
+		SELECT storage_key
+		FROM storage_objects
 		WHERE file_hash = $1
-			AND storage_section = $2
-			AND storage_collection = $3
+			AND media_family = $2
+		ORDER BY created_at DESC
 		LIMIT 1
-	`, fileHash, string(section), string(collection)).Scan(&imageKey)
+	`, fileHash, mediaFamily).Scan(&storageKey)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", nil
 		}
 		return "", err
 	}
-	return NormalizeStorageKey(imageKey), nil
+	return NormalizeStorageKey(storageKey), nil
 }
 func deleteMetadataByHash(ctx context.Context, fileHash string, section Section, collection Collection) error {
-	_, err := db.PDB.Exec(ctx, `
-		DELETE FROM media_files
+	mediaFamily, err := mediaFamilyForTarget(UploadTarget{
+		Section:    section,
+		Collection: collection,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = db.PDB.Exec(ctx, `
+		DELETE FROM storage_objects
 		WHERE file_hash = $1
-			AND storage_section = $2
-			AND storage_collection = $3
-	`, fileHash, string(section), string(collection))
+			AND media_family = $2
+	`, fileHash, mediaFamily)
 	return err
 }
 func upsertMetadata(ctx context.Context, imageKey string, fileHash string, target UploadTarget, ext string, byteSize int64) (string, error) {
-	var ownerUserID any
-	if target.UserID != uuid.Nil {
-		ownerUserID = target.UserID
-	}
-	var recipeID any
-	if target.RecipeID != nil && *target.RecipeID != uuid.Nil {
-		recipeID = *target.RecipeID
-	}
-	var mediaKind string
-	switch {
-	case target.Section == SectionUsers && target.Collection == CollectionAvatars:
-		mediaKind = "avatar"
-	case target.Section == SectionKitchen && target.Collection == CollectionRecipes:
-		mediaKind = "recipe"
-	default:
-		return "", errors.New("media target is invalid")
+	mediaFamily, err := mediaFamilyForTarget(target)
+	if err != nil {
+		return "", err
 	}
 	var storedKey string
-	err := db.PDB.QueryRow(ctx, `
-		INSERT INTO media_files (
-			image_key,
+	err = db.PDB.QueryRow(ctx, `
+		INSERT INTO storage_objects (
+			storage_key,
 			file_hash,
-			storage_section,
-			storage_collection,
-			media_kind,
-			owner_user_id,
-			recipe_id,
-			content_ext,
-			byte_size
+			bucket_name,
+			media_family,
+			content_type,
+			byte_size,
+			source_kind,
+			metadata
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		ON CONFLICT (file_hash, storage_section, storage_collection) DO UPDATE
-		SET updated_at = now()
-		RETURNING image_key
-	`, imageKey, fileHash, string(target.Section), string(target.Collection), mediaKind, ownerUserID, recipeID, ext, byteSize).Scan(&storedKey)
+		VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			'runtime',
+			jsonb_build_object(
+				'storage_ext', $7,
+				'section', $8,
+				'collection', $9,
+				'user_id', NULLIF($10, ''),
+				'recipe_id', NULLIF($11, '')
+			)
+		)
+		ON CONFLICT (storage_key) DO UPDATE
+		SET
+			file_hash = EXCLUDED.file_hash,
+			bucket_name = EXCLUDED.bucket_name,
+			media_family = EXCLUDED.media_family,
+			content_type = EXCLUDED.content_type,
+			byte_size = EXCLUDED.byte_size,
+			source_kind = EXCLUDED.source_kind,
+			metadata = EXCLUDED.metadata,
+			updated_at = now()
+		RETURNING storage_key
+	`,
+		imageKey,
+		fileHash,
+		MinIOBucket(),
+		mediaFamily,
+		detectContentType(imageKey, nil),
+		byteSize,
+		ext,
+		string(target.Section),
+		string(target.Collection),
+		target.UserID.String(),
+		func() string {
+			if target.RecipeID == nil {
+				return ""
+			}
+			return target.RecipeID.String()
+		}(),
+	).Scan(&storedKey)
 	if err != nil {
 		return "", err
 	}
 	return NormalizeStorageKey(storedKey), nil
 }
 func hasReferences(ctx context.Context, storageKey string) (bool, error) {
+	objectID, err := findObjectIDByStorageKey(ctx, storageKey)
+	if err != nil {
+		return false, err
+	}
+	if objectID != uuid.Nil {
+		var referencedByUsage bool
+		if err := db.PDB.QueryRow(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM storage_object_usages
+				WHERE object_id = $1
+			)
+		`, objectID).Scan(&referencedByUsage); err != nil {
+			return false, err
+		}
+		if referencedByUsage {
+			return true, nil
+		}
+	}
 	var referenced bool
-	err := db.PDB.QueryRow(ctx, `
+	err = db.PDB.QueryRow(ctx, `
 		SELECT
 			EXISTS (
 				SELECT 1
@@ -320,6 +401,22 @@ func hasReferences(ctx context.Context, storageKey string) (bool, error) {
 			)
 	`, storageKey).Scan(&referenced)
 	return referenced, err
+}
+func findObjectIDByStorageKey(ctx context.Context, storageKey string) (uuid.UUID, error) {
+	var objectID uuid.UUID
+	err := db.PDB.QueryRow(ctx, `
+		SELECT object_id
+		FROM storage_objects
+		WHERE storage_key = $1
+		LIMIT 1
+	`, storageKey).Scan(&objectID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, nil
+		}
+		return uuid.Nil, err
+	}
+	return objectID, nil
 }
 func removeFileAndEmptyParents(storageKey string) error {
 	path, err := ResolveFilePath(storageKey)

@@ -1,20 +1,23 @@
 package services
+
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"sinde.ru/db"
 	"sinde.ru/internal/models"
+	"strings"
 )
+
 var ErrKitchenRecipeNotFound = errors.New("kitchen recipe not found")
 var ErrKitchenRecipeForbidden = errors.New("kitchen recipe forbidden")
 var ErrKitchenRecipeOwnerNotFound = errors.New("kitchen recipe owner not found")
+
 type KitchenSearchParams struct {
 	Query                  string
 	IngredientTags         []string
@@ -41,6 +44,7 @@ type KitchenCatalogPayload struct {
 	Ingredients   []*models.KitchenCatalogIngredient `json:"ingredients"`
 	FilterOptions []*models.KitchenFilterOption      `json:"filter_options"`
 }
+
 const kitchenRecipeSelect = `
 	SELECT
 		id,
@@ -70,6 +74,7 @@ const kitchenRecipeSelect = `
 	updated_at
 	FROM kitchen_recipes
 `
+
 func scanKitchenRecipe(row kitchenScanner) (*models.KitchenRecipe, error) {
 	var recipe models.KitchenRecipe
 	var ownerUserID pgtype.UUID
@@ -126,11 +131,6 @@ func scanKitchenRecipe(row kitchenScanner) (*models.KitchenRecipe, error) {
 			return nil, err
 		}
 	}
-	if len(stepsRaw) > 0 {
-		if err := json.Unmarshal(stepsRaw, &recipe.Steps); err != nil {
-			return nil, err
-		}
-	}
 	if recipe.Tags == nil {
 		recipe.Tags = []string{}
 	}
@@ -140,20 +140,153 @@ func scanKitchenRecipe(row kitchenScanner) (*models.KitchenRecipe, error) {
 	if recipe.Ingredients == nil {
 		recipe.Ingredients = []models.KitchenIngredient{}
 	}
-	if recipe.Steps == nil {
-		recipe.Steps = []models.KitchenStep{}
-	}
+	recipe.CoverImageKey = ""
+	recipe.Steps = []models.KitchenStep{}
 	return &recipe, nil
 }
 func scanKitchenRecipeCollect(row pgx.CollectableRow) (*models.KitchenRecipe, error) {
 	return scanKitchenRecipe(row)
 }
+func firstStorageKeyForUsage(usages []*models.StorageObjectUsage, usageType string, fieldName string) string {
+	for _, usage := range usages {
+		if usage == nil || usage.Object == nil {
+			continue
+		}
+		if usage.UsageType != usageType || usage.FieldName != fieldName {
+			continue
+		}
+		return usage.Object.StorageKey
+	}
+	return ""
+}
+func attachKitchenRecipeCoverUsage(ctx context.Context, recipeID uuid.UUID, storageKey string) error {
+	if err := PdbDeleteStorageObjectUsagesBySelector(ctx, "kitchen_recipe", recipeID.String(), "image", "cover"); err != nil {
+		return err
+	}
+	if strings.TrimSpace(storageKey) == "" {
+		return nil
+	}
+	object, err := PdbFindStorageObjectByStorageKey(ctx, storageKey)
+	if err != nil {
+		return err
+	}
+	_, err = PdbAttachStorageObjectUsage(ctx, &models.StorageObjectUsage{
+		ObjectID:   object.ObjectID,
+		EntityType: "kitchen_recipe",
+		EntityID:   recipeID.String(),
+		UsageType:  "image",
+		FieldName:  "cover",
+		SortOrder:  0,
+		IsPrimary:  true,
+		Metadata:   json.RawMessage(`{}`),
+	})
+	return err
+}
+func syncKitchenRecipeSteps(ctx context.Context, recipe *models.KitchenRecipe) error {
+	existingSteps, err := PdbListKitchenRecipeStepsByRecipeID(ctx, recipe.ID)
+	if err != nil {
+		return err
+	}
+	for _, step := range existingSteps {
+		if step == nil {
+			continue
+		}
+		if err := PdbDeleteStorageObjectUsagesByEntity(ctx, "kitchen_recipe_step", step.StepID.String()); err != nil {
+			return err
+		}
+	}
+	if err := PdbDeleteKitchenRecipeStepsByRecipeID(ctx, recipe.ID); err != nil {
+		return err
+	}
+	nextSteps := make([]models.KitchenStep, 0, len(recipe.Steps))
+	for index, step := range recipe.Steps {
+		record, createErr := PdbCreateKitchenRecipeStep(ctx, &models.KitchenRecipeStep{
+			StepID:      uuid.New(),
+			RecipeID:    recipe.ID,
+			StepOrder:   index + 1,
+			Title:       "",
+			Description: step.Text,
+			Metadata:    json.RawMessage(`{}`),
+		})
+		if createErr != nil {
+			return createErr
+		}
+		imageKey := strings.TrimSpace(step.ImageKey)
+		if imageKey != "" {
+			object, findErr := PdbFindStorageObjectByStorageKey(ctx, imageKey)
+			if findErr != nil {
+				return findErr
+			}
+			if _, attachErr := PdbAttachStorageObjectUsage(ctx, &models.StorageObjectUsage{
+				ObjectID:   object.ObjectID,
+				EntityType: "kitchen_recipe_step",
+				EntityID:   record.StepID.String(),
+				UsageType:  "image",
+				FieldName:  "content",
+				SortOrder:  0,
+				IsPrimary:  true,
+				Metadata:   json.RawMessage(`{}`),
+			}); attachErr != nil {
+				return attachErr
+			}
+		}
+		nextSteps = append(nextSteps, models.KitchenStep{
+			Order:    record.StepOrder,
+			Text:     record.Description,
+			ImageKey: imageKey,
+		})
+	}
+	recipe.Steps = nextSteps
+	return nil
+}
+func hydrateKitchenRecipe(ctx context.Context, recipe *models.KitchenRecipe) error {
+	if recipe == nil {
+		return nil
+	}
+	if usages, err := PdbListStorageObjectUsagesByEntity(ctx, "kitchen_recipe", recipe.ID.String()); err != nil {
+		return err
+	} else if coverKey := firstStorageKeyForUsage(usages, "image", "cover"); coverKey != "" {
+		recipe.CoverImageKey = coverKey
+	}
+	stepRecords, err := PdbListKitchenRecipeStepsByRecipeID(ctx, recipe.ID)
+	if err != nil {
+		return err
+	}
+	if len(stepRecords) == 0 {
+		return nil
+	}
+	steps := make([]models.KitchenStep, 0, len(stepRecords))
+	for _, step := range stepRecords {
+		if step == nil {
+			continue
+		}
+		usages, usageErr := PdbListStorageObjectUsagesByEntity(ctx, "kitchen_recipe_step", step.StepID.String())
+		if usageErr != nil {
+			return usageErr
+		}
+		text := strings.TrimSpace(step.Description)
+		if text == "" {
+			text = strings.TrimSpace(step.Title)
+		}
+		steps = append(steps, models.KitchenStep{
+			Order:    step.StepOrder,
+			Text:     text,
+			ImageKey: firstStorageKeyForUsage(usages, "image", "content"),
+		})
+	}
+	recipe.Steps = steps
+	return nil
+}
+func hydrateKitchenRecipes(ctx context.Context, recipes []*models.KitchenRecipe) error {
+	for _, recipe := range recipes {
+		if err := hydrateKitchenRecipe(ctx, recipe); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func PdbKitchenCreateRecipe(ctx context.Context, recipe *models.KitchenRecipe) (*models.KitchenRecipe, error) {
 	ingredientsRaw, err := json.Marshal(recipe.Ingredients)
-	if err != nil {
-		return nil, err
-	}
-	stepsRaw, err := json.Marshal(recipe.Steps)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +337,7 @@ func PdbKitchenCreateRecipe(ctx context.Context, recipe *models.KitchenRecipe) (
 		recipe.OwnerUserID,
 		recipe.Title,
 		recipe.Description,
-		recipe.CoverImageKey,
+		"",
 		recipe.Kcal,
 		recipe.PrepMinutes,
 		recipe.CookMinutes,
@@ -216,7 +349,7 @@ func PdbKitchenCreateRecipe(ctx context.Context, recipe *models.KitchenRecipe) (
 		recipe.DietType,
 		ingredientsRaw,
 		recipe.IngredientsSearch,
-		stepsRaw,
+		json.RawMessage(`[]`),
 		recipe.Tags,
 		recipe.IsPublic,
 		recipe.ModerationStatus,
@@ -224,14 +357,23 @@ func PdbKitchenCreateRecipe(ctx context.Context, recipe *models.KitchenRecipe) (
 		recipe.ModeratedAt,
 		recipe.ModerationNote,
 	)
-	return scanKitchenRecipe(row)
-}
-func PdbKitchenUpdateRecipe(ctx context.Context, recipe *models.KitchenRecipe, ownerUserID uuid.UUID) (*models.KitchenRecipe, error) {
-	ingredientsRaw, err := json.Marshal(recipe.Ingredients)
+	item, err := scanKitchenRecipe(row)
 	if err != nil {
 		return nil, err
 	}
-	stepsRaw, err := json.Marshal(recipe.Steps)
+	if err := attachKitchenRecipeCoverUsage(ctx, item.ID, recipe.CoverImageKey); err != nil {
+		return nil, err
+	}
+	if err := syncKitchenRecipeSteps(ctx, recipe); err != nil {
+		return nil, err
+	}
+	if err := hydrateKitchenRecipe(ctx, item); err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+func PdbKitchenUpdateRecipe(ctx context.Context, recipe *models.KitchenRecipe, ownerUserID uuid.UUID) (*models.KitchenRecipe, error) {
+	ingredientsRaw, err := json.Marshal(recipe.Ingredients)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +436,7 @@ func PdbKitchenUpdateRecipe(ctx context.Context, recipe *models.KitchenRecipe, o
 		ownerUserID,
 		recipe.Title,
 		recipe.Description,
-		recipe.CoverImageKey,
+		"",
 		recipe.Kcal,
 		recipe.PrepMinutes,
 		recipe.CookMinutes,
@@ -306,7 +448,7 @@ func PdbKitchenUpdateRecipe(ctx context.Context, recipe *models.KitchenRecipe, o
 		recipe.DietType,
 		ingredientsRaw,
 		recipe.IngredientsSearch,
-		stepsRaw,
+		json.RawMessage(`[]`),
 		recipe.Tags,
 		recipe.IsPublic,
 		recipe.ModerationStatus,
@@ -321,9 +463,22 @@ func PdbKitchenUpdateRecipe(ctx context.Context, recipe *models.KitchenRecipe, o
 		}
 		return nil, err
 	}
+	if err := attachKitchenRecipeCoverUsage(ctx, item.ID, recipe.CoverImageKey); err != nil {
+		return nil, err
+	}
+	if err := syncKitchenRecipeSteps(ctx, recipe); err != nil {
+		return nil, err
+	}
+	if err := hydrateKitchenRecipe(ctx, item); err != nil {
+		return nil, err
+	}
 	return item, nil
 }
 func PdbKitchenDeleteRecipe(ctx context.Context, recipeID uuid.UUID, ownerUserID uuid.UUID) error {
+	stepRecords, err := PdbListKitchenRecipeStepsByRecipeID(ctx, recipeID)
+	if err != nil {
+		return err
+	}
 	tag, err := db.PDB.Exec(ctx, `DELETE FROM kitchen_recipes WHERE id = $1 AND owner_user_id = $2`, recipeID, ownerUserID)
 	if err != nil {
 		return err
@@ -331,14 +486,21 @@ func PdbKitchenDeleteRecipe(ctx context.Context, recipeID uuid.UUID, ownerUserID
 	if tag.RowsAffected() == 0 {
 		return ErrKitchenRecipeForbidden
 	}
+	for _, step := range stepRecords {
+		if step == nil {
+			continue
+		}
+		if err := PdbDeleteStorageObjectUsagesByEntity(ctx, "kitchen_recipe_step", step.StepID.String()); err != nil {
+			return err
+		}
+	}
+	if err := PdbDeleteStorageObjectUsagesByEntity(ctx, "kitchen_recipe", recipeID.String()); err != nil {
+		return err
+	}
 	return nil
 }
 func PdbKitchenUpdateRecipeAsAdmin(ctx context.Context, recipe *models.KitchenRecipe) (*models.KitchenRecipe, error) {
 	ingredientsRaw, err := json.Marshal(recipe.Ingredients)
-	if err != nil {
-		return nil, err
-	}
-	stepsRaw, err := json.Marshal(recipe.Steps)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +562,7 @@ func PdbKitchenUpdateRecipeAsAdmin(ctx context.Context, recipe *models.KitchenRe
 		recipe.ID,
 		recipe.Title,
 		recipe.Description,
-		recipe.CoverImageKey,
+		"",
 		recipe.Kcal,
 		recipe.PrepMinutes,
 		recipe.CookMinutes,
@@ -412,7 +574,7 @@ func PdbKitchenUpdateRecipeAsAdmin(ctx context.Context, recipe *models.KitchenRe
 		recipe.DietType,
 		ingredientsRaw,
 		recipe.IngredientsSearch,
-		stepsRaw,
+		json.RawMessage(`[]`),
 		recipe.Tags,
 		recipe.IsPublic,
 		recipe.ModerationStatus,
@@ -427,15 +589,39 @@ func PdbKitchenUpdateRecipeAsAdmin(ctx context.Context, recipe *models.KitchenRe
 		}
 		return nil, err
 	}
+	if err := attachKitchenRecipeCoverUsage(ctx, item.ID, recipe.CoverImageKey); err != nil {
+		return nil, err
+	}
+	if err := syncKitchenRecipeSteps(ctx, recipe); err != nil {
+		return nil, err
+	}
+	if err := hydrateKitchenRecipe(ctx, item); err != nil {
+		return nil, err
+	}
 	return item, nil
 }
 func PdbKitchenDeleteRecipeAsAdmin(ctx context.Context, recipeID uuid.UUID) error {
+	stepRecords, err := PdbListKitchenRecipeStepsByRecipeID(ctx, recipeID)
+	if err != nil {
+		return err
+	}
 	tag, err := db.PDB.Exec(ctx, `DELETE FROM kitchen_recipes WHERE id = $1`, recipeID)
 	if err != nil {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
 		return ErrKitchenRecipeNotFound
+	}
+	for _, step := range stepRecords {
+		if step == nil {
+			continue
+		}
+		if err := PdbDeleteStorageObjectUsagesByEntity(ctx, "kitchen_recipe_step", step.StepID.String()); err != nil {
+			return err
+		}
+	}
+	if err := PdbDeleteStorageObjectUsagesByEntity(ctx, "kitchen_recipe", recipeID.String()); err != nil {
+		return err
 	}
 	return nil
 }
@@ -444,14 +630,28 @@ func PdbKitchenGetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Kitchen
 		WHERE id = $1 AND is_public = TRUE
 	`
 	row := db.PDB.QueryRow(ctx, query, id)
-	return scanKitchenRecipe(row)
+	item, err := scanKitchenRecipe(row)
+	if err != nil {
+		return nil, err
+	}
+	if err := hydrateKitchenRecipe(ctx, item); err != nil {
+		return nil, err
+	}
+	return item, nil
 }
 func PdbKitchenGetRecipeByIDAny(ctx context.Context, id uuid.UUID) (*models.KitchenRecipe, error) {
 	query := kitchenRecipeSelect + `
 		WHERE id = $1
 	`
 	row := db.PDB.QueryRow(ctx, query, id)
-	return scanKitchenRecipe(row)
+	item, err := scanKitchenRecipe(row)
+	if err != nil {
+		return nil, err
+	}
+	if err := hydrateKitchenRecipe(ctx, item); err != nil {
+		return nil, err
+	}
+	return item, nil
 }
 func PdbKitchenListRecipesByOwner(ctx context.Context, ownerUserID uuid.UUID, limit int) ([]*models.KitchenRecipe, error) {
 	if limit <= 0 {
@@ -476,6 +676,9 @@ func PdbKitchenListRecipesByOwner(ctx context.Context, ownerUserID uuid.UUID, li
 	}
 	if items == nil {
 		return []*models.KitchenRecipe{}, nil
+	}
+	if err := hydrateKitchenRecipes(ctx, items); err != nil {
+		return nil, err
 	}
 	return items, nil
 }
@@ -502,6 +705,9 @@ func PdbKitchenLatestRecipes(ctx context.Context, limit int) ([]*models.KitchenR
 	}
 	if items == nil {
 		return []*models.KitchenRecipe{}, nil
+	}
+	if err := hydrateKitchenRecipes(ctx, items); err != nil {
+		return nil, err
 	}
 	return items, nil
 }
@@ -568,6 +774,9 @@ func PdbKitchenListRecipesForModeration(ctx context.Context, status string, limi
 	}
 	if items == nil {
 		items = []*models.KitchenRecipe{}
+	}
+	if err := hydrateKitchenRecipes(ctx, items); err != nil {
+		return nil, 0, err
 	}
 	countQuery := `SELECT COUNT(*)::BIGINT FROM kitchen_recipes` + countWhere
 	var total int64
@@ -667,6 +876,9 @@ func PdbKitchenModerateRecipe(ctx context.Context, recipeID uuid.UUID, approve b
 		}
 		return nil, err
 	}
+	if err := hydrateKitchenRecipe(ctx, item); err != nil {
+		return nil, err
+	}
 	return item, nil
 }
 func PdbKitchenChangeRecipeOwner(ctx context.Context, recipeID uuid.UUID, ownerUserID uuid.UUID) (*models.KitchenRecipe, error) {
@@ -712,6 +924,9 @@ func PdbKitchenChangeRecipeOwner(ctx context.Context, recipeID uuid.UUID, ownerU
 		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
 			return nil, ErrKitchenRecipeOwnerNotFound
 		}
+		return nil, err
+	}
+	if err := hydrateKitchenRecipe(ctx, item); err != nil {
 		return nil, err
 	}
 	return item, nil
@@ -1160,6 +1375,9 @@ func PdbKitchenSearchRecipes(ctx context.Context, params KitchenSearchParams) ([
 	}
 	if items == nil {
 		return []*models.KitchenRecipe{}, nil
+	}
+	if err := hydrateKitchenRecipes(ctx, items); err != nil {
+		return nil, err
 	}
 	return items, nil
 }

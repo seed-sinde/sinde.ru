@@ -1,5 +1,7 @@
 package auth
+
 import "testing"
+
 func TestBuildDeviceContextFingerprintIgnoresIP(t *testing.T) {
 	userAgent := "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4)"
 	acceptLanguage := "ru-RU,ru;q=0.9,en-US;q=0.8"

@@ -1,25 +1,30 @@
 package store
+
 import (
 	"fmt"
-	"strings"
 	"github.com/google/uuid"
 	"sinde.ru/internal/models"
+	"strings"
 )
+
 func traitIndexKey(keyID int64, value string) string {
 	return fmt.Sprintf("%d\x1f%s", keyID, value)
 }
 func normalizeSyn(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
+
 // LoadInitialData атомарно сбрасывает и заполняет in-memory store.
 //
 // Параметры:
-//   traits — список особенностей.
-//   keys — список ключей.
-//   sets — список наборов.
+//
+//	traits — список особенностей.
+//	keys — список ключей.
+//	sets — список наборов.
 //
 // Возвращает:
-//   Ничего; обновляет глобальное хранилище в памяти.
+//
+//	Ничего; обновляет глобальное хранилище в памяти.
 func LoadInitialData(traits []*models.Trait, keys []*models.Key, sets []*models.Set) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

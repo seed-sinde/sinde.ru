@@ -1,14 +1,16 @@
 package middleware
+
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gofiber/fiber/v3"
 	"log"
 	"os"
+	"sinde.ru/internal/http/responses"
 	"strings"
 	"time"
-	"github.com/gofiber/fiber/v3"
-	"sinde.ru/internal/http/responses"
 )
+
 const (
 	ansiReset         = "\033[0m"
 	ansiRed           = "\033[31m"
@@ -18,6 +20,7 @@ const (
 	ansiGray          = "\033[90m"
 	ansiBrightMagenta = "\033[95m"
 )
+
 func AccessLog() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		err := c.Next()

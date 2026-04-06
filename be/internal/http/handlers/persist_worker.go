@@ -1,23 +1,28 @@
 package handlers
+
 import (
 	"context"
 	"log"
 	"sync"
 	"time"
 )
+
 type persistTask struct {
 	name string
 	fn   func(ctx context.Context)
 }
+
 var (
 	persistOnce  sync.Once
 	persistQueue chan persistTask
 )
+
 const (
 	persistQueueSize   = 256
 	persistWorkerCount = 4
 	persistTaskTimeout = 5 * time.Second
 )
+
 func initPersistWorkers() {
 	persistQueue = make(chan persistTask, persistQueueSize)
 	for i := 0; i < persistWorkerCount; i++ {

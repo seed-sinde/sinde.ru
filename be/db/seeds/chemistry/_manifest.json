@@ -8,7 +8,7 @@
     },
     {
       "file": "minerals.csv",
-      "table": "minerals",
+      "table": "chemistry_minerals",
       "order": 20
     }
   ]

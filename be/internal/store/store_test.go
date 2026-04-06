@@ -1,11 +1,13 @@
 package store
+
 import (
 	"encoding/json"
-	"reflect"
-	"testing"
 	"github.com/google/uuid"
+	"reflect"
 	"sinde.ru/internal/models"
+	"testing"
 )
+
 func resetStoreForTest(t *testing.T) {
 	t.Helper()
 	old := s

@@ -1,11 +1,13 @@
 package auth
+
 import (
 	"fmt"
-	"time"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"sinde.ru/internal/models"
+	"time"
 )
+
 func (s *Service) issueTokens(user *models.User, sessionID uuid.UUID, familyID uuid.UUID, device DeviceContext, mfaVerified bool) (*TokenBundle, error) {
 	now := s.now()
 	accessJTI, err := randomToken(24)

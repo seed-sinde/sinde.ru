@@ -43,7 +43,7 @@
   }
 </script>
 <template>
-  <LabDropdown v-model="open" width-class="w-40" :match-trigger-width="false">
+  <LabDropdown v-model="open" side="top" width-class="w-40" :match-trigger-width="false">
     <template #trigger="{ toggle }">
       <LabBaseButton
         :aria-label="triggerTitle"

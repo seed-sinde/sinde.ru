@@ -1,17 +1,20 @@
 package auth
+
 import (
 	"context"
 	"errors"
-	"strings"
-	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"sinde.ru/internal/models"
+	"strings"
+	"time"
 )
+
 type Repository struct {
 	db *pgxpool.Pool
 }
+
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }

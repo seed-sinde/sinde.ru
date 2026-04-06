@@ -8,11 +8,16 @@
   }
   const route = useRoute()
   const runtimeConfig = useRuntimeConfig()
+  const { data: periodicTableElementsData, error: chemistryElementsError } = await useChemistryElements()
+  if (chemistryElementsError.value) {
+    throw createError({ statusCode: 500, statusMessage: 'Не удалось загрузить элементы' })
+  }
   const color_hex_to_rgba = (value: string, alpha: number) => colorHexToRgba(value, alpha)
   const periodic_table_element_route = (value: Parameters<typeof getPeriodicTableElementRoute>[0]) =>
     getPeriodicTableElementRoute(value)
   const elementParam = computed(() => route.params.element)
-  const element = computed(() => resolvePeriodicTableElement(elementParam.value))
+  const periodicTableElements = computed(() => periodicTableElementsData.value || [])
+  const element = computed(() => resolvePeriodicTableElement(periodicTableElements.value, elementParam.value))
   if (!element.value) {
     throw createError({ statusCode: 404, statusMessage: 'Элемент не найден' })
   }
@@ -214,7 +219,8 @@
   })
   const relatedElements = computed(() => {
     const item = currentElement.value
-    return PERIODIC_TABLE_ELEMENTS.filter(element => element.number !== item.number)
+    return periodicTableElements.value
+      .filter(element => element.number !== item.number)
       .filter(
         element => element.group === item.group || element.period === item.period || element.category === item.category
       )

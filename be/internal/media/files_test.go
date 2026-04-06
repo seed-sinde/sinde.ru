@@ -1,4 +1,5 @@
 package media
+
 import (
 	"bytes"
 	"image"
@@ -7,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 )
+
 func TestNormalizeStorageKey(t *testing.T) {
 	cases := []struct {
 		raw  string

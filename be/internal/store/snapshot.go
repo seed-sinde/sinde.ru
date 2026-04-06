@@ -1,14 +1,17 @@
 package store
+
 import (
-	"sort"
 	"github.com/google/uuid"
 	"sinde.ru/internal/models"
+	"sort"
 )
+
 type Snapshot struct {
 	Keys   []*models.Key
 	Traits []*models.Trait
 	Sets   []*models.Set
 }
+
 func SnapshotData() Snapshot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

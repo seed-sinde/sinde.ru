@@ -1,18 +1,20 @@
 package handlers
+
 import (
 	"bytes"
 	"fmt"
-	"log"
-	"strings"
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"log"
 	"sinde.ru/db/services"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/models"
 	"sinde.ru/internal/store"
 	"sinde.ru/utils"
+	"strings"
 )
+
 // CreateSetHandler создаёт или находит набор из двух потомков.
 //
 // Маршрут:
@@ -122,6 +124,7 @@ func CreateSetHandler() fiber.Handler {
 		return responses.Success(c, 201, out)
 	}
 }
+
 // FindOrBuildSetHandler строит или находит цепочку наборов из списка t_uuid.
 //
 // Маршрут:
@@ -175,6 +178,7 @@ func FindOrBuildSetHandler() fiber.Handler {
 		return responses.Success(c, 200, fiber.Map{"s_uuid": current.String()})
 	}
 }
+
 // StoreSetHandler возвращает набор с раскрытыми особенностями.
 //
 // Маршрут:
@@ -215,6 +219,7 @@ func StoreSetHandler() fiber.Handler {
 		return c.JSON(resp)
 	}
 }
+
 // StoreSetStreamHandler стримит особенности набора в формате NDJSON.
 //
 // Маршрут:

@@ -1,5 +1,7 @@
 package responses
+
 import "strings"
+
 var errorMessageRuMap = map[string]string{
 	"authentication required":                         "Требуется авторизация.",
 	"invalid or expired session":                      "Недействительная или просроченная сессия.",
@@ -93,6 +95,7 @@ var errorMessageRuMap = map[string]string{
 	"current password is invalid":                     "Текущий пароль введён неверно.",
 	"recipe owner is required for non-admin update":   "Для обновления без прав администратора требуется владелец рецепта.",
 }
+
 func localizeErrorMessage(msg string) string {
 	normalized := strings.TrimSpace(msg)
 	if normalized == "" {

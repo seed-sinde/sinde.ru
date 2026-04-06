@@ -1,9 +1,8 @@
 package handlers
+
 import (
 	"context"
 	"errors"
-	"strconv"
-	"strings"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -12,7 +11,10 @@ import (
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/media"
 	"sinde.ru/internal/models"
+	"strconv"
+	"strings"
 )
+
 type kitchenRecipeIngredientInput struct {
 	Name   string `json:"name"`
 	Amount string `json:"amount"`
@@ -73,6 +75,7 @@ type kitchenRecipeModerationRequest struct {
 type kitchenRecipeOwnerChangeRequest struct {
 	OwnerUserID string `json:"owner_user_id"`
 }
+
 func normalizeKitchenStepImageKey(raw string) string {
 	return media.NormalizeStorageKey(raw)
 }
