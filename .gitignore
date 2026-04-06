@@ -8,3 +8,4 @@ fe/.nuxt/
 fe/.output/
 .runtime-cache
 .vscode
+fe/tsconfig.vitest.tsbuildinfo
