@@ -11,6 +11,9 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -49,3 +52,94 @@ jobs:
       - name: Run frontend checks
         working-directory: fe
         run: bun run check
+
+  release:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs:
+      - backend
+      - frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release version
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            changed_files="$(git diff-tree --no-commit-id --name-only -r "$CURRENT_SHA")"
+          else
+            changed_files="$(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA")"
+          fi
+
+          if ! grep -qx 'VERSION' <<< "$changed_files"; then
+            echo "VERSION was not changed in this push, skipping release."
+            echo "SHOULD_RELEASE=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          version="$(tr -d '[:space:]' < VERSION)"
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "VERSION must be a semver-like value, got: $version" >&2
+            exit 1
+          fi
+
+          echo "SHOULD_RELEASE=true" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$version" >> "$GITHUB_ENV"
+
+      - name: Create or verify release tag
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
+        env:
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          git fetch --tags origin
+
+          if git rev-parse "${RELEASE_TAG}" >/dev/null 2>&1; then
+            existing_sha="$(git rev-list -n 1 "${RELEASE_TAG}")"
+
+            if [[ "$existing_sha" != "$CURRENT_SHA" ]]; then
+              echo "Tag ${RELEASE_TAG} already exists on ${existing_sha}, expected ${CURRENT_SHA}" >&2
+              exit 1
+            fi
+
+            echo "Tag ${RELEASE_TAG} already points to ${CURRENT_SHA}"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${RELEASE_TAG}" "${CURRENT_SHA}" -m "Release ${RELEASE_TAG}"
+          git push origin "${RELEASE_TAG}"
+
+      - name: Trigger production deploy
+        if: ${{ env.SHOULD_RELEASE == 'true' }}
+        env:
+          OPS_REPO_DISPATCH_TOKEN: ${{ secrets.OPS_REPO_DISPATCH_TOKEN }}
+        run: |
+          if [[ -z "${OPS_REPO_DISPATCH_TOKEN:-}" ]]; then
+            echo "Missing secret OPS_REPO_DISPATCH_TOKEN" >&2
+            exit 1
+          fi
+
+          curl --fail --silent --show-error \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${OPS_REPO_DISPATCH_TOKEN}" \
+            https://api.github.com/repos/seed-sinde/sinde.ru-ops/dispatches \
+            -d @- <<JSON
+          {
+            "event_type": "sinde-ru-deploy",
+            "client_payload": {
+              "app_ref": "${RELEASE_TAG}",
+              "ops_ref": "main",
+              "version": "${RELEASE_VERSION}",
+              "source_sha": "${{ github.sha }}"
+            }
+          }
+          JSON

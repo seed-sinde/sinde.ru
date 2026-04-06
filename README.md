@@ -96,6 +96,7 @@ Frontend:
 ## Версия
 
 Текущая версия продукта хранится в [VERSION](VERSION).
+Изменение `VERSION` в `main` после успешного CI автоматически создаёт release tag `vX.Y.Z` и запускает production deploy через `seed-sinde/sinde.ru-ops`.
 
 ## Лицензия
 
