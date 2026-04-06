@@ -1,4 +1,4 @@
-ARG BUN_VERSION
+ARG BUN_VERSION=1.3.11
 FROM oven/bun:${BUN_VERSION}-alpine
 WORKDIR /app
 COPY .output ./.output
