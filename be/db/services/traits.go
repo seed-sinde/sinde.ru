@@ -38,7 +38,7 @@ func PdbInsertTrait(conn *pgxpool.Conn, trait *models.Trait) error {
 	const query = `
 		INSERT INTO traits_v (t_uuid, t_key, t_value)
 		VALUES ($1, $2, $3)
-		ON CONFLICT ON CONSTRAINT unique_t_key_value DO NOTHING;
+		ON CONFLICT (t_key, t_value) DO NOTHING;
 	`
 	_, err := conn.Exec(context.Background(), query, trait.TUUID, trait.TKey, trait.TValue)
 	return err
@@ -127,7 +127,7 @@ func PdbGetOrCreateTraitByKeyValue(ctx context.Context, keyID int64, value strin
 	const query = `
 		INSERT INTO traits_v (t_uuid, t_key, t_value)
 		VALUES ($1, $2, $3)
-		ON CONFLICT ON CONSTRAINT unique_t_key_value DO NOTHING
+		ON CONFLICT (t_key, t_value) DO NOTHING
 		RETURNING t_uuid, t_key, t_value
 	`
 	var inserted models.Trait

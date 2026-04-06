@@ -96,6 +96,10 @@
     try {
       const res = await getKeyMeta(syn)
       if (token !== requestToken) return
+      if ((res?.data as { notFound?: boolean } | undefined)?.notFound) {
+        resetMetaState()
+        return
+      }
       const meta = (res?.data?.meta as KeyMeta | undefined) || null
       if (!meta) {
         resetMetaState()

@@ -42,6 +42,17 @@
   </form>
 </template>
 <script setup lang="ts">
+  import TraitsInputString from './InputString.vue'
+  import TraitsInputNumber from './InputNumber.vue'
+  import TraitsInputBoolean from './InputBoolean.vue'
+  import TraitsInputDatetime from './InputDatetime.vue'
+  import TraitsInputDateRange from './InputDateRange.vue'
+  import TraitsInputInterval from './InputInterval.vue'
+  import TraitsInputSchedule from './InputSchedule.vue'
+  import TraitsInputGeoPoint from './InputGeoPoint.vue'
+  import TraitsInputEnum from './InputEnum.vue'
+  import TraitsInputValidity from './InputValidity.vue'
+  import TraitsInputColor from './InputColor.vue'
   const emit = defineEmits<{ (e: 'add', trait: TraitInput): void }>()
   const key = ref('')
   const meta = ref<KeyMeta>(defaultKeyMeta('string'))
@@ -55,7 +66,32 @@
       value.value = next as any
     }
   })
-  const valueComponent = computed(() => VALUE_COMPONENTS[meta.value.dataType] || 'TraitsFormInputString')
+  const valueComponent = computed(() => {
+    switch (meta.value.dataType) {
+      case 'number':
+        return TraitsInputNumber
+      case 'boolean':
+        return TraitsInputBoolean
+      case 'datetime':
+        return TraitsInputDatetime
+      case 'datetime-range':
+        return TraitsInputDateRange
+      case 'interval':
+        return TraitsInputInterval
+      case 'schedule':
+        return TraitsInputSchedule
+      case 'geo-point':
+        return TraitsInputGeoPoint
+      case 'enum':
+        return TraitsInputEnum
+      case 'validity':
+        return TraitsInputValidity
+      case 'color':
+        return TraitsInputColor
+      default:
+        return TraitsInputString
+    }
+  })
   const valueComponentHasLabel = computed(() => {
     return ['enum', 'boolean', 'datetime-range', 'interval', 'schedule', 'geo-point', 'validity', 'color'].includes(
       meta.value.dataType as any
