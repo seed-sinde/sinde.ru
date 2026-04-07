@@ -1,28 +1,5 @@
 -- +goose Up
--- +goose StatementBegin
-DO $$
-BEGIN
-  IF to_regclass('public.storage_objects') IS NOT NULL AND NOT EXISTS(
-    SELECT
-      1
-    FROM
-      information_schema.columns
-    WHERE
-      table_schema = 'public' AND table_name = 'storage_objects' AND column_name = 'object_id') THEN
-    IF EXISTS(
-      SELECT
-        1
-      FROM
-        storage_objects
-      LIMIT 1) THEN
-  RAISE EXCEPTION 'legacy storage_objects table contains data; manual migration required before applying the current storage schema';
-  END IF;
-  DROP TABLE storage_objects;
-END IF;
-END
-$$;
--- +goose StatementEnd
-CREATE TABLE IF NOT EXISTS storage_objects(
+CREATE TABLE storage_objects(
   object_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   storage_key text NOT NULL UNIQUE,
   bucket_name text NOT NULL,
@@ -40,53 +17,10 @@ CREATE TABLE IF NOT EXISTS storage_objects(
   CONSTRAINT chk_storage_objects_content_type_not_blank CHECK (btrim(content_type) <> ''),
   CONSTRAINT chk_storage_objects_source_kind CHECK (source_kind IN ('seed', 'runtime', 'import'))
 );
-ALTER TABLE storage_objects
-  ADD COLUMN IF NOT EXISTS file_hash text,
-  ADD COLUMN IF NOT EXISTS source_kind text,
-  ADD COLUMN IF NOT EXISTS metadata jsonb,
-  ADD COLUMN IF NOT EXISTS updated_at timestamptz;
-UPDATE
-  storage_objects
-SET
-  file_hash = COALESCE(file_hash, ''),
-  source_kind = COALESCE(source_kind, 'runtime'),
-  metadata = COALESCE(metadata, '{}'::jsonb),
-  updated_at = COALESCE(updated_at, created_at, now())
-WHERE
-  file_hash IS NULL
-  OR source_kind IS NULL
-  OR metadata IS NULL
-  OR updated_at IS NULL;
-ALTER TABLE storage_objects
-  ALTER COLUMN file_hash SET DEFAULT '',
-  ALTER COLUMN file_hash SET NOT NULL,
-  ALTER COLUMN source_kind SET DEFAULT 'runtime',
-  ALTER COLUMN source_kind SET NOT NULL,
-  ALTER COLUMN metadata SET DEFAULT '{}'::jsonb,
-  ALTER COLUMN metadata SET NOT NULL,
-  ALTER COLUMN updated_at SET DEFAULT now(),
-  ALTER COLUMN updated_at SET NOT NULL;
--- +goose StatementBegin
-DO $$
-BEGIN
-  IF NOT EXISTS(
-    SELECT
-      1
-    FROM
-      pg_constraint
-    WHERE
-      conname = 'chk_storage_objects_source_kind'
-      AND conrelid = 'storage_objects'::regclass) THEN
-  ALTER TABLE storage_objects
-    ADD CONSTRAINT chk_storage_objects_source_kind CHECK(source_kind IN('seed', 'runtime', 'import'));
-END IF;
-END
-$$;
--- +goose StatementEnd
-CREATE INDEX IF NOT EXISTS idx_storage_objects_bucket_created ON storage_objects(bucket_name, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_storage_objects_media_family_created ON storage_objects(media_family, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_storage_objects_source_kind_created ON storage_objects(source_kind, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_storage_objects_file_hash ON storage_objects(file_hash);
+CREATE INDEX idx_storage_objects_bucket_created ON storage_objects(bucket_name, created_at DESC);
+CREATE INDEX idx_storage_objects_media_family_created ON storage_objects(media_family, created_at DESC);
+CREATE INDEX idx_storage_objects_source_kind_created ON storage_objects(source_kind, created_at DESC);
+CREATE INDEX idx_storage_objects_file_hash ON storage_objects(file_hash);
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION set_storage_objects_updated_at()
   RETURNS TRIGGER
@@ -99,7 +33,6 @@ $fn$
 LANGUAGE plpgsql;
 -- +goose StatementEnd
 -- +goose StatementBegin
-DROP TRIGGER IF EXISTS trg_storage_objects_updated_at ON storage_objects;
 CREATE TRIGGER trg_storage_objects_updated_at
   BEFORE UPDATE ON storage_objects
   FOR EACH ROW

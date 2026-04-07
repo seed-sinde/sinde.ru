@@ -9,23 +9,23 @@
 -- - s_childs elements must be distinct
 -- - UPDATE sets is forbidden
 -- - DELETE sets is forbidden
-CREATE TABLE IF NOT EXISTS key_syns(
+CREATE TABLE key_syns(
   id bigserial PRIMARY KEY,
   name text NOT NULL UNIQUE
 );
-CREATE TABLE IF NOT EXISTS traits_k(
+CREATE TABLE traits_k(
   id bigserial PRIMARY KEY,
   syn_id bigint NOT NULL REFERENCES key_syns(id) ON DELETE RESTRICT,
   meta jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT uq_traits_k_syn_id_meta UNIQUE (syn_id, meta)
 );
-CREATE TABLE IF NOT EXISTS traits_v(
+CREATE TABLE traits_v(
   t_uuid uuid PRIMARY KEY,
   t_key bigint NOT NULL REFERENCES traits_k(id) ON DELETE RESTRICT,
   t_value text NOT NULL,
   CONSTRAINT uq_traits_v_t_key_t_value UNIQUE (t_key, t_value)
 );
-CREATE TABLE IF NOT EXISTS SETS (
+CREATE TABLE SETS (
   s_uuid uuid PRIMARY KEY,
   s_childs uuid[] NOT NULL,
   CONSTRAINT chk_sets_s_childs_length CHECK (cardinality(s_childs) = 2),
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS SETS (
 );
 COMMENT ON TABLE SETS IS 'Immutable append-only trait graph. INSERT allowed; UPDATE and DELETE forbidden.';
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION validate_sets_s_childs()
+CREATE FUNCTION validate_sets_s_childs()
   RETURNS TRIGGER
   AS $fn$
 BEGIN
@@ -70,14 +70,13 @@ $fn$
 LANGUAGE plpgsql;
 -- +goose StatementEnd
 -- +goose StatementBegin
-DROP TRIGGER IF EXISTS trg_validate_sets_s_childs ON SETS;
 CREATE TRIGGER trg_validate_sets_s_childs
   BEFORE INSERT ON SETS
   FOR EACH ROW
   EXECUTE FUNCTION validate_sets_s_childs();
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION forbid_sets_update()
+CREATE FUNCTION forbid_sets_update()
   RETURNS TRIGGER
   AS $fn$
 BEGIN
@@ -87,14 +86,13 @@ $fn$
 LANGUAGE plpgsql;
 -- +goose StatementEnd
 -- +goose StatementBegin
-DROP TRIGGER IF EXISTS trg_forbid_sets_update ON SETS;
 CREATE TRIGGER trg_forbid_sets_update
   BEFORE UPDATE ON SETS
   FOR EACH ROW
   EXECUTE FUNCTION forbid_sets_update();
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION forbid_sets_delete()
+CREATE FUNCTION forbid_sets_delete()
   RETURNS TRIGGER
   AS $fn$
 BEGIN
@@ -104,7 +102,6 @@ $fn$
 LANGUAGE plpgsql;
 -- +goose StatementEnd
 -- +goose StatementBegin
-DROP TRIGGER IF EXISTS trg_forbid_sets_delete ON SETS;
 CREATE TRIGGER trg_forbid_sets_delete
   BEFORE DELETE ON SETS
   FOR EACH ROW

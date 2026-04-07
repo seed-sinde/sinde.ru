@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS chemistry_elements(
+CREATE TABLE chemistry_elements(
   number integer PRIMARY KEY,
   symbol text NOT NULL,
   name text NOT NULL,
@@ -44,10 +44,15 @@ CREATE TABLE IF NOT EXISTS chemistry_elements(
   CONSTRAINT chemistry_elements_samples_array CHECK (jsonb_typeof(samples) = 'array'),
   CONSTRAINT chemistry_elements_sample_fallback_object CHECK (sample_fallback IS NULL OR jsonb_typeof(sample_fallback) = 'object')
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_chemistry_elements_symbol_unique ON chemistry_elements(symbol);
-CREATE INDEX IF NOT EXISTS idx_chemistry_elements_category ON chemistry_elements(category);
-CREATE INDEX IF NOT EXISTS idx_chemistry_elements_period ON chemistry_elements(period);
-CREATE INDEX IF NOT EXISTS idx_chemistry_elements_group_number ON chemistry_elements(group_number);
-CREATE INDEX IF NOT EXISTS idx_chemistry_elements_block ON chemistry_elements(block);
+CREATE UNIQUE INDEX idx_chemistry_elements_symbol_unique ON chemistry_elements(symbol);
+CREATE INDEX idx_chemistry_elements_category ON chemistry_elements(category);
+CREATE INDEX idx_chemistry_elements_period ON chemistry_elements(period);
+CREATE INDEX idx_chemistry_elements_group_number ON chemistry_elements(group_number);
+CREATE INDEX idx_chemistry_elements_block ON chemistry_elements(block);
 -- +goose Down
-DROP TABLE IF EXISTS chemistry_elements;
+DROP INDEX idx_chemistry_elements_block;
+DROP INDEX idx_chemistry_elements_group_number;
+DROP INDEX idx_chemistry_elements_period;
+DROP INDEX idx_chemistry_elements_category;
+DROP INDEX idx_chemistry_elements_symbol_unique;
+DROP TABLE chemistry_elements;
