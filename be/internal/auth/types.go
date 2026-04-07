@@ -102,6 +102,9 @@ type VerifyEmailInput struct {
 type RequestEmailVerificationInput struct {
 	Email string `json:"email"`
 }
+type RequestEmailChangeInput struct {
+	Email string `json:"email"`
+}
 type RefreshInput struct {
 	RefreshToken string
 	CSRFToken    string
@@ -217,6 +220,12 @@ type TwoFactorSetupResult struct {
 }
 type MeResult struct {
 	User AuthUser `json:"user"`
+}
+type VerifyEmailResult struct {
+	Verified     bool   `json:"verified"`
+	Action       string `json:"action"`
+	Email        string `json:"email,omitempty"`
+	SessionHints bool   `json:"session_hints,omitempty"`
 }
 type UpdateProfileResult struct {
 	Changes AuthUserPatch `json:"changes"`

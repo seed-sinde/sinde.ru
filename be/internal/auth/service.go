@@ -185,12 +185,85 @@ func (s *Service) RequestEmailVerification(ctx context.Context, email string) er
 	}
 	return s.issueActionTokenEmail(ctx, user, "verify_email", s.cfg.VerifyTTL, "/auth/verify-email")
 }
-func (s *Service) VerifyEmail(ctx context.Context, token string) error {
-	action, err := s.repo.ConsumeActionToken(ctx, "verify_email", hashToken(strings.TrimSpace(token)), s.now())
+func (s *Service) RequestEmailChange(ctx context.Context, user *models.User, nextEmail string, device DeviceContext) error {
+	if user == nil {
+		return ErrUnauthorized
+	}
+	normalized, err := normalizeEmail(nextEmail)
+	if err != nil {
+		return ErrInvalidInput
+	}
+	if strings.EqualFold(normalized, user.EmailNormalized) {
+		return ErrInvalidInput
+	}
+	if err := s.rateLimit(ctx, "verify:mail", normalized, s.cfg.VerifyRateLimit); err != nil {
+		return err
+	}
+	if err := s.rateLimit(ctx, "verify:user", user.UserID.String(), s.cfg.VerifyRateLimit); err != nil {
+		return err
+	}
+	existing, err := s.repo.GetUserByEmail(ctx, normalized)
+	if err == nil && existing.UserID != user.UserID {
+		return ErrEmailAlreadyExists
+	}
+	meta, err := json.Marshal(map[string]string{
+		"kind":      "change_email",
+		"new_email": normalized,
+	})
 	if err != nil {
 		return err
 	}
-	return s.repo.MarkUserEmailVerified(ctx, action.UserID, s.now())
+	if err := s.issueActionTokenEmailTo(ctx, user, "change_email", s.cfg.VerifyTTL, "/auth/verify-email", normalized, meta); err != nil {
+		return err
+	}
+	_ = s.logSecurityEvent(ctx, &user.UserID, nil, "auth", "auth.email_change.requested", "info", device, map[string]any{
+		"current_email": user.Email,
+		"next_email":    normalized,
+	})
+	return nil
+}
+func (s *Service) VerifyEmail(ctx context.Context, token string, device DeviceContext) (*VerifyEmailResult, error) {
+	tokenHash := hashToken(strings.TrimSpace(token))
+	action, err := s.repo.ConsumeActionToken(ctx, "verify_email", tokenHash, s.now())
+	if err != nil {
+		action, err = s.repo.ConsumeActionToken(ctx, "change_email", tokenHash, s.now())
+		if err != nil {
+			return nil, err
+		}
+	}
+	meta := parseActionTokenMeta(action.Meta)
+	if action.Purpose == "change_email" || strings.EqualFold(meta["kind"], "change_email") {
+		nextEmail, err := normalizeEmail(meta["new_email"])
+		if err != nil {
+			return nil, ErrInvalidToken
+		}
+		if err := s.repo.UpdateUserEmail(ctx, action.UserID, nextEmail, nextEmail, s.now()); err != nil {
+			if isUniqueViolation(err) {
+				return nil, ErrEmailAlreadyExists
+			}
+			return nil, err
+		}
+		_ = s.logSecurityEvent(ctx, &action.UserID, nil, "auth", "auth.email_change.confirmed", "info", device, map[string]any{
+			"next_email": nextEmail,
+		})
+		return &VerifyEmailResult{
+			Verified:     true,
+			Action:       "change_email",
+			Email:        nextEmail,
+			SessionHints: true,
+		}, nil
+	}
+	if err := s.repo.MarkUserEmailVerified(ctx, action.UserID, s.now()); err != nil {
+		return nil, err
+	}
+	_ = s.logSecurityEvent(ctx, &action.UserID, nil, "auth", "auth.email.verified", "info", device, map[string]any{
+		"email": action.DeliveryValue,
+	})
+	return &VerifyEmailResult{
+		Verified: true,
+		Action:   "verify_email",
+		Email:    action.DeliveryValue,
+	}, nil
 }
 func (s *Service) Login(ctx context.Context, input LoginInput, device DeviceContext) (*LoginResult, *TokenBundle, error) {
 	email, err := normalizeEmail(input.Email)
@@ -1528,10 +1601,38 @@ func generateBackupCodes() ([]string, []string, error) {
 	}
 	return plain, hashes, nil
 }
+func parseActionTokenMeta(raw json.RawMessage) map[string]string {
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return map[string]string{}
+	}
+	var meta map[string]string
+	if err := json.Unmarshal(raw, &meta); err != nil || meta == nil {
+		return map[string]string{}
+	}
+	return meta
+}
 func (s *Service) issueActionTokenEmail(ctx context.Context, user *models.User, purpose string, ttl time.Duration, path string) error {
+	return s.issueActionTokenEmailTo(ctx, user, purpose, ttl, path, user.Email, []byte("{}"))
+}
+func (s *Service) issueActionTokenEmailTo(
+	ctx context.Context,
+	user *models.User,
+	purpose string,
+	ttl time.Duration,
+	path string,
+	recipientEmail string,
+	meta json.RawMessage,
+) error {
 	token, err := randomToken(32)
 	if err != nil {
 		return err
+	}
+	deliveryValue := strings.TrimSpace(recipientEmail)
+	if deliveryValue == "" {
+		deliveryValue = user.Email
+	}
+	if len(meta) == 0 {
+		meta = []byte("{}")
 	}
 	action := &models.ActionToken{
 		TokenID:       uuid.New(),
@@ -1539,8 +1640,8 @@ func (s *Service) issueActionTokenEmail(ctx context.Context, user *models.User, 
 		Purpose:       purpose,
 		TokenHash:     hashToken(token),
 		ExpiresAt:     s.now().Add(ttl),
-		DeliveryValue: user.Email,
-		Meta:          []byte("{}"),
+		DeliveryValue: deliveryValue,
+		Meta:          meta,
 	}
 	if err := s.repo.CreateActionToken(ctx, action); err != nil {
 		return err
@@ -1553,7 +1654,7 @@ func (s *Service) issueActionTokenEmail(ctx context.Context, user *models.User, 
 	q.Set("token", token)
 	u.RawQuery = q.Encode()
 	subject, textBody, htmlBody := buildActionEmail(purpose, ttl, u.String(), s.cfg.PublicBaseURL)
-	if err := s.mailer.Send(user.Email, subject, textBody, htmlBody); err != nil {
+	if err := s.mailer.Send(deliveryValue, subject, textBody, htmlBody); err != nil {
 		_ = s.repo.DeleteActionToken(ctx, action.TokenID)
 		return fmt.Errorf("%w: %v", ErrEmailDeliveryFailed, err)
 	}
@@ -1633,6 +1734,45 @@ func buildActionEmail(purpose string, ttl time.Duration, actionURL string, publi
 				projectHost,
 				"Если вы не регистрировались на %s, просто проигнорируйте это письмо.",
 				"Если вы не регистрировались, просто проигнорируйте это письмо.",
+			),
+		)
+		return subject, textBody, htmlBody
+	case "change_email":
+		subject := buildEmailSubject("Подтвердите новый email", projectHost)
+		textBody := fmt.Sprintf(
+			"Здравствуйте.\n\n"+
+				"%s\n\n"+
+				"Чтобы подтвердить новый адрес email для аккаунта, откройте ссылку:\n%s\n\n"+
+				"Ссылка действует %s.\n\n"+
+				"%s\n",
+			withProjectHost(
+				projectHost,
+				"Вы получили это письмо, потому что в аккаунте на %s запросили смену email.",
+				"Вы получили это письмо, потому что в аккаунте запросили смену email.",
+			),
+			actionURL,
+			expiry,
+			withProjectHost(
+				projectHost,
+				"Если вы не запрашивали смену email на %s, просто проигнорируйте это письмо.",
+				"Если вы не запрашивали смену email, просто проигнорируйте это письмо.",
+			),
+		)
+		htmlBody := actionEmailHTML(
+			projectHost,
+			"Подтвердите новый email",
+			withProjectHost(
+				projectHost,
+				"Вы получили это письмо, потому что в аккаунте на %s запросили смену email.",
+				"Вы получили это письмо, потому что в аккаунте запросили смену email.",
+			),
+			actionURL,
+			"Подтвердить email",
+			expiry,
+			withProjectHost(
+				projectHost,
+				"Если вы не запрашивали смену email на %s, просто проигнорируйте письмо.",
+				"Если вы не запрашивали смену email, просто проигнорируйте письмо.",
 			),
 		)
 		return subject, textBody, htmlBody

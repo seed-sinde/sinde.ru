@@ -185,11 +185,20 @@ export const useAuth = () => {
       body: { email }
     })
   }
+  const requestEmailChange = async (email: string) => {
+    return await useApiJson<AuthApiResult<{ queued: boolean }>>('/auth/email/change/request', {
+      method: 'POST',
+      body: { email }
+    })
+  }
   const verifyEmail = async (token: string) => {
-    return await useApiJson<AuthApiResult<{ verified: boolean }>>('/auth/verify-email/confirm', {
+    return await useApiJson<AuthApiResult<{ verified: boolean; action?: string; email?: string; session_hints?: boolean }>>(
+      '/auth/verify-email/confirm',
+      {
       method: 'POST',
       body: { token }
-    })
+      }
+    )
   }
   const login = async (email: string, password: string) => {
     clearMfaState()
@@ -647,6 +656,7 @@ export const useAuth = () => {
     loadMe,
     register,
     requestEmailVerification,
+    requestEmailChange,
     verifyEmail,
     login,
     completeMfa,

@@ -74,7 +74,7 @@ const onChange = (event: Event) => {
 </script>
 <style scoped>
   .lab-checkbox {
-    border: 1px solid var(--lab-border);
+    border: 1px solid;
     background: var(--lab-bg-control);
     color: var(--lab-accent);
   }

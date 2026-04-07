@@ -5,6 +5,7 @@
       "file": "storage_objects.csv",
       "table": "storage_objects",
       "order": 10,
+      "verify_count_sql": "SELECT COUNT(*)::BIGINT FROM storage_objects WHERE source_kind = 'seed'",
       "columns": [
         "object_id",
         "storage_key",
@@ -21,6 +22,7 @@
       "file": "storage_object_usages.csv",
       "table": "storage_object_usages",
       "order": 20,
+      "verify_count_sql": "SELECT COUNT(*)::BIGINT FROM storage_object_usages usage JOIN storage_objects object ON object.object_id = usage.object_id WHERE object.source_kind = 'seed'",
       "columns": [
         "usage_id",
         "object_id",

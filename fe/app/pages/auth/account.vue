@@ -1,13 +1,14 @@
 <script setup lang="ts">
-  const title = 'Аккаунт'
+  const { t, readThemePreferenceFromSettings } = useInterfacePreferences()
+  const title = t('auth.account.title')
   usePageSeo({
     title,
-    description: 'Профиль аккаунта, настройки, выход.'
+    description: t('auth.account.description')
   })
   const router = useRouter()
   const runtimeConfig = useRuntimeConfig()
   const uiPreferences = useUiPreferencesStore()
-  const { t, readThemePreferenceFromSettings } = useInterfacePreferences()
+  const { formatAbsoluteDateTime } = useLocalizedDateTime()
   const { saveInterfacePreferences: syncInterfacePreferences } = useInterfacePreferencesSync()
   const {
     user,
@@ -17,6 +18,7 @@
     loadMe,
     logout,
     logoutAll,
+    requestEmailChange,
     listSessions,
     listLoginAttempts,
     listSecurityEvents,
@@ -27,13 +29,55 @@
     enableTwoFactor,
     disableTwoFactor
   } = useAuth()
+
+  const { access, accessLoading, ensureAccessLoaded } = usePayments()
+
   await ensureLoaded()
+  await ensureAccessLoaded()
+
+  const SUCCESS_NOTIFY_TIMEOUT_MS = 5000
+  const AVATAR_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif'
+  const avatarImageMaxBytes = Number(runtimeConfig.public.mediaImageMaxBytes || 8388608)
+  const AVATAR_IMAGE_MAX_MB = Math.max(1, Math.ceil(avatarImageMaxBytes / (1024 * 1024)))
+  const AVATAR_IMAGE_MAX_BYTES = avatarImageMaxBytes
+
+  const accountTabItems: LabTabItem[] = [
+    { value: 'profile', label: t('auth.account.tab.profile') },
+    { value: 'security', label: t('auth.account.tab.security') }
+  ]
+  const activityTabItems: LabTabItem[] = [
+    { value: 'sessions', label: t('auth.account.activity.sessions') },
+    { value: 'attempts', label: t('auth.account.activity.attempts') },
+    { value: 'events', label: t('auth.account.activity.events') }
+  ]
+  const disableCodeTabItems: LabTabItem[] = [
+    { value: 'totp', label: t('auth.account.twofa.code_label') },
+    { value: 'backup', label: t('auth.login.mfa_backup') }
+  ]
+
+  const accountTab = ref<'profile' | 'security'>('profile')
+  const activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
+  const disableMethodTab = ref<'totp' | 'backup'>('totp')
+
+  const initialLoading = ref(!loaded.value)
+  const editingDisplayName = ref(false)
+  const showLogoutActions = ref(false)
+  const showDisable2faForm = ref(false)
+  const avatarUploading = ref(false)
+
   const sessions = ref<AuthSessionView[]>([])
   const loginAttempts = ref<AuthLoginAttemptView[]>([])
   const securityEvents = ref<AuthSecurityEventView[]>([])
-  const initialLoading = ref(!loaded.value)
-  const activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
-  const securityTab = ref<'password' | 'twofa' | 'activity'>('password')
+  const backupCodes = ref<string[]>([])
+
+  const enableCode = ref('')
+  const disablePassword = ref('')
+  const disableTotpCode = ref('')
+  const disableBackupCode = ref('')
+  const setupSecret = ref('')
+  const setupOtpAuthUrl = ref('')
+  const setupQrDataUrl = ref('')
+
   const activityLoading = ref(false)
   const activityLoaded = ref(false)
   const activityError = ref('')
@@ -41,40 +85,43 @@
   const actionInfo = ref('')
   const twofaError = ref('')
   const twofaInfo = ref('')
-  const setupSecret = ref('')
-  const setupOtpAuthUrl = ref('')
-  const setupQrDataUrl = ref('')
-  const enableCode = ref('')
+
+  const passwordError = ref('')
+  const passwordInfo = ref('')
+  const passwordCurrentInputError = ref(false)
+  const emailChangeError = ref('')
+  const emailChangeInfo = ref('')
+  const emailChangePending = ref(false)
+  const profileError = ref('')
+  const profileInfo = ref('')
+  const profileNoticeTone = ref<NotifyTone>('success')
+  const profileNoticeTemporary = ref(false)
+  const interfaceError = ref('')
+  const interfaceInfo = ref('')
+  const avatarError = ref('')
+  const avatarInfo = ref('')
+
+  const suppressInterfaceAutosave = ref(false)
+  const interfaceAutosavePending = ref(false)
+  const suppressProfileErrorReset = ref(false)
+  const profileInputError = ref(false)
+
   const enableCodeInputRef = ref<{ focus: () => void } | null>(null)
-  const disablePassword = ref('')
-  const disableMethodTab = ref<'totp' | 'backup'>('totp')
-  const disableTotpCode = ref('')
-  const disableBackupCode = ref('')
   const disableTotpInputRef = ref<{ focus: () => void } | null>(null)
   const disableBackupCodeInputRef = ref<{ focus: () => void } | null>(null)
-  const showDisable2faForm = ref(false)
-  const backupCodes = ref<string[]>([])
-  const securityTabItems: LabTabItem[] = [
-    { value: 'password', label: 'Изменить пароль' },
-    { value: 'twofa', label: '2FA' },
-    { value: 'activity', label: 'Активность' }
-  ]
-  const activityTabItems: LabTabItem[] = [
-    { value: 'sessions', label: 'Сессии' },
-    { value: 'attempts', label: 'Попытки входа' },
-    { value: 'events', label: 'Журнал безопасности' }
-  ]
-  const disableCodeTabItems: LabTabItem[] = [
-    { value: 'totp', label: 'Код из приложения' },
-    { value: 'backup', label: 'Код сброса' }
-  ]
+  const displayNameInputRef = ref<HTMLInputElement | null>(null)
+  const profileNameEditorRef = ref<HTMLElement | null>(null)
+  const avatarPreviewScrollerRef = ref<HTMLElement | null>(null)
+
+  const successNoticeTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
   const passwordForm = reactive({
     current: '',
     next: ''
   })
-  const passwordError = ref('')
-  const passwordInfo = ref('')
-  const passwordCurrentInputError = ref(false)
+  const emailChangeForm = reactive({
+    email: ''
+  })
   const profileForm = reactive({
     display_name: ''
   })
@@ -85,18 +132,6 @@
     locale: 'ru',
     theme_preference: 'system'
   })
-  const profileError = ref('')
-  const profileInfo = ref('')
-  const interfaceError = ref('')
-  const interfaceInfo = ref('')
-  const suppressInterfaceAutosave = ref(false)
-  const interfaceAutosavePending = ref(false)
-  const profileInputError = ref(false)
-  const editingDisplayName = ref(false)
-  const displayNameInputRef = ref<{ focus: () => void } | null>(null)
-  const profileNameEditorRef = ref<HTMLElement | null>(null)
-  const showLogoutActions = ref(false)
-  const logoutMenuRef = ref<HTMLElement | null>(null)
   const avatarCropDialog = reactive<{
     open: boolean
     file: File | null
@@ -106,74 +141,59 @@
   })
   const avatarPreviewDialog = reactive({
     open: false,
-    index: 0,
-    title: 'Фотографии профиля'
+    index: 0
   })
-  const avatarUploading = ref(false)
-  const avatarError = ref('')
-  const avatarInfo = ref('')
-  const SUCCESS_NOTIFY_TIMEOUT_MS = 5000
-  const successNoticeTimers = new Map<string, ReturnType<typeof setTimeout>>()
-  const avatarImageMaxBytes = Number(runtimeConfig.public.mediaImageMaxBytes || 8388608)
-  const AVATAR_IMAGE_MAX_MB = Math.max(1, Math.ceil(avatarImageMaxBytes / (1024 * 1024)))
-  const AVATAR_IMAGE_MAX_BYTES = avatarImageMaxBytes
-  const AVATAR_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif'
+  const paymentAccessUntilText = computed(() => {
+    if (!access.value?.access_until) return ''
+    return formatAbsoluteDateTime(access.value.access_until)
+  })
+  const paymentLatestOrderStatusLabel = computed(() => {
+    const status = String(access.value?.latest_order?.status || '').trim()
+    switch (status) {
+      case 'success':
+        return 'Оплачен'
+      case 'pending':
+        return 'Ожидает подтверждения'
+      case 'failed':
+        return 'Неуспешен'
+      case 'canceled':
+        return 'Отменён'
+      case 'refunded':
+        return 'Возвращён'
+      default:
+        return '—'
+    }
+  })
+  const paymentLatestOrderAmountText = computed(() => {
+    const amount = Number(access.value?.latest_order?.amount || 0)
+    return new Intl.NumberFormat('ru-RU').format(Math.floor(amount / 100)) + ' ₽'
+  })
   const avatarGallery = computed(() => getAuthAvatarGallery(user.value))
   const avatarGalleryItems = computed(() => avatarGallery.value.items)
   const avatarPrimaryItemId = computed(() => avatarGallery.value.primaryId)
-  const avatar = computed(() => getAuthAvatarUrls(user.value))
+  const avatarSecondaryGalleryItems = computed(() =>
+    avatarGalleryItems.value.filter(item => item.id !== avatarPrimaryItemId.value)
+  )
+  const { edges: avatarPreviewScrollState, sync: syncAvatarPreviewScrollState } = useScrollableEdges(
+    avatarPreviewScrollerRef,
+    { axis: 'x' }
+  )
   const avatarViewerItems = computed<ImageViewerItem[]>(() =>
     avatarGalleryItems.value.map((item, index) => ({
       src: buildMediaFileUrl(item.original_image_key || item.profile_image_key || item.icon_image_key),
       thumbnailSrc: buildMediaFileUrl(item.profile_image_key || item.icon_image_key || item.original_image_key),
-      title: avatarGalleryItems.value.length > 1 ? `Фотография профиля ${index + 1}` : 'Фотография профиля',
-      alt: avatarGalleryItems.value.length > 1 ? `Фотография профиля ${index + 1}` : 'Фотография профиля'
+      alt:
+        avatarGalleryItems.value.length > 1
+          ? `${t('auth.account.tab.profile')} ${index + 1}`
+          : t('auth.account.tab.profile')
     }))
   )
   const activePreviewAvatarItem = computed(() => avatarGalleryItems.value[avatarPreviewDialog.index] || null)
   const isPreviewAvatarPrimary = computed(() => activePreviewAvatarItem.value?.id === avatarPrimaryItemId.value)
   const displayNameText = computed(() => profileForm.display_name.trim() || 'Имя профиля')
-  const formatDateTime = (value?: string | null) => {
-    const date = value ? new Date(value) : null
-    if (!date || Number.isNaN(date.getTime())) return '—'
-    return new Intl.DateTimeFormat('ru-RU', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(date)
-  }
-  const clearSuccessNotice = (key: string, target?: { value: string }) => {
-    const existing = successNoticeTimers.get(key)
-    if (existing) {
-      clearTimeout(existing)
-      successNoticeTimers.delete(key)
-    }
-    if (target) {
-      target.value = ''
-    }
-  }
-  const showSuccessNotice = (key: string, target: { value: string }, message: string) => {
-    clearSuccessNotice(key)
-    target.value = message
-    const timer = setTimeout(() => {
-      if (target.value === message) {
-        target.value = ''
-      }
-      successNoticeTimers.delete(key)
-    }, SUCCESS_NOTIFY_TIMEOUT_MS)
-    successNoticeTimers.set(key, timer)
-  }
-  const browserLabelFromUserAgent = (userAgent?: string) => {
-    const raw = String(userAgent || '').toLowerCase()
-    if (!raw) return 'Браузер'
-    if (raw.includes('yabrowser')) return 'Yandex Browser'
-    if (raw.includes('edg/')) return 'Microsoft Edge'
-    if (raw.includes('opr/') || raw.includes('opera')) return 'Opera'
-    if (raw.includes('firefox/')) return 'Firefox'
-    if (raw.includes('chrome/') && !raw.includes('chromium')) return 'Chrome'
-    if (raw.includes('safari/') && !raw.includes('chrome/')) return 'Safari'
-    if (raw.includes('curl/')) return 'cURL'
-    return 'Браузер'
-  }
+  const twofaStatusLabel = computed(() =>
+    user.value?.is_two_factor_enabled ? t('auth.account.twofa.enabled') : t('auth.account.twofa.disabled')
+  )
   const groupedSessions = computed<AuthSessionGroupView[]>(() => {
     const groups = new Map<
       string,
@@ -235,14 +255,73 @@
       }))
       .sort((a, b) => (new Date(b.lastSeenAt).getTime() || 0) - (new Date(a.lastSeenAt).getTime() || 0))
   })
-  const resolveUploadedImageKey = (res: any) => {
-    return String(res?.data?.image_key || res?.image_key || '').trim()
+
+  const formatDateTime = (value?: string | null) =>
+    formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
+  const browserLabelFromUserAgent = (userAgent?: string) => {
+    const raw = String(userAgent || '').toLowerCase()
+    if (!raw) return 'Браузер'
+    if (raw.includes('yabrowser')) return 'Yandex Browser'
+    if (raw.includes('edg/')) return 'Microsoft Edge'
+    if (raw.includes('opr/') || raw.includes('opera')) return 'Opera'
+    if (raw.includes('firefox/')) return 'Firefox'
+    if (raw.includes('chrome/') && !raw.includes('chromium')) return 'Chrome'
+    if (raw.includes('safari/') && !raw.includes('chrome/')) return 'Safari'
+    if (raw.includes('curl/')) return 'cURL'
+    return 'Браузер'
   }
-  const closeAvatarCropDialog = (force = false) => {
-    if (avatarUploading.value && !force) return
-    avatarCropDialog.open = false
-    avatarCropDialog.file = null
+  const resolveUploadedImageKey = (res: any) => String(res?.data?.image_key || res?.image_key || '').trim()
+  const findAvatarGalleryIndexById = (itemId?: string | null) => {
+    const normalizedId = String(itemId || '').trim()
+    if (!normalizedId) return 0
+    const foundIndex = avatarGalleryItems.value.findIndex(item => item.id === normalizedId)
+    return foundIndex >= 0 ? foundIndex : 0
   }
+  const clearSuccessNotice = (key: string, target?: { value: string }) => {
+    const existing = successNoticeTimers.get(key)
+    if (existing) {
+      clearTimeout(existing)
+      successNoticeTimers.delete(key)
+    }
+    if (target) {
+      target.value = ''
+    }
+  }
+  const showSuccessNotice = (key: string, target: { value: string }, message: string) => {
+    clearSuccessNotice(key)
+    target.value = message
+    const timer = setTimeout(() => {
+      if (target.value === message) {
+        target.value = ''
+      }
+      successNoticeTimers.delete(key)
+    }, SUCCESS_NOTIFY_TIMEOUT_MS)
+    successNoticeTimers.set(key, timer)
+  }
+  const showProfileNotice = (message: string, tone: NotifyTone, temporary = false) => {
+    profileError.value = ''
+    clearSuccessNotice('profile', profileInfo)
+    profileNoticeTone.value = tone
+    profileNoticeTemporary.value = temporary
+    if (temporary) {
+      showSuccessNotice('profile', profileInfo, message)
+      return
+    }
+    profileInfo.value = message
+  }
+
+  const syncProfileForm = () => {
+    if (!user.value) return
+    suppressInterfaceAutosave.value = true
+    emailChangeForm.email = user.value.email || ''
+    profileForm.display_name = user.value.display_name || ''
+    interfaceForm.locale = normalizeInterfaceLocale(user.value.locale || uiPreferences.interfaceLocale)
+    interfaceForm.theme_preference = readThemePreferenceFromSettings(user.value.settings)
+    nextTick(() => {
+      suppressInterfaceAutosave.value = false
+    })
+  }
+
   const updateAvatarProfilePayload = async (nextAvatar: Record<string, any> | null) => {
     if (!user.value) throw new Error('Требуется активная сессия.')
     await updateProfile({
@@ -259,12 +338,6 @@
     })
     syncProfileForm()
   }
-  const findAvatarGalleryIndexById = (itemId?: string | null) => {
-    const normalizedId = String(itemId || '').trim()
-    if (!normalizedId) return 0
-    const foundIndex = avatarGalleryItems.value.findIndex(item => item.id === normalizedId)
-    return foundIndex >= 0 ? foundIndex : 0
-  }
   const persistAvatarGallery = async (items: AuthAvatarGalleryItem[], primaryId: string, successMessage: string) => {
     avatarUploading.value = true
     avatarError.value = ''
@@ -280,62 +353,20 @@
       avatarUploading.value = false
     }
   }
-  const onAvatarFileChange = async (event: Event) => {
-    const input = event.target as HTMLInputElement | null
-    const file = input?.files?.[0] || null
-    if (input) input.value = ''
-    if (!file) return
-    avatarError.value = ''
-    clearSuccessNotice('avatar', avatarInfo)
-    if (file.size > AVATAR_IMAGE_MAX_BYTES) {
-      avatarError.value = `Файл слишком большой. Максимум ${AVATAR_IMAGE_MAX_MB} МБ.`
-      return
-    }
-    avatarCropDialog.file = file
-    avatarCropDialog.open = true
+  const closeAvatarCropDialog = (force = false) => {
+    if (avatarUploading.value && !force) return
+    avatarCropDialog.open = false
+    avatarCropDialog.file = null
   }
-  const onAvatarCropConfirm = async (file: File) => {
-    avatarUploading.value = true
-    avatarError.value = ''
-    clearSuccessNotice('avatar', avatarInfo)
-    try {
-      const originalFile = avatarCropDialog.file
-      if (!originalFile) {
-        throw new Error('Не найден исходный файл аватарки.')
-      }
-      const icon64 = await resizeImageToSquareFile(file, AVATAR_ICON_SIZE, {
-        suffix: `avatar-${AVATAR_ICON_SIZE}`
-      })
-      const [originalRes, profileRes, iconRes] = await Promise.all([
-        uploadMediaFile(originalFile, { section: 'users', collection: 'avatars' }),
-        uploadMediaFile(file, { section: 'users', collection: 'avatars' }),
-        uploadMediaFile(icon64, { section: 'users', collection: 'avatars' })
-      ])
-      const originalKey = resolveUploadedImageKey(originalRes)
-      const iconKey = resolveUploadedImageKey(iconRes)
-      const profileKey = resolveUploadedImageKey(profileRes)
-      if (!originalKey || !iconKey || !profileKey) {
-        throw new Error('Сервер не вернул ключи для аватарки.')
-      }
-      const nextItem: AuthAvatarGalleryItem = {
-        id: globalThis.crypto.randomUUID(),
-        original_image_key: originalKey,
-        icon_image_key: iconKey,
-        profile_image_key: profileKey,
-        icon_size: AVATAR_ICON_SIZE,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      const nextItems = [nextItem, ...avatarGalleryItems.value]
-      await updateAvatarProfilePayload(buildAuthAvatarPayload(nextItems, nextItem.id, AVATAR_ICON_SIZE))
-      showSuccessNotice('avatar', avatarInfo, 'Фотография профиля добавлена.')
-      avatarPreviewDialog.index = 0
-      closeAvatarCropDialog(true)
-    } catch (err: any) {
-      avatarError.value = err?.data?.message || err?.message || 'Не удалось обработать и сохранить аватарку.'
-    } finally {
-      avatarUploading.value = false
-    }
+  const openAvatarPreview = (index = findAvatarGalleryIndexById(avatarPrimaryItemId.value)) => {
+    if (!avatarViewerItems.value.length) return
+    avatarPreviewDialog.index = Math.min(Math.max(index, 0), avatarViewerItems.value.length - 1)
+    avatarPreviewDialog.open = true
+  }
+  const makePreviewAvatarPrimary = async () => {
+    const itemId = activePreviewAvatarItem.value?.id || ''
+    if (!itemId) return
+    await setPrimaryAvatar(itemId)
   }
   const removeAvatarItem = async (itemId: string) => {
     const nextItems = avatarGalleryItems.value.filter(item => item.id !== itemId)
@@ -357,34 +388,6 @@
     if (!itemId || itemId === avatarPrimaryItemId.value) return
     await persistAvatarGallery(avatarGalleryItems.value, itemId, 'Основная фотография профиля обновлена.')
   }
-  const openAvatarPreview = (index = findAvatarGalleryIndexById(avatarPrimaryItemId.value)) => {
-    if (!avatarViewerItems.value.length) return
-    avatarPreviewDialog.index = Math.min(Math.max(index, 0), avatarViewerItems.value.length - 1)
-    avatarPreviewDialog.open = true
-    avatarPreviewDialog.title = 'Фотографии профиля'
-  }
-  const onAvatarPreviewModelUpdate = (value: boolean) => {
-    avatarPreviewDialog.open = value
-  }
-  const onAvatarPreviewIndexChange = (index: number) => {
-    avatarPreviewDialog.index = index
-  }
-  const makePreviewAvatarPrimary = async () => {
-    const itemId = activePreviewAvatarItem.value?.id || ''
-    if (!itemId) return
-    await setPrimaryAvatar(itemId)
-  }
-  const syncProfileForm = () => {
-    if (!user.value) return
-    suppressInterfaceAutosave.value = true
-    profileForm.display_name = user.value.display_name || ''
-    interfaceForm.locale = normalizeInterfaceLocale(user.value.locale || uiPreferences.interfaceLocale)
-    interfaceForm.theme_preference = readThemePreferenceFromSettings(user.value.settings)
-    nextTick(() => {
-      suppressInterfaceAutosave.value = false
-    })
-  }
-  syncProfileForm()
   const refreshState = async () => {
     actionError.value = ''
     try {
@@ -418,90 +421,22 @@
       activityLoading.value = false
     }
   }
-  onMounted(async () => {
-    if (import.meta.client) {
-      window.addEventListener('pointerdown', onWindowPointerDown)
-    }
-    initialLoading.value = false
-  })
-  onBeforeUnmount(() => {
-    if (import.meta.client) {
-      window.removeEventListener('pointerdown', onWindowPointerDown)
-    }
-    for (const timer of successNoticeTimers.values()) {
-      clearTimeout(timer)
-    }
-    successNoticeTimers.clear()
-  })
-  const onWindowPointerDown = (event: PointerEvent) => {
-    const target = event.target as Node | null
-    if (!target) return
-    if (editingDisplayName.value && !profileNameEditorRef.value?.contains(target)) {
-      editingDisplayName.value = false
-    }
-    if (showLogoutActions.value && !logoutMenuRef.value?.contains(target)) {
-      showLogoutActions.value = false
-    }
-  }
-  watch(securityTab, tab => {
-    if (tab !== 'activity') return
-    void loadActivityState()
-  })
-  watch(
-    () => avatarGalleryItems.value.length,
-    length => {
-      if (!length) {
-        avatarPreviewDialog.index = 0
-        return
-      }
-      if (avatarPreviewDialog.index < length) return
-      avatarPreviewDialog.index = length - 1
-    }
-  )
-  const goToAdmin = async () => {
-    await router.push('/auth/admin')
-  }
-  const leave = async (all: boolean) => {
-    showLogoutActions.value = false
-    all ? await logoutAll() : await logout()
-    await router.push('/auth/login')
-  }
-  const revokeSessionGroup = async (group: AuthSessionGroupView) => {
-    if (!group.revokableSessionIds.length) return
-    actionError.value = ''
-    clearSuccessNotice('action', actionInfo)
-    try {
-      const currentSet = new Set(group.currentSessionIds)
-      const revokeOrder = [
-        ...group.revokableSessionIds.filter(sessionId => !currentSet.has(sessionId)),
-        ...group.currentSessionIds
-      ]
-      for (const sessionId of revokeOrder) {
-        await revokeSession(sessionId)
-      }
-      if (group.hasCurrent) {
-        await logout()
-        await router.push('/auth/login')
-        return
-      }
-      showSuccessNotice('action', actionInfo, 'Сессии устройства отозваны.')
-      await loadActivityState(true)
-    } catch (err: any) {
-      actionError.value = err?.data?.message || err?.message || 'Не удалось отозвать сессии устройства.'
-    }
-  }
   const saveProfile = async () => {
     profileError.value = ''
     clearSuccessNotice('profile', profileInfo)
+    profileNoticeTone.value = 'success'
+    profileNoticeTemporary.value = true
     try {
       await updateProfile({
         display_name: profileForm.display_name
       })
       editingDisplayName.value = false
       profileInputError.value = false
-      showSuccessNotice('profile', profileInfo, 'Ник обновлён.')
+      showProfileNotice(t('auth.account.display_name_updated'), 'success', true)
       syncProfileForm()
     } catch (err: any) {
+      profileNoticeTemporary.value = false
+      profileNoticeTone.value = 'error'
       profileInputError.value = true
       profileError.value = err?.data?.message || err?.message || 'Не удалось обновить профиль.'
     }
@@ -542,6 +477,25 @@
       }
     }
   }
+  const submitEmailChange = async () => {
+    emailChangeError.value = ''
+    clearSuccessNotice('email-change', emailChangeInfo)
+    const nextEmail = emailChangeForm.email.trim()
+    if (!nextEmail) {
+      emailChangeError.value = 'Введите новый email.'
+      return
+    }
+    emailChangePending.value = true
+    try {
+      await requestEmailChange(nextEmail)
+      showSuccessNotice('email-change', emailChangeInfo, t('auth.account.email.request_sent', { email: nextEmail }))
+    } catch (err: any) {
+      emailChangeError.value =
+        err?.data?.message || err?.message || 'Не удалось отправить письмо для подтверждения email.'
+    } finally {
+      emailChangePending.value = false
+    }
+  }
   const begin2faSetup = async () => {
     if (user.value?.is_two_factor_enabled) return
     twofaError.value = ''
@@ -552,11 +506,8 @@
       setupSecret.value = res.data.secret
       setupOtpAuthUrl.value = res.data.otpauth_url || ''
       setupQrDataUrl.value = res.data.qr_data_url || ''
-      showSuccessNotice(
-        'twofa',
-        twofaInfo,
-        'Ключ для двухфакторной защиты создан. Добавь его в приложение и введи код подтверждения.'
-      )
+      clearSuccessNotice('twofa', twofaInfo)
+      twofaInfo.value = t('auth.account.twofa.setup_created')
     } catch (err: any) {
       twofaError.value = extractApiErrorMessage(err, 'Не удалось начать настройку 2FA.')
     }
@@ -566,7 +517,7 @@
     clearSuccessNotice('twofa', twofaInfo)
     enableCode.value = enableCode.value.replace(/\D+/g, '').slice(0, 6)
     if (enableCode.value.length !== 6) {
-      twofaError.value = 'Введите 6 цифр кода подтверждения 2FA.'
+      twofaError.value = t('auth.account.twofa.code_hint')
       return
     }
     try {
@@ -583,30 +534,12 @@
       twofaError.value = getTwoFactorErrorMessage(err, 'totp', 'Неверный код из приложения. Попробуйте ещё раз.')
     }
   }
-  const onEnableCodeInput = (value: string) => {
-    enableCode.value = value
-    if (twofaError.value) {
-      twofaError.value = ''
-    }
-  }
   const focusDisableCodeInput = () => {
     if (disableMethodTab.value === 'backup') {
       disableBackupCodeInputRef.value?.focus()
       return
     }
     disableTotpInputRef.value?.focus()
-  }
-  const onDisableTotpCodeInput = (value: string) => {
-    disableTotpCode.value = value
-    if (twofaError.value) {
-      twofaError.value = ''
-    }
-  }
-  const onDisableBackupCodeInput = (value: string) => {
-    disableBackupCode.value = value
-    if (twofaError.value) {
-      twofaError.value = ''
-    }
   }
   const deactivate2fa = async (rawCode?: string) => {
     twofaError.value = ''
@@ -685,6 +618,171 @@
       })
     }
   }
+  const goToAdmin = async () => {
+    await router.push('/auth/admin')
+  }
+  const leave = async (all: boolean) => {
+    showLogoutActions.value = false
+    all ? await logoutAll() : await logout()
+    await router.push('/auth/login')
+  }
+  const revokeSessionGroup = async (group: AuthSessionGroupView) => {
+    if (!group.revokableSessionIds.length) return
+    actionError.value = ''
+    clearSuccessNotice('action', actionInfo)
+    try {
+      const currentSet = new Set(group.currentSessionIds)
+      const revokeOrder = [
+        ...group.revokableSessionIds.filter(sessionId => !currentSet.has(sessionId)),
+        ...group.currentSessionIds
+      ]
+      for (const sessionId of revokeOrder) {
+        await revokeSession(sessionId)
+      }
+      if (group.hasCurrent) {
+        await logout()
+        await router.push('/auth/login')
+        return
+      }
+      showSuccessNotice('action', actionInfo, 'Сессии устройства отозваны.')
+      await loadActivityState(true)
+    } catch (err: any) {
+      actionError.value = err?.data?.message || err?.message || 'Не удалось отозвать сессии устройства.'
+    }
+  }
+  syncProfileForm()
+
+  const onAvatarFileChange = async (event: Event) => {
+    const input = event.target as HTMLInputElement | null
+    const file = input?.files?.[0] || null
+    if (input) input.value = ''
+    if (!file) return
+    avatarError.value = ''
+    clearSuccessNotice('avatar', avatarInfo)
+    if (file.size > AVATAR_IMAGE_MAX_BYTES) {
+      avatarError.value = `Файл слишком большой. Максимум ${AVATAR_IMAGE_MAX_MB} МБ.`
+      return
+    }
+    avatarCropDialog.file = file
+    avatarCropDialog.open = true
+  }
+  const onAvatarCropConfirm = async (file: File) => {
+    avatarUploading.value = true
+    avatarError.value = ''
+    clearSuccessNotice('avatar', avatarInfo)
+    try {
+      const originalFile = avatarCropDialog.file
+      if (!originalFile) {
+        throw new Error('Не найден исходный файл аватарки.')
+      }
+      const icon64 = await resizeImageToSquareFile(file, AVATAR_ICON_SIZE, {
+        suffix: `avatar-${AVATAR_ICON_SIZE}`
+      })
+      const [originalRes, profileRes, iconRes] = await Promise.all([
+        uploadMediaFile(originalFile, { section: 'users', collection: 'avatars' }),
+        uploadMediaFile(file, { section: 'users', collection: 'avatars' }),
+        uploadMediaFile(icon64, { section: 'users', collection: 'avatars' })
+      ])
+      const originalKey = resolveUploadedImageKey(originalRes)
+      const iconKey = resolveUploadedImageKey(iconRes)
+      const profileKey = resolveUploadedImageKey(profileRes)
+      if (!originalKey || !iconKey || !profileKey) {
+        throw new Error('Сервер не вернул ключи для аватарки.')
+      }
+      const nextItem: AuthAvatarGalleryItem = {
+        id: globalThis.crypto.randomUUID(),
+        original_image_key: originalKey,
+        icon_image_key: iconKey,
+        profile_image_key: profileKey,
+        icon_size: AVATAR_ICON_SIZE,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      const nextItems = [nextItem, ...avatarGalleryItems.value]
+      await updateAvatarProfilePayload(buildAuthAvatarPayload(nextItems, nextItem.id, AVATAR_ICON_SIZE))
+      showSuccessNotice('avatar', avatarInfo, 'Фотография профиля добавлена.')
+      avatarPreviewDialog.index = 0
+      closeAvatarCropDialog(true)
+    } catch (err: any) {
+      avatarError.value = err?.data?.message || err?.message || 'Не удалось обработать и сохранить аватарку.'
+    } finally {
+      avatarUploading.value = false
+    }
+  }
+  const onAvatarPreviewModelUpdate = (value: boolean) => {
+    avatarPreviewDialog.open = value
+  }
+  const onAvatarPreviewIndexChange = (index: number) => {
+    avatarPreviewDialog.index = index
+  }
+  const onWindowPointerDown = (event: PointerEvent) => {
+    const target = event.target as Node | null
+    if (!target) return
+    if (editingDisplayName.value && !profileNameEditorRef.value?.contains(target)) {
+      cancelProfileEdit()
+    }
+  }
+  const onProfileEditorFocusout = (event: FocusEvent) => {
+    if (!editingDisplayName.value) return
+    const nextTarget = event.relatedTarget as Node | null
+    if (nextTarget && profileNameEditorRef.value?.contains(nextTarget)) return
+    if (!import.meta.client) return
+    queueMicrotask(() => {
+      const activeElement = document.activeElement
+      if (activeElement && profileNameEditorRef.value?.contains(activeElement)) return
+      cancelProfileEdit()
+    })
+  }
+  const onEnableCodeInput = (value: string) => {
+    enableCode.value = value
+    if (twofaError.value) {
+      twofaError.value = ''
+    }
+  }
+  const onDisableTotpCodeInput = (value: string) => {
+    disableTotpCode.value = value
+    if (twofaError.value) {
+      twofaError.value = ''
+    }
+  }
+  const onDisableBackupCodeInput = (value: string) => {
+    disableBackupCode.value = value
+    if (twofaError.value) {
+      twofaError.value = ''
+    }
+  }
+
+  const cancelProfileEdit = () => {
+    const actualDisplayName = user.value?.display_name || ''
+    const hasChanges = profileForm.display_name !== actualDisplayName
+    editingDisplayName.value = false
+    suppressProfileErrorReset.value = true
+    profileForm.display_name = actualDisplayName
+    if (hasChanges) {
+      profileInputError.value = false
+      showProfileNotice(t('auth.account.display_name_cancelled'), 'info', true)
+    }
+    nextTick(() => {
+      suppressProfileErrorReset.value = false
+    })
+  }
+
+  onMounted(async () => {
+    if (import.meta.client) {
+      window.addEventListener('pointerdown', onWindowPointerDown)
+    }
+    initialLoading.value = false
+  })
+  onBeforeUnmount(() => {
+    if (import.meta.client) {
+      window.removeEventListener('pointerdown', onWindowPointerDown)
+    }
+    for (const timer of successNoticeTimers.values()) {
+      clearTimeout(timer)
+    }
+    successNoticeTimers.clear()
+  })
+
   watch(
     () => Boolean(user.value?.is_two_factor_enabled),
     enabled => {
@@ -725,6 +823,7 @@
   watch(
     () => profileForm.display_name,
     () => {
+      if (suppressProfileErrorReset.value) return
       if (profileInputError.value) {
         profileInputError.value = false
         profileError.value = ''
@@ -741,6 +840,10 @@
   )
   watch(editingDisplayName, async value => {
     if (!value) return
+    profileForm.display_name = user.value?.display_name || ''
+    profileInputError.value = false
+    profileError.value = ''
+    clearSuccessNotice('profile', profileInfo)
     await nextTick()
     displayNameInputRef.value?.focus()
   })
@@ -752,541 +855,662 @@
       void saveInterfacePreferences()
     }
   )
+  watch(
+    [accountTab, user],
+    ([tab, currentUser]) => {
+      if (tab !== 'security' || !currentUser) return
+      void loadActivityState()
+    },
+    { immediate: true }
+  )
+  watch(
+    () => avatarGalleryItems.value.length,
+    length => {
+      if (!length) {
+        avatarPreviewDialog.index = 0
+        return
+      }
+      if (avatarPreviewDialog.index < length) return
+      avatarPreviewDialog.index = length - 1
+    }
+  )
+  watch(
+    avatarSecondaryGalleryItems,
+    () => {
+      nextTick(syncAvatarPreviewScrollState)
+    },
+    { deep: true }
+  )
 </script>
 <template>
   <div>
     <LabNavHeader :title class="min-w-0 flex-1" />
-    <LabNotify :text="actionError" tone="error" size="xs" />
-    <LabNotify :text="actionInfo" tone="success" size="xs" />
-    <section>
-      <LabLoader v-if="initialLoading" variant="inline" label="Загрузка аккаунта…" />
+    <section v-if="initialLoading" class="p-4">
+      <LabLoader variant="inline" label="Загрузка аккаунта…" />
+    </section>
+    <section v-else-if="!user" class="p-4">
       <AuthFeatureGateNotice
-        v-else-if="!user"
         message="Войдите в аккаунт, чтобы управлять профилем, сессиями и параметрами безопасности." />
-      <template v-else-if="user">
-        <section class="text-(--lab-text-primary) relative overflow-hidden">
-          <div class="flex min-w-0 flex-col">
-            <div class="flex min-w-0 flex-wrap items-start justify-between">
-              <div ref="profileNameEditorRef" class="relative h-12 min-w-0 flex-1 basis-72">
-                <button
-                  v-if="!editingDisplayName"
-                  type="button"
-                  class="text-(--lab-text-primary) focus-visible:ring-(--lab-accent) absolute inset-0 inline-flex h-full w-full items-center bg-transparent text-left text-xl font-semibold outline-none transition-colors ring-0"
-                  @click="editingDisplayName = true">
-                  <span class="truncate">{{ displayNameText }}</span>
-                </button>
-                <div v-else class="absolute inset-0 flex items-center">
-                  <LabBaseInput
-                    ref="displayNameInputRef"
-                    id="account-display-name"
-                    v-model="profileForm.display_name"
-                    name="display_name"
-                    type="text"
-                    autocomplete="nickname"
-                    autocapitalize="words"
-                    spellcheck="false"
-                    :input-class="[
-                      'h-full min-h-0 w-full text-lg font-semibold leading-tight outline-none',
-                      profileInputError ? 'text-(--lab-danger)' : ''
-                    ]"
-                    placeholder="Имя профиля"
-                    @keydown.enter.prevent="saveProfile" />
-                  <LabBaseButton
-                    variant="secondary"
-                    size="sm"
-                    button-class="shrink-0"
-                    icon="ic:round-save"
-                    icon-only
-                    icon-class="h-5 w-5"
-                    @click="saveProfile"></LabBaseButton>
-                </div>
-              </div>
-              <div class="flex shrink-0 flex-wrap items-center justify-end">
-                <LabBaseButton
-                  v-if="isAdmin"
-                  label="Админка"
-                  variant="info"
-                  size="lg"
-                  button-class="text-xs"
-                  @click="goToAdmin" />
-                <div ref="logoutMenuRef" class="relative shrink-0">
-                  <LabBaseButton
-                    variant="danger"
-                    size="lg"
-                    label="Выйти"
-                    button-class="text-xs"
-                    @click="showLogoutActions = !showLogoutActions" />
-                  <div v-if="showLogoutActions" class="absolute right-0 top-full z-20 min-w-56">
+    </section>
+    <template v-else>
+      <LabNavTabs
+        v-model="accountTab"
+        :items="accountTabItems"
+        :no-select="true"
+        route-query-key="account"
+        route-default-value="profile"
+        panel-class="space-y-4 p-4">
+        <template #panel-profile>
+          <section class="text-(--lab-text-primary) space-y-4">
+            <section class="flex flex-wrap items-start gap-4">
+              <div class="flex shrink-0 flex-col items-start gap-3">
+                <div class="relative overflow-hidden">
+                  <LabAvatar version="profile" :user="user" clickable @click="openAvatarPreview()" />
+                  <label
+                    class="absolute bottom-2 right-2"
+                    :class="avatarUploading ? 'cursor-not-allowed' : 'cursor-pointer'">
+                    <LabBaseInput
+                      id="account-avatar-file"
+                      name="account_avatar_file"
+                      type="file"
+                      :accept="AVATAR_IMAGE_ACCEPT"
+                      class="hidden"
+                      :disabled="avatarUploading"
+                      @change="onAvatarFileChange" />
                     <LabBaseButton
-                      variant="plain"
+                      tag="span"
+                      variant="secondary"
                       size="lg"
-                      block
-                      label="На этом устройстве"
-                      button-class="justify-start text-xs"
-                      @click="leave(false)" />
+                      button-class="pointer-events-none"
+                      icon="ic:round-photo-camera"
+                      iconOnly
+                      title="Загрузить новую аватарку"
+                      aria-label="Загрузить новую аватарку"
+                      :disabled="avatarUploading" />
+                  </label>
+                </div>
+                <div
+                  v-if="avatarSecondaryGalleryItems.length"
+                  class="relative w-36 [--avatar-preview-size:3rem] [--avatar-preview-overlap:calc(var(--avatar-preview-size)/2)] sm:w-40">
+                  <div ref="avatarPreviewScrollerRef" class="lab-scroll-hidden overflow-x-auto">
+                    <div class="flex min-w-max items-center pb-2 pr-6">
+                      <button
+                        v-for="(item, index) in avatarSecondaryGalleryItems"
+                        :key="item.id"
+                        type="button"
+                        class="border-(--lab-bg-canvas) h-(--avatar-preview-size) w-(--avatar-preview-size) shrink-0 overflow-hidden rounded-full border-2 bg-(--lab-bg-canvas)"
+                        :style="{
+                          marginInlineStart: index === 0 ? '0' : 'calc(var(--avatar-preview-overlap) * -1)',
+                          zIndex: avatarSecondaryGalleryItems.length - index
+                        }"
+                        aria-label="Открыть фотографию профиля"
+                        @click="openAvatarPreview(findAvatarGalleryIndexById(item.id))">
+                        <img
+                          :src="
+                            buildMediaFileUrl(item.profile_image_key || item.icon_image_key || item.original_image_key)
+                          "
+                          alt="Фотография профиля"
+                          class="h-full w-full object-cover" />
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    class="lab-scroll-fade lab-scroll-fade-x-left bottom-2"
+                    :class="{ 'lab-scroll-fade-visible': avatarPreviewScrollState.left }"
+                    aria-hidden="true"></div>
+                  <div
+                    class="lab-scroll-fade lab-scroll-fade-x-right bottom-2"
+                    :class="{ 'lab-scroll-fade-visible': avatarPreviewScrollState.right }"
+                    aria-hidden="true"></div>
+                </div>
+                <LabNotify :text="avatarError" tone="error" size="xs" />
+                <LabNotify :text="avatarInfo" tone="success" size="xs" />
+              </div>
+              <div class="min-w-fit flex flex-1 flex-col gap-3">
+                <article class="flex flex-col gap-2">
+                  <div class="flex min-w-fit flex-wrap items-start justify-between gap-3">
+                    <div ref="profileNameEditorRef" class="min-w-fit flex flex-col gap-2">
+                      <div
+                        v-if="!editingDisplayName"
+                        class="inline-grid grid-cols-[max-content_2rem] items-start gap-1.5">
+                        <button
+                          type="button"
+                          class="text-(--lab-text-primary) border-b border-transparent hover:border-(--lab-border) focus-visible:ring-(--lab-accent) inline-flex items-center bg-transparent py-0 text-left text-xl font-semibold outline-none transition-colors ring-0"
+                          @click="editingDisplayName = true">
+                          <span>{{ displayNameText }}</span>
+                        </button>
+                        <span class="h-8 w-8" aria-hidden="true"></span>
+                      </div>
+                      <div v-else class="min-w-fit" @focusout="onProfileEditorFocusout">
+                        <div class="inline-grid grid-cols-[max-content_2rem] items-start gap-1.5">
+                          <input
+                            ref="displayNameInputRef"
+                            id="account-display-name"
+                            v-model="profileForm.display_name"
+                            name="display_name"
+                            type="text"
+                            autocomplete="new-password"
+                            autocapitalize="words"
+                            spellcheck="false"
+                            data-form-type="other"
+                            :size="Math.max((profileForm.display_name || displayNameText).length, 1)"
+                            class="text-(--lab-text-primary) border-b focus-visible:ring-(--lab-accent) appearance-none w-auto bg-transparent p-0 text-xl font-semibold outline-none ring-0"
+                            :class="profileInputError ? 'text-(--lab-danger)' : ''"
+                            placeholder="Имя профиля"
+                            @keydown.enter.prevent="saveProfile"
+                            @keydown.esc.prevent="cancelProfileEdit" />
+                          <LabBaseButton
+                            icon="ic:round-check"
+                            icon-only
+                            variant="secondary"
+                            size="sm"
+                            button-class="text-(--lab-text-secondary) hover:text-(--lab-info) focus-visible:text-(--lab-info) h-8 w-8"
+                            title="Сохранить никнейм"
+                            aria-label="Сохранить никнейм"
+                            @click="saveProfile" />
+                        </div>
+                      </div>
+                      <LabNotify
+                        :text="profileError || profileInfo"
+                        :tone="profileError ? 'error' : profileNoticeTone"
+                        :temporary="profileError ? false : profileNoticeTemporary"
+                        size="xs" />
+                    </div>
                     <LabBaseButton
-                      variant="danger"
+                      v-if="isAdmin"
+                      :label="t('auth.account.admin')"
+                      variant="info"
                       size="lg"
-                      block
-                      label="На всех устройствах"
-                      button-class="justify-start text-xs"
-                      @click="leave(true)" />
+                      button-class="text-xs"
+                      @click="goToAdmin" />
                   </div>
-                </div>
-              </div>
-            </div>
-            <LabNotify :text="profileError || profileInfo" :tone="profileError ? 'error' : 'success'" size="xs" />
-          </div>
-          <div class="flex flex-col lg:flex-row lg:items-start">
-            <div class="flex shrink-0 flex-col items-start">
-              <div class="relative h-36 w-36 overflow-hidden sm:h-40 sm:w-40">
-                <img
-                  v-if="avatar.profileImageUrl"
-                  :src="avatar.profileImageUrl"
-                  alt="Аватар профиля"
-                  class="h-full w-full cursor-zoom-in object-cover"
-                  @click="openAvatarPreview()" />
-                <div v-else class="text-(--lab-text-muted) flex h-full w-full items-center justify-center">
-                  <Icon name="ic:round-account-circle" class="h-20 w-20 text-6xl" />
-                </div>
-                <label
-                  class="absolute bottom-2 right-2"
-                  :class="avatarUploading ? 'cursor-not-allowed' : 'cursor-pointer'">
-                  <LabBaseInput
-                    id="account-avatar-file"
-                    name="account_avatar_file"
-                    type="file"
-                    :accept="AVATAR_IMAGE_ACCEPT"
-                    class="hidden"
-                    :disabled="avatarUploading"
-                    @change="onAvatarFileChange" />
-                  <LabBaseButton
-                    tag="span"
-                    variant="secondary"
-                    size="lg"
-                    button-class="pointer-events-none"
-                    icon="ic:round-photo-camera"
-                    iconOnly
-                    title="Загрузить новую аватарку"
-                    aria-label="Загрузить новую аватарку"
-                    :disabled="avatarUploading" />
-                </label>
-              </div>
-              <div v-if="avatarGalleryItems.length > 1" class="w-full max-w-40 sm:max-w-44">
-                <div class="flex items-center justify-between">
-                  <p class="lab-text-muted text-xs uppercase tracking-wide">Фотографии профиля</p>
-                </div>
-                <div class="grid w-full grid-cols-3">
-                  <div v-for="(item, index) in avatarGalleryItems" :key="item.id" class="relative overflow-hidden">
-                    <button
-                      type="button"
-                      class="block aspect-square w-full overflow-hidden"
-                      :aria-label="`Открыть фотографию профиля ${index + 1}`"
-                      @click="openAvatarPreview(index)">
-                      <img
-                        :src="
-                          buildMediaFileUrl(item.profile_image_key || item.icon_image_key || item.original_image_key)
-                        "
-                        :alt="`Фотография профиля ${index + 1}`"
-                        class="h-full w-full object-cover" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <LabNotify :text="avatarError" tone="error" size="xs" />
-              <LabNotify :text="avatarInfo" tone="success" size="xs" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <article>
-                <div>
-                  <div class="flex flex-wrap items-baseline">
-                    <span class="lab-text-muted basis-full text-xs uppercase tracking-wide sm:basis-36">Email</span>
-                    <span class="text-(--lab-text-primary) min-w-0 flex-1 basis-64 wrap-break-word text-sm">
+                  <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span class="lab-text-muted shrink-0 text-xs uppercase tracking-wide">
+                      {{ t('auth.account.email_label') }}
+                    </span>
+                    <span class="text-(--lab-text-primary) min-w-56 flex-1 basis-56 wrap-break-word text-sm">
                       {{ user.email }}
                     </span>
                   </div>
-                  <div class="flex flex-wrap items-baseline">
-                    <span class="lab-text-muted basis-full text-xs uppercase tracking-wide sm:basis-36">Статус</span>
-                    <span class="text-(--lab-text-primary) min-w-0 flex-1 basis-64 text-sm">
-                      {{ user.status }}
-                      <span v-if="isAdmin" class="text-(--lab-text-muted)">· администратор</span>
-                    </span>
-                  </div>
-                  <div class="flex flex-wrap items-baseline">
-                    <span class="lab-text-muted basis-full text-xs uppercase tracking-wide sm:basis-36">Роли</span>
-                    <span class="text-(--lab-text-primary) min-w-0 flex-1 basis-64 wrap-break-word text-sm">
-                      {{ user.roles.length ? user.roles.join(', ') : '—' }}
-                    </span>
-                  </div>
-                  <div class="flex flex-wrap items-baseline">
-                    <span class="lab-text-muted basis-full text-xs uppercase tracking-wide sm:basis-36">
-                      Последний вход
-                    </span>
-                    <span class="text-(--lab-text-primary) min-w-0 flex-1 basis-64 text-sm">
-                      {{ formatDateTime(user.last_login_at) }}
-                    </span>
-                  </div>
-                  <div class="flex flex-wrap items-baseline">
-                    <span class="lab-text-muted basis-full text-xs uppercase tracking-wide sm:basis-36">
-                      Регистрация
-                    </span>
-                    <span class="text-(--lab-text-primary) min-w-0 flex-1 basis-64 text-sm">
-                      {{ formatDateTime(user.created_at) }}
-                    </span>
-                  </div>
-                </div>
-              </article>
-              <article>
-                <LabNotify :text="interfaceError" tone="error" size="xs" />
-                <LabNotify :text="interfaceInfo" tone="success" size="xs" />
-              </article>
+                </article>
+                <article class="space-y-3">
+                  <LabNotify :text="interfaceError" tone="error" size="xs" />
+                  <LabNotify :text="interfaceInfo" tone="success" size="xs" />
+                </article>
+                <LabDropdown
+                  v-model="showLogoutActions"
+                  side="top"
+                  align="right"
+                  width-class="w-56"
+                  :match-trigger-width="false"
+                  :close-on-select="false">
+                  <template #trigger="{ toggle }">
+                    <LabBaseButton
+                      variant="danger"
+                      size="lg"
+                      :label="t('auth.account.logout')"
+                      button-class="text-xs"
+                      @click="toggle" />
+                  </template>
+                  <LabBaseButton
+                    variant="plain"
+                    size="lg"
+                    block
+                    :label="t('auth.account.logout.current')"
+                    button-class="justify-start text-xs"
+                    @click="leave(false)" />
+                  <LabBaseButton
+                    variant="danger"
+                    size="lg"
+                    block
+                    :label="t('auth.account.logout.all')"
+                    button-class="justify-start text-xs"
+                    @click="leave(true)" />
+                </LabDropdown>
+              </div>
+            </section>
+          </section>
+          <section class="space-y-4 border bg-(--lab-bg-elevated) p-5">
+            <div class="space-y-1">
+              <h2 class="text-base font-medium text-(--lab-text-primary)">Оплата и доступ</h2>
+              <p class="text-sm text-(--lab-text-muted)">Состояние платного доступа и последний заказ.</p>
             </div>
-          </div>
-        </section>
-        <section class="text-(--lab-text-primary) relative overflow-hidden">
-          <div>
-            <h2 class="lab-text-primary text-xl sm:text-2xl">Безопасность</h2>
-            <p class="text-(--lab-text-muted) text-sm">
-              {{ user.is_two_factor_enabled ? '2FA включена' : '2FA выключена' }}
-            </p>
-          </div>
-          <LabNavTabs
-            v-model="securityTab"
-            :items="securityTabItems"
-            :no-select="true"
-            list-class="flex flex-wrap"
-            route-query-key="security"
-            route-default-value="password"
-            button-class="inline-flex min-h-10 items-center justify-center text-xs transition-colors"
-            active-class="text-(--lab-accent)"
-            inactive-class="text-(--lab-text-secondary) hover:text-(--lab-text-primary)"
-            panel-class="">
-            <template #panel-password>
-              <section>
-                <div class="grid lg:grid-cols-2">
-                  <LabField
-                    label="Текущий пароль"
-                    forId="account-current-password"
-                    label-class="lab-text-muted text-xs normal-case tracking-normal">
-                    <LabBaseInput
-                      id="account-current-password"
-                      v-model="passwordForm.current"
-                      name="current_password"
-                      type="password"
-                      autocomplete="current-password"
-                      :input-class="['w-full', passwordCurrentInputError ? 'text-(--lab-danger)' : '']"
-                      placeholder="Текущий пароль" />
-                  </LabField>
-                  <LabField
-                    label="Новый пароль"
-                    forId="account-next-password"
-                    label-class="lab-text-muted text-xs normal-case tracking-normal">
-                    <LabBaseInput
-                      id="account-next-password"
-                      v-model="passwordForm.next"
-                      name="new_password"
-                      type="password"
-                      autocomplete="new-password"
-                      input-class="w-full"
-                      placeholder="Новый пароль" />
-                  </LabField>
+
+            <div v-if="accessLoading" class="rounded-2xl border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
+              Загрузка сведений о доступе…
+            </div>
+
+            <template v-else>
+              <div
+                v-if="access?.has_active_access"
+                class="rounded-2xl border border-(--lab-success)/30 bg-(--lab-success)/8 p-4">
+                <div class="text-sm font-medium text-(--lab-text-primary)">Доступ активен</div>
+                <p class="mt-1 text-sm text-(--lab-text-muted)">До {{ paymentAccessUntilText || '—' }}.</p>
+              </div>
+
+              <div v-else class="rounded-2xl border border-(--lab-border) bg-(--lab-bg-soft) p-4">
+                <div class="text-sm font-medium text-(--lab-text-primary)">Активного доступа нет</div>
+                <p class="mt-1 text-sm text-(--lab-text-muted)">
+                  Можно перейти к странице оплаты и открыть доступ на месяц.
+                </p>
+              </div>
+
+              <dl v-if="access?.latest_order" class="grid gap-3 sm:grid-cols-2">
+                <div class="space-y-1">
+                  <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Последний статус</dt>
+                  <dd class="text-sm text-(--lab-text-primary)">
+                    {{ paymentLatestOrderStatusLabel }}
+                  </dd>
                 </div>
-                <div class="flex flex-wrap items-center">
-                  <LabBaseButton
-                    label="Изменить пароль"
-                    variant="primary"
-                    size="lg"
-                    button-class="text-xs"
-                    @click="submitPasswordChange" />
+
+                <div class="space-y-1">
+                  <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Последняя сумма</dt>
+                  <dd class="text-sm text-(--lab-text-primary)">
+                    {{ paymentLatestOrderAmountText }}
+                  </dd>
                 </div>
-                <div>
-                  <LabNotify :text="passwordError" tone="error" size="xs" />
-                  <LabNotify :text="passwordInfo" tone="success" size="xs" />
-                </div>
-              </section>
+              </dl>
+
+              <div class="pt-1">
+                <NuxtLink
+                  to="/payments"
+                  class="inline-flex min-h-11 items-center justify-center rounded-2xl border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)">
+                  Перейти к оплате
+                </NuxtLink>
+              </div>
             </template>
-            <template #panel-twofa>
-              <section>
-                <div class="flex flex-wrap items-center justify-between">
-                  <p class="text-(--lab-text-primary) text-sm">
-                    2FA {{ user.is_two_factor_enabled ? 'включена' : 'выключена' }}
+          </section>
+        </template>
+        <template #panel-security>
+          <section class="text-(--lab-text-primary) space-y-4">
+            <article class="space-y-3">
+              <div>
+                <h2 class="text-xl sm:text-2xl">{{ t('auth.account.email.title') }}</h2>
+                <p class="text-(--lab-text-muted) text-sm">
+                  {{ t('auth.account.email.description', { email: user.email }) }}
+                </p>
+              </div>
+              <div class="grid gap-3 sm:max-w-fit">
+                <LabField
+                  :label="t('auth.account.email.new_label')"
+                  forId="account-next-email"
+                  label-class="lab-text-muted text-xs normal-case tracking-normal">
+                  <LabBaseInput
+                    id="account-next-email"
+                    v-model="emailChangeForm.email"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    input-class="w-full"
+                    :placeholder="t('auth.account.email.new_placeholder')"
+                    @keydown.enter.prevent="submitEmailChange" />
+                </LabField>
+              </div>
+              <div class="flex flex-wrap items-center">
+                <LabBaseButton
+                  :label="t('auth.account.email.submit')"
+                  variant="primary"
+                  size="lg"
+                  button-class="text-xs"
+                  :disabled="emailChangePending"
+                  @click="submitEmailChange" />
+              </div>
+              <LabNotify :text="emailChangeError" tone="error" size="xs" />
+              <LabNotify :text="emailChangeInfo" tone="success" size="xs" />
+            </article>
+            <article class="space-y-3">
+              <div>
+                <h2 class="text-xl sm:text-2xl flex items-center flex-wrap gap-3">
+                  {{ t('auth.account.password.title') }}
+                  <span class="text-(--lab-text-muted) text-sm">{{ t('auth.account.password.description') }}</span>
+                </h2>
+              </div>
+              <div class="grid gap-3 lg:grid-rows-2 sm:max-w-fit">
+                <LabField
+                  :label="t('auth.account.password.current_label')"
+                  forId="account-current-password"
+                  label-class="lab-text-muted text-xs normal-case tracking-normal">
+                  <LabBaseInput
+                    id="account-current-password"
+                    v-model="passwordForm.current"
+                    name="current_password"
+                    type="password"
+                    autocomplete="current-password"
+                    :input-class="['w-full', passwordCurrentInputError ? 'text-(--lab-danger)' : '']"
+                    :placeholder="t('auth.account.password.current_placeholder')" />
+                </LabField>
+                <LabField
+                  :label="t('auth.account.password.next_label')"
+                  forId="account-next-password"
+                  label-class="lab-text-muted text-xs normal-case tracking-normal">
+                  <LabBaseInput
+                    id="account-next-password"
+                    v-model="passwordForm.next"
+                    name="new_password"
+                    type="password"
+                    autocomplete="new-password"
+                    input-class="w-full"
+                    :placeholder="t('auth.account.password.next_placeholder')" />
+                </LabField>
+              </div>
+              <div class="flex flex-wrap items-center">
+                <LabBaseButton
+                  :label="t('auth.account.password.submit')"
+                  variant="primary"
+                  size="lg"
+                  button-class="text-xs"
+                  @click="submitPasswordChange" />
+              </div>
+              <LabNotify :text="passwordError" tone="error" size="xs" />
+              <LabNotify :text="passwordInfo" tone="success" size="xs" />
+            </article>
+            <article class="space-y-3">
+              <div class="space-y-3">
+                <h2 class="text-xl sm:text-2xl flex items-center flex-wrap gap-3">
+                  2FA
+                  <span class="text-(--lab-text-muted) text-sm">
+                    {{ twofaStatusLabel }}
+                  </span>
+                </h2>
+
+                <LabBaseButton
+                  :variant="user.is_two_factor_enabled ? 'danger' : 'success'"
+                  size="lg"
+                  button-class="text-xs"
+                  @click="user.is_two_factor_enabled ? toggleDisable2faForm() : begin2faSetup()">
+                  {{
+                    user.is_two_factor_enabled
+                      ? showDisable2faForm
+                        ? t('auth.account.twofa.hide_form')
+                        : t('auth.account.twofa.disable')
+                      : t('auth.account.twofa.get_secret')
+                  }}
+                </LabBaseButton>
+              </div>
+              <LabNotify :text="twofaError" tone="error" />
+              <LabNotify :text="twofaInfo" tone="success" :temporary="false" />
+              <div
+                v-if="!user.is_two_factor_enabled && setupSecret"
+                class="grid items-start gap-3 xl:grid-cols-[auto_minmax(0,1fr)]">
+                <div v-if="setupQrDataUrl">
+                  <img
+                    :src="setupQrDataUrl"
+                    alt="QR-код для настройки 2FA"
+                    class="h-48 w-48 object-contain"
+                    loading="lazy" />
+                </div>
+                <div class="space-y-3">
+                  <p v-if="setupOtpAuthUrl" class="text-(--lab-text-muted) wrap-break-word text-xs leading-5">
+                    {{ t('auth.account.twofa.qr_fallback').split('{link}')[0] }}
+                    <a
+                      :href="setupOtpAuthUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-(--lab-info) ring-1 ring-transparent focus-visible:outline-none focus-visible:ring-2">
+                      {{ t('auth.account.twofa.qr_fallback_link') }}
+                    </a>
+                    {{ t('auth.account.twofa.qr_fallback').split('{link}')[1] }}
                   </p>
-                  <LabBaseButton
-                    :variant="user.is_two_factor_enabled ? 'danger' : 'success'"
-                    size="lg"
-                    button-class="text-xs"
-                    @click="user.is_two_factor_enabled ? toggleDisable2faForm() : begin2faSetup()">
-                    {{
-                      user.is_two_factor_enabled
-                        ? showDisable2faForm
-                          ? 'Скрыть форму'
-                          : 'Отключить 2FA'
-                        : 'Получить секрет'
-                    }}
-                  </LabBaseButton>
+                  <LabCopyBlock
+                    :label="t('auth.account.twofa.copy_key_label')"
+                    :value="setupSecret"
+                    variant="dark-cyan"
+                    button-class="w-full"
+                    :title-idle="t('auth.account.twofa.copy_key_idle')"
+                    :title-success="t('auth.account.twofa.copy_key_success')"
+                    :title-error="t('auth.account.twofa.copy_key_error')"
+                    :show-state-tooltip="true" />
+                  <AuthCodeInput
+                    id="account-enable-2fa-code"
+                    ref="enableCodeInputRef"
+                    :model-value="enableCode"
+                    name="one_time_code_enable"
+                    :label="t('auth.account.twofa.code_label')"
+                    :hint="t('auth.account.twofa.code_hint')"
+                    :invalid="Boolean(twofaError)"
+                    :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
+                    @update:model-value="onEnableCodeInput"
+                    @complete="activate2fa" />
                 </div>
-                <div>
-                  <LabNotify :text="twofaError" tone="error" />
-                  <LabNotify :text="twofaInfo" tone="success" />
-                </div>
-                <div v-if="!user.is_two_factor_enabled && setupSecret" class="grid xl:grid-cols-2">
-                  <div v-if="setupQrDataUrl">
-                    <img
-                      :src="setupQrDataUrl"
-                      alt="QR-код для настройки 2FA"
-                      class="h-48 w-48 object-contain"
-                      loading="lazy" />
-                  </div>
-                  <div>
-                    <p v-if="setupOtpAuthUrl" class="text-(--lab-text-muted) wrap-break-word text-xs leading-5">
-                      Если QR не сканируется, используй ключ ниже или otpauth URL: {{ setupOtpAuthUrl }}
-                    </p>
-                    <LabCopyBlock
-                      label="Ключ 2FA"
-                      :value="setupSecret"
-                      variant="dark-cyan"
-                      button-class="w-full"
-                      title-idle="Нажмите, чтобы скопировать ключ 2FA"
-                      title-success="Ключ 2FA скопирован в буфер обмена."
-                      title-error="Ошибка копирования ключа 2FA"
-                      :show-state-tooltip="true" />
+              </div>
+              <div v-if="user.is_two_factor_enabled && showDisable2faForm" class="space-y-3">
+                <input
+                  type="text"
+                  name="account_disable_2fa_username"
+                  autocomplete="username"
+                  tabindex="-1"
+                  aria-hidden="true"
+                  class="pointer-events-none absolute -left-96 h-px w-px opacity-0" />
+                <LabField
+                  label="Текущий пароль"
+                  forId="account-disable-2fa-password"
+                  field-class="min-w-0"
+                  label-class="lab-text-muted text-xs normal-case tracking-normal">
+                  <LabBaseInput
+                    id="account-disable-2fa-password"
+                    v-model="disablePassword"
+                    name="disable_2fa_password"
+                    type="password"
+                    autocomplete="current-password"
+                    input-class="w-full"
+                    placeholder="Текущий пароль" />
+                </LabField>
+                <LabNavTabs
+                  v-model="disableMethodTab"
+                  :items="disableCodeTabItems"
+                  route-query-key="disable2fa"
+                  route-default-value="totp"
+                  panel-class="space-y-3">
+                  <template #panel-totp>
                     <AuthCodeInput
-                      id="account-enable-2fa-code"
-                      ref="enableCodeInputRef"
-                      :model-value="enableCode"
-                      name="one_time_code_enable"
+                      id="account-disable-2fa-totp"
+                      ref="disableTotpInputRef"
+                      :model-value="disableTotpCode"
+                      name="disable_totp_code"
                       label="Код из приложения"
-                      hint="Проверка начнётся автоматически после ввода 6 цифр."
+                      hint="Отключение начнётся автоматически после ввода 6 цифр."
                       :invalid="Boolean(twofaError)"
                       :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
-                      @update:model-value="onEnableCodeInput"
-                      @complete="activate2fa" />
-                  </div>
-                </div>
-                <div v-if="user.is_two_factor_enabled && showDisable2faForm" class="">
-                  <input
-                    type="text"
-                    name="account_disable_2fa_username"
-                    autocomplete="username"
-                    tabindex="-1"
-                    aria-hidden="true"
-                    class="pointer-events-none absolute -left-96 h-px w-px opacity-0" />
-                  <div>
-                    <LabField
-                      label="Текущий пароль"
-                      forId="account-disable-2fa-password"
-                      field-class="min-w-0"
-                      label-class="lab-text-muted text-xs normal-case tracking-normal">
-                      <LabBaseInput
-                        id="account-disable-2fa-password"
-                        v-model="disablePassword"
-                        name="disable_2fa_password"
-                        type="password"
-                        autocomplete="current-password"
-                        input-class="w-full"
-                        placeholder="Текущий пароль" />
-                    </LabField>
-                    <LabNavTabs
-                      v-model="disableMethodTab"
-                      :items="disableCodeTabItems"
-                      route-query-key="disable2fa"
-                      route-default-value="totp"
-                      list-class="flex flex-wrap"
-                      button-class="inline-flex min-h-10 items-center justify-center text-xs transition-colors"
-                      active-class="text-(--lab-danger)"
-                      inactive-class="text-(--lab-text-secondary) hover:text-(--lab-text-primary)"
-                      panel-class="">
-                      <template #panel-totp>
-                        <AuthCodeInput
-                          id="account-disable-2fa-totp"
-                          ref="disableTotpInputRef"
-                          :model-value="disableTotpCode"
-                          name="disable_totp_code"
-                          label="Код из приложения"
-                          hint="Отключение начнётся автоматически после ввода 6 цифр."
-                          :invalid="Boolean(twofaError)"
-                          :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
-                          @update:model-value="onDisableTotpCodeInput"
-                          @complete="deactivate2fa" />
-                      </template>
-                      <template #panel-backup>
-                        <AuthRecoveryCodeInput
-                          id="account-disable-2fa-backup"
-                          ref="disableBackupCodeInputRef"
-                          :model-value="disableBackupCode"
-                          name="disable_backup_code"
-                          label="Код сброса"
-                          hint="Отключение начнётся автоматически после ввода 8 символов."
-                          :invalid="Boolean(twofaError)"
-                          :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
-                          @update:model-value="onDisableBackupCodeInput"
-                          @complete="deactivate2fa(`${$event.slice(0, 4)}-${$event.slice(4, 8)}`)" />
-                      </template>
-                    </LabNavTabs>
-                  </div>
-                </div>
-                <div v-if="backupCodes.length" class="text-(--lab-info)">
-                  <div>
-                    <p class="text-sm font-medium">Резервные коды</p>
-                    <p class="text-xs leading-5">Сохрани все 10 кодов. Каждый код сработает только один раз.</p>
-                  </div>
-                  <div class="grid grid-cols-2 sm:grid-cols-3">
-                    <div
-                      v-for="code in backupCodes"
-                      :key="code"
-                      class="inline-flex min-h-11 items-center justify-center text-center font-mono text-sm tracking-widest">
-                      {{ code }}
-                    </div>
-                  </div>
-                  <p class="text-xs leading-5">Храни их вне браузера и не передавай через мессенджеры.</p>
-                </div>
-              </section>
-            </template>
-            <template #panel-activity>
-              <section>
-                <p v-if="activityLoading" class="text-(--lab-text-muted) text-xs">Загрузка сессий и активности…</p>
-                <template v-else-if="activityError">
-                  <LabNotify :text="activityError" tone="error" size="xs" />
-                </template>
-                <LabNavTabs
-                  v-else
-                  v-model="activityTab"
-                  :items="activityTabItems"
-                  route-query-key="activity"
-                  route-default-value="sessions">
-                  <template #tab="{ item }">
-                    <span>{{ item.label }}</span>
-                    <span class="ml-1 opacity-80">
-                      {{
-                        item.value === 'sessions'
-                          ? groupedSessions.length
-                          : item.value === 'attempts'
-                            ? loginAttempts.length
-                            : securityEvents.length
-                      }}
-                    </span>
+                      @update:model-value="onDisableTotpCodeInput"
+                      @complete="deactivate2fa" />
                   </template>
-                  <template #panel-sessions>
-                    <div class="max-h-96 overflow-y-auto">
-                      <article
-                        v-for="item in groupedSessions"
-                        :key="item.key"
-                        class="flex flex-wrap items-center justify-between">
-                        <div>
-                          <p class="text-(--lab-text-primary) text-sm">{{ item.deviceLabel }}</p>
-                          <p class="text-(--lab-text-muted) text-xs">
-                            {{ item.ip }} · 2FA {{ item.mfaVerified ? 'подтверждена' : 'не подтверждена' }}
-                          </p>
-                          <p class="text-(--lab-text-muted) text-xs">
-                            Сессий: {{ item.count }} · Последняя активность:
-                            <LabRelativeTime :datetime="item.lastSeenAt" compact />
-                          </p>
-                        </div>
-                        <LabBaseButton
-                          variant="secondary"
-                          size="lg"
-                          button-class="text-xs"
-                          :disabled="item.revokableSessionIds.length === 0"
-                          @click="revokeSessionGroup(item)">
-                          {{
-                            item.revokableSessionIds.length === 0
-                              ? 'Текущая'
-                              : item.hasCurrent
-                                ? 'Отозвать и выйти'
-                                : 'Отозвать'
-                          }}
-                        </LabBaseButton>
-                      </article>
-                    </div>
-                  </template>
-                  <template #panel-attempts>
-                    <div class="max-h-96 overflow-y-auto">
-                      <article v-for="item in loginAttempts" :key="item.attempt_id" class="">
-                        <div class="flex flex-wrap items-start justify-between">
-                          <p class="text-(--lab-text-primary) text-sm">{{ item.outcome }}</p>
-                          <p class="text-(--lab-text-muted) text-xs">
-                            <LabRelativeTime :datetime="item.created_at" compact />
-                          </p>
-                        </div>
-                        <p class="text-(--lab-text-muted) text-xs">
-                          {{ item.ip || '—' }} · оценка риска {{ item.risk_score }}
-                        </p>
-                        <p class="text-(--lab-text-muted) text-xs">
-                          {{ item.failure_reason || item.suspicious_reason || item.user_agent || '—' }}
-                        </p>
-                      </article>
-                    </div>
-                  </template>
-                  <template #panel-events>
-                    <div class="max-h-96 overflow-y-auto">
-                      <article v-for="item in securityEvents" :key="item.event_id" class="">
-                        <div class="flex flex-wrap items-start justify-between">
-                          <p class="text-(--lab-text-primary) text-sm">
-                            {{ item.event_type }}
-                            <span class="text-(--lab-text-muted)">· {{ item.severity }}</span>
-                          </p>
-                          <p class="text-(--lab-text-muted) text-xs">
-                            <LabRelativeTime :datetime="item.created_at" compact />
-                          </p>
-                        </div>
-                        <p class="text-(--lab-text-muted) text-xs">{{ item.ip || '—' }}</p>
-                        <p class="text-(--lab-text-muted) text-xs wrap-break-word">
-                          {{ JSON.stringify(item.payload || {}) }}
-                        </p>
-                      </article>
-                    </div>
+                  <template #panel-backup>
+                    <AuthRecoveryCodeInput
+                      id="account-disable-2fa-backup"
+                      ref="disableBackupCodeInputRef"
+                      :model-value="disableBackupCode"
+                      name="disable_backup_code"
+                      label="Код сброса"
+                      hint="Отключение начнётся автоматически после ввода 8 символов."
+                      :invalid="Boolean(twofaError)"
+                      :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
+                      @update:model-value="onDisableBackupCodeInput"
+                      @complete="deactivate2fa(`${$event.slice(0, 4)}-${$event.slice(4, 8)}`)" />
                   </template>
                 </LabNavTabs>
-              </section>
-            </template>
-          </LabNavTabs>
-        </section>
-        <LabCropperModal
-          v-if="avatarCropDialog.open && avatarCropDialog.file"
-          :file="avatarCropDialog.file"
-          title="Кадрирование аватарки"
-          :loading="avatarUploading"
-          aspect-preset="1:1"
-          :aspect-locked="true"
-          @cancel="closeAvatarCropDialog"
-          @confirm="onAvatarCropConfirm" />
-        <LabViewerImage
-          v-model="avatarPreviewDialog.open"
-          :items="avatarViewerItems"
-          :initial-index="avatarPreviewDialog.index"
-          :title="avatarPreviewDialog.title"
-          @active-index-change="onAvatarPreviewIndexChange"
-          @update:model-value="onAvatarPreviewModelUpdate">
-          <template #toolbar-extra>
-            <div v-if="activePreviewAvatarItem" class="flex items-center">
-              <LabBaseButton
-                :variant="isPreviewAvatarPrimary ? 'success' : 'primary'"
-                size="sm"
-                :disabled="avatarUploading"
-                :aria-label="isPreviewAvatarPrimary ? 'Основная фотография профиля' : 'Сделать фотографию основной'"
-                :label="isPreviewAvatarPrimary ? 'Основная фотография' : 'Сделать основной'"
-                @click.stop="makePreviewAvatarPrimary" />
-              <LabConfirmActionButton
-                :disabled="avatarUploading"
-                icon="ic:round-delete-outline"
-                confirm-icon="ic:round-check"
-                label="Удалить фотографию"
-                title="Удалить текущую фотографию профиля"
-                idle-class="lab-button lab-button-secondary"
-                confirm-class="lab-button lab-button-danger text-white hover:text-white hover:bg-rose-500"
-                progress-class="bg-rose-300/30"
-                aria-label="Удалить текущую фотографию профиля"
-                confirm-aria-label="Подтвердить удаление текущей фотографии профиля"
-                tooltip="Удалить фото?"
-                @confirm="removeAvatarItem(activePreviewAvatarItem.id)" />
-            </div>
-          </template>
-        </LabViewerImage>
-      </template>
-      <template v-else>
-        <p class="text-xs">Активная сессия не найдена.</p>
-        <AuthLinks variant="inline" />
-      </template>
-    </section>
+              </div>
+              <div v-if="backupCodes.length" class="text-(--lab-info) space-y-3">
+                <div>
+                  <p class="text-sm font-medium">Резервные коды</p>
+                  <p class="text-xs leading-5">Сохрани все 10 кодов. Каждый код сработает только один раз.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div
+                    v-for="code in backupCodes"
+                    :key="code"
+                    class="inline-flex min-h-11 items-center justify-center text-center font-mono text-sm tracking-widest">
+                    {{ code }}
+                  </div>
+                </div>
+                <p class="text-xs leading-5">Храни их вне браузера и не передавай через мессенджеры.</p>
+              </div>
+            </article>
+            <article class="space-y-3">
+              <div>
+                <h2 class="text-xl sm:text-2xl">{{ t('auth.account.activity.title') }}</h2>
+                <p class="text-(--lab-text-muted) text-sm">{{ t('auth.account.activity.description') }}</p>
+              </div>
+              <div class="space-y-2">
+                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span class="lab-text-muted shrink-0 text-xs uppercase tracking-wide">
+                    {{ t('auth.account.activity.last_login') }}
+                  </span>
+                  <span class="text-(--lab-text-primary) min-w-56 flex-1 basis-56 text-sm">
+                    {{ formatDateTime(user.last_login_at) }}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span class="lab-text-muted shrink-0 text-xs uppercase tracking-wide">
+                    {{ t('auth.account.activity.created_at') }}
+                  </span>
+                  <span class="text-(--lab-text-primary) min-w-56 flex-1 basis-56 text-sm">
+                    {{ formatDateTime(user.created_at) }}
+                  </span>
+                </div>
+              </div>
+              <LabNotify :text="actionError" tone="error" size="xs" />
+              <LabNotify :text="actionInfo" tone="success" size="xs" />
+              <p v-if="activityLoading" class="text-(--lab-text-muted) text-xs">Загрузка сессий и активности…</p>
+              <LabNotify v-else-if="activityError" :text="activityError" tone="error" size="xs" />
+              <LabNavTabs
+                v-else
+                v-model="activityTab"
+                :items="activityTabItems"
+                route-query-key="activity"
+                route-default-value="sessions">
+                <template #tab="{ item }">
+                  <span>{{ item.label }}</span>
+                  <span class="ml-1 opacity-80">
+                    {{
+                      item.value === 'sessions'
+                        ? groupedSessions.length
+                        : item.value === 'attempts'
+                          ? loginAttempts.length
+                          : securityEvents.length
+                    }}
+                  </span>
+                </template>
+                <template #panel-sessions>
+                  <div class="max-h-96 overflow-y-auto space-y-3">
+                    <article
+                      v-for="item in groupedSessions"
+                      :key="item.key"
+                      class="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p class="text-(--lab-text-primary) text-sm">{{ item.deviceLabel }}</p>
+                        <p class="text-(--lab-text-muted) text-xs">
+                          {{ item.ip }} ·
+                          {{
+                            item.mfaVerified
+                              ? t('auth.account.activity.mfa_verified')
+                              : t('auth.account.activity.mfa_unverified')
+                          }}
+                        </p>
+                        <p class="text-(--lab-text-muted) text-xs">
+                          {{ t('auth.account.activity.sessions_count', { count: item.count }) }} ·
+                          {{ t('auth.account.activity.last_activity') }}
+                          <LabRelativeTime :datetime="item.lastSeenAt" compact />
+                        </p>
+                      </div>
+                      <LabBaseButton
+                        variant="secondary"
+                        size="lg"
+                        button-class="text-xs"
+                        :disabled="item.revokableSessionIds.length === 0"
+                        @click="revokeSessionGroup(item)">
+                        {{
+                          item.revokableSessionIds.length === 0
+                            ? t('auth.account.activity.current')
+                            : item.hasCurrent
+                              ? t('auth.account.activity.revoke_and_logout')
+                              : t('auth.account.activity.revoke')
+                        }}
+                      </LabBaseButton>
+                    </article>
+                  </div>
+                </template>
+                <template #panel-attempts>
+                  <div class="max-h-96 overflow-y-auto space-y-3">
+                    <article v-for="item in loginAttempts" :key="item.attempt_id">
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <p class="text-(--lab-text-primary) text-sm">{{ item.outcome }}</p>
+                        <p class="text-(--lab-text-muted) text-xs">
+                          <LabRelativeTime :datetime="item.created_at" compact />
+                        </p>
+                      </div>
+                      <p class="text-(--lab-text-muted) text-xs">
+                        {{ item.ip || '—' }} · оценка риска {{ item.risk_score }}
+                      </p>
+                      <p class="text-(--lab-text-muted) text-xs">
+                        {{ item.failure_reason || item.suspicious_reason || item.user_agent || '—' }}
+                      </p>
+                    </article>
+                  </div>
+                </template>
+                <template #panel-events>
+                  <div class="max-h-96 overflow-y-auto space-y-3">
+                    <article v-for="item in securityEvents" :key="item.event_id">
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <p class="text-(--lab-text-primary) text-sm">
+                          {{ item.event_type }}
+                          <span class="text-(--lab-text-muted)">· {{ item.severity }}</span>
+                        </p>
+                        <p class="text-(--lab-text-muted) text-xs">
+                          <LabRelativeTime :datetime="item.created_at" compact />
+                        </p>
+                      </div>
+                      <p class="text-(--lab-text-muted) text-xs">{{ item.ip || '—' }}</p>
+                      <p class="text-(--lab-text-muted) text-xs wrap-break-word">
+                        {{ JSON.stringify(item.payload || {}) }}
+                      </p>
+                    </article>
+                  </div>
+                </template>
+              </LabNavTabs>
+            </article>
+          </section>
+        </template>
+      </LabNavTabs>
+      <LabCropperModal
+        v-if="avatarCropDialog.open && avatarCropDialog.file"
+        :file="avatarCropDialog.file"
+        title="Кадрирование аватарки"
+        :loading="avatarUploading"
+        aspect-preset="1:1"
+        :aspect-locked="true"
+        @cancel="closeAvatarCropDialog"
+        @confirm="onAvatarCropConfirm" />
+      <LabViewerImage
+        v-model="avatarPreviewDialog.open"
+        :items="avatarViewerItems"
+        :initial-index="avatarPreviewDialog.index"
+        @active-index-change="onAvatarPreviewIndexChange"
+        @update:model-value="onAvatarPreviewModelUpdate">
+        <template #toolbar-extra>
+          <div v-if="activePreviewAvatarItem" class="flex items-center gap-2">
+            <LabBaseButton
+              :variant="isPreviewAvatarPrimary ? 'success' : 'primary'"
+              size="sm"
+              :disabled="avatarUploading"
+              :aria-label="isPreviewAvatarPrimary ? 'Основная фотография профиля' : 'Сделать фотографию основной'"
+              :label="isPreviewAvatarPrimary ? 'Основная фотография' : 'Сделать основной'"
+              @click.stop="makePreviewAvatarPrimary" />
+            <LabConfirmActionButton
+              :disabled="avatarUploading"
+              icon="ic:round-delete-outline"
+              confirm-icon="ic:round-check"
+              label="Удалить фотографию"
+              title="Удалить текущую фотографию профиля"
+              idle-class="lab-button lab-button-secondary"
+              confirm-class="lab-button lab-button-danger text-white hover:text-white hover:bg-rose-500"
+              progress-class="bg-rose-300/30"
+              aria-label="Удалить текущую фотографию профиля"
+              confirm-aria-label="Подтвердить удаление текущей фотографии профиля"
+              tooltip="Удалить фото?"
+              @confirm="removeAvatarItem(activePreviewAvatarItem.id)" />
+          </div>
+        </template>
+      </LabViewerImage>
+    </template>
   </div>
 </template>

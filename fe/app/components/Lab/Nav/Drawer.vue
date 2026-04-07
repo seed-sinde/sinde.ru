@@ -13,7 +13,7 @@
   const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
   }>()
-  const { t, faviconSrc } = useInterfacePreferences()
+  const { t, faviconSrc, themePreference } = useInterfacePreferences()
   const isOpen = computed(() => props.modelValue)
   const close = () => {
     emit('update:modelValue', false)
@@ -41,14 +41,18 @@
           leave-active-class="transition-transform duration-200"
           leave-from-class="translate-x-0"
           leave-to-class="-translate-x-full">
-          <aside class="border-(--lab-border) bg-(--lab-bg-overlay) relative flex h-full w-full max-w-fit flex-col border-r pt-1">
-            <div class="border-(--lab-border) mb-1 flex items-center justify-between border-b px-1 pb-1">
+          <aside class="bg-(--lab-bg-overlay) relative flex h-full w-full max-w-fit flex-col border-r pt-1">
+            <div class="mb-1 flex items-center justify-between border-b px-1 pb-1">
               <NuxtLink
                 :to="homeTo"
                 class="hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover) text-(--lab-text-primary) inline-flex h-9 w-9 items-center justify-center transition-colors"
                 :aria-label="t('nav.home')"
                 @click="close">
-                <img :src="faviconSrc" alt="" class="h-4.5 w-4.5 object-contain" />
+                <picture v-if="themePreference === 'system'">
+                  <source srcset="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
+                  <img src="/favicon-light.svg" alt="" class="h-4.5 w-4.5 object-contain" />
+                </picture>
+                <img v-else :src="faviconSrc" alt="" class="h-4.5 w-4.5 object-contain" />
               </NuxtLink>
               <LabBaseButton
                 icon="ic:round-close"

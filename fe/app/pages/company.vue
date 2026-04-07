@@ -77,7 +77,7 @@
       <div class="grid gap-6 xl:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
         <section class="space-y-3">
           <div class="text-(--lab-text-muted) mb-3 text-sm uppercase tracking-[0.18em]">Контакты</div>
-          <div class="divide-y divide-(--lab-border)">
+          <div class="divide-y">
             <article v-for="item in contacts" :key="item.label" class="py-3">
               <div class="min-w-0">
                 <p class="text-(--lab-text-muted) text-xs uppercase tracking-[0.16em]">
@@ -98,7 +98,7 @@
         </section>
         <section class="space-y-3">
           <div class="text-(--lab-text-muted) mb-3 text-sm uppercase tracking-[0.18em]">Реквизиты</div>
-          <div class="divide-y divide-(--lab-border)">
+          <div class="divide-y">
             <article
               v-for="item in requisites"
               :key="item.label"

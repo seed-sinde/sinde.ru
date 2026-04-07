@@ -21,6 +21,9 @@
     (e: 'confirm', file: File): void
   }>()
   const imageRef = ref<HTMLImageElement | null>(null)
+  const cropperViewportRef = ref<HTMLElement | null>(null)
+  const headerScrollerRef = ref<HTMLElement | null>(null)
+  const controlsScrollerRef = ref<HTMLElement | null>(null)
   const objectUrl = ref('')
   const cropError = ref<string | null>(null)
   const aspectPreset = ref<CropperAspectPreset>('free')
@@ -32,6 +35,11 @@
   const zoomRatio = ref(1)
   const originalImageAspect = ref<number | null>(null)
   let cropper: Cropper | null = null
+  let cropperResizeObserver: ResizeObserver | null = null
+  const { edges: headerScrollEdges, sync: syncHeaderScrollEdges } = useScrollableEdges(headerScrollerRef, { axis: 'x' })
+  const { edges: controlsScrollEdges, sync: syncControlsScrollEdges } = useScrollableEdges(controlsScrollerRef, {
+    axis: 'x'
+  })
   const parsedCustomAspect = computed(() => {
     const w = Number.parseFloat(String(customAspectWidth.value || '').replace(',', '.'))
     const h = Number.parseFloat(String(customAspectHeight.value || '').replace(',', '.'))
@@ -189,7 +197,7 @@
     { value: 'custom', label: 'Ручн.' },
     { value: 'free', label: 'Своб.' }
   ] satisfies SelectOptionInput[]
-  const controlButtonClass = 'h-9 shrink-0 border px-2.5 text-sm'
+  const controlButtonClass = 'h-9 w-9 shrink-0 rounded-full p-0 text-sm'
   const actionButtonClass = 'h-9 shrink-0 px-3 text-sm'
   const onZoomSliderInput = () => {
     if (!cropper) return
@@ -266,6 +274,15 @@
     })
     emit('confirm', nextFile)
   }
+  const scheduleCropperLayoutSync = () => {
+    if (!import.meta.client) {
+      fitImageToView()
+      return
+    }
+    requestAnimationFrame(() => {
+      fitImageToView()
+    })
+  }
   const onEscKeydown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return
     if (props.loading) return
@@ -306,10 +323,20 @@
   onMounted(() => {
     if (!import.meta.client) return
     window.addEventListener('keydown', onEscKeydown)
+    cropperResizeObserver = new ResizeObserver(() => {
+      syncHeaderScrollEdges()
+      syncControlsScrollEdges()
+      scheduleCropperLayoutSync()
+    })
+    if (cropperViewportRef.value) {
+      cropperResizeObserver.observe(cropperViewportRef.value)
+    }
   })
   onBeforeUnmount(() => {
     destroyCropper()
     revokeObjectUrl()
+    cropperResizeObserver?.disconnect()
+    cropperResizeObserver = null
     if (import.meta.client) {
       window.removeEventListener('keydown', onEscKeydown)
     }
@@ -321,24 +348,38 @@
     @click.self="emit('cancel')">
     <div class="bg-(--lab-bg-canvas) flex h-full w-full flex-col">
       <div class="z-10" @click.stop>
-        <div
-          class="border-(--lab-border) bg-(--lab-bg-canvas) text-(--lab-text-secondary) flex w-full flex-wrap items-center justify-end gap-2.5 border-b px-2.5 py-1.5 backdrop-blur-sm sm:px-3">
-          <div class="flex shrink-0 items-center gap-1.5 text-sm font-medium">
-            масштаб:
-            <p class="tabular-nums">{{ zoomPercentLabel }}</p>
+        <div class="relative">
+          <div
+            ref="headerScrollerRef"
+            class="bg-(--lab-bg-canvas) text-(--lab-text-secondary) lab-scroll-hidden w-full overflow-x-auto overflow-y-hidden border-b px-2.5 py-1.5 sm:px-3">
+            <div class="flex min-w-max items-center justify-end gap-2.5">
+              <div class="flex shrink-0 items-center gap-1.5 text-sm font-medium">
+                масштаб:
+                <p class="tabular-nums">{{ zoomPercentLabel }}</p>
+              </div>
+              <LabBaseButton
+                icon="ic:round-close"
+                icon-only
+                aria-label="Закрыть окно"
+                :disabled="loading"
+                @click="emit('cancel')" />
+            </div>
           </div>
-          <LabBaseButton
-            icon="ic:round-close"
-            icon-only
-            aria-label="Закрыть окно"
-            :disabled="loading"
-            @click="emit('cancel')" />
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-left"
+            :class="{ 'lab-scroll-fade-visible': headerScrollEdges.left }"
+            aria-hidden="true"></div>
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-right"
+            :class="{ 'lab-scroll-fade-visible': headerScrollEdges.right }"
+            aria-hidden="true"></div>
         </div>
       </div>
       <div
+        ref="cropperViewportRef"
         class="bg-(--lab-bg-canvas) relative min-h-0 flex-1 overflow-hidden px-2 py-2 sm:px-3 sm:py-3">
         <div
-          class="border-(--lab-border) bg-(--lab-bg-surface-muted) h-full w-full overflow-hidden border [&_.cropper-container]:h-full [&_.cropper-container]:w-full [&_.cropper-dashed]:border-white/20 [&_.cropper-face]:bg-transparent [&_.cropper-line]:bg-white/85 [&_.cropper-point]:bg-white/85 [&_.cropper-view-box]:outline [&_.cropper-view-box]:outline-white/40"
+          class="bg-(--lab-bg-surface-muted) h-full w-full overflow-hidden border [&_.cropper-container]:h-full [&_.cropper-container]:w-full [&_.cropper-dashed]:border-white/20 [&_.cropper-face]:bg-transparent [&_.cropper-line]:bg-white/85 [&_.cropper-point]:bg-white/85 [&_.cropper-view-box]:outline [&_.cropper-view-box]:outline-white/40"
           @click.stop>
           <img
             ref="imageRef"
@@ -348,10 +389,11 @@
         </div>
       </div>
       <div
-        class="border-(--lab-border) bg-(--lab-bg-canvas) border-t px-3 py-3 backdrop-blur-sm sm:px-4"
+        class="bg-(--lab-bg-canvas) border-t px-3 py-3 backdrop-blur-sm sm:px-4"
         @click.stop>
-        <div class="overflow-x-auto overflow-y-hidden">
-          <div class="flex min-w-max items-center gap-3">
+        <div class="relative">
+          <div ref="controlsScrollerRef" class="lab-scroll-hidden overflow-x-auto overflow-y-hidden">
+            <div class="flex min-w-max items-center gap-3">
             <div class="flex shrink-0 items-center gap-2">
               <LabBaseButton
                 icon="ic:round-rotate-left"
@@ -401,8 +443,7 @@
                 :button-class="controlButtonClass"
                 :disabled="loading"
                 @click="zoomIn" />
-              <div
-                class="border-(--lab-border) bg-(--lab-bg-control) flex h-9 shrink-0 items-center gap-2 border px-2.5">
+              <div class="flex h-9 shrink-0 items-center gap-2 px-1">
                 <input
                   id="image-crop-zoom-ratio"
                   v-model.number="zoomRatio"
@@ -411,7 +452,7 @@
                   min="0.1"
                   max="3"
                   step="0.01"
-                  class="accent-(--lab-info) w-28"
+                  class="accent-(--lab-info) w-28 border-0 bg-transparent"
                   @input="onZoomSliderInput" />
               </div>
               <LabBaseButton
@@ -492,6 +533,15 @@
                 @click="applyCrop" />
             </div>
           </div>
+          </div>
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-left"
+            :class="{ 'lab-scroll-fade-visible': controlsScrollEdges.left }"
+            aria-hidden="true"></div>
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-right"
+            :class="{ 'lab-scroll-fade-visible': controlsScrollEdges.right }"
+            aria-hidden="true"></div>
         </div>
         <LabNotify :text="cropError" tone="error" size="xs" class="mt-3" />
       </div>

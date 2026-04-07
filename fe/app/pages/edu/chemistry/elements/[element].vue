@@ -286,7 +286,7 @@
         </div>
         <div class="mx-4 mt-4 flex flex-wrap items-end gap-4 sm:mx-6 xl:col-start-1 xl:row-start-2">
           <div
-            class="grid h-20 w-20 place-items-center rounded-3xl border border-white/15 bg-black/20 text-5xl font-semibold text-white sm:h-24 sm:w-24 sm:text-6xl">
+            class="grid h-20 w-20 place-items-center border border-white/15 bg-black/20 text-5xl font-semibold text-white sm:h-24 sm:w-24 sm:text-6xl">
             {{ formattedCurrentSymbol }}
           </div>
           <div class="space-y-1">
@@ -336,9 +336,7 @@
         </div>
       </div>
     </section>
-    <section
-      class="mx-3 overflow-hidden border sm:mx-6"
-      :style="detailPanelStyle">
+    <section class="mx-3 overflow-hidden border sm:mx-6" :style="detailPanelStyle">
       <div class="grid gap-0 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
         <article class="min-w-0 px-4 py-4 sm:px-6 sm:py-6 xl:border-r xl:border-white/10">
           <div class="space-y-6">
@@ -412,9 +410,7 @@
                     @select="selectedSampleImageIndex = $event" />
                 </div>
               </div>
-              <section
-                v-else-if="currentElement.sampleFallback"
-                class="border border-amber-500/30 bg-amber-500/8 p-4">
+              <section v-else-if="currentElement.sampleFallback" class="border border-amber-500/30 bg-amber-500/8 p-4">
                 <div class="text-xs uppercase tracking-[0.07em] text-amber-300">
                   {{ currentElement.sampleFallback.type }}
                 </div>
@@ -488,8 +484,12 @@
                   :key="item.number"
                   :to="periodic_table_element_route(item)"
                   class="min-w-0 flex-1 basis-56 border border-white/10 bg-black/12 px-3 py-3 transition hover:border-white/20 hover:bg-black/20">
-                  <div class="text-sm font-semibold text-zinc-100">{{ item.displaySymbol }} · {{ item.russianName }}</div>
-                  <div class="mt-1 text-xs leading-5 text-zinc-300/70">№{{ item.number }} · {{ item.categoryLabel }}</div>
+                  <div class="text-sm font-semibold text-zinc-100">
+                    {{ item.displaySymbol }} · {{ item.russianName }}
+                  </div>
+                  <div class="mt-1 text-xs leading-5 text-zinc-300/70">
+                    №{{ item.number }} · {{ item.categoryLabel }}
+                  </div>
                 </NuxtLink>
               </div>
             </section>

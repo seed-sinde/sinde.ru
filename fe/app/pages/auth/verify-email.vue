@@ -6,7 +6,7 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const { t } = useInterfacePreferences()
-const { verifyEmail } = useAuth()
+const { verifyEmail, refresh, loadMe, canAttemptSessionRestore } = useAuth()
 const token = computed(() => {
   const raw = route.query.token
   return typeof raw === 'string' ? raw : ''
@@ -18,9 +18,21 @@ onMounted(async () => {
   if (!token.value) return
   pending.value = true
   try {
-    await verifyEmail(token.value)
-    successText.value = 'Email подтверждён. Можно входить в систему.'
-    setTimeout(() => router.push('/auth/login'), 1000)
+    const res = await verifyEmail(token.value)
+    if (res.data.action === 'change_email') {
+      if (canAttemptSessionRestore.value) {
+        try {
+          await refresh()
+        } catch {
+          await loadMe()
+        }
+      }
+      successText.value = `Новый email подтверждён: ${res.data.email || 'адрес обновлён'}. Текущая сессия обновлена.`
+      setTimeout(() => router.push('/auth/account?account=security'), 1200)
+    } else {
+      successText.value = 'Email подтверждён. Можно входить в систему.'
+      setTimeout(() => router.push('/auth/login'), 1000)
+    }
   } catch (err: any) {
     errorText.value = err?.data?.message || err?.message || 'Подтверждение не удалось.'
   } finally {

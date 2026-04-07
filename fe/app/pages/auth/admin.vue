@@ -691,11 +691,7 @@
           :no-select="true"
           :render-panels="false"
           route-query-key="tab"
-          route-default-value="users"
-          list-class="flex min-w-0 flex-wrap gap-2 border-0 overflow-visible"
-          button-class="rounded border px-3"
-          active-class="border-amber-500/70 bg-amber-500/15 text-amber-100"
-          inactive-class="border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800" />
+          route-default-value="users" />
       </div>
     </section>
     <div class="mx-auto mt-4 max-w-7xl space-y-4 px-3 md:px-4">

@@ -4,13 +4,14 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"sinde.ru/internal/http/handlers"
 	authhandlers "sinde.ru/internal/http/handlers/auth"
+	paymenthandlers "sinde.ru/internal/http/handlers/payments"
 	"sinde.ru/internal/http/middleware"
 )
 
-func SetupRoutes(app *fiber.App, authHandler *authhandlers.Handler) {
-	registerAPIRoutes(app.Group("/api/v1"), authHandler)
+func SetupRoutes(app *fiber.App, authHandler *authhandlers.Handler, paymentHandler *paymenthandlers.Handler) {
+	registerAPIRoutes(app.Group("/api/v1"), authHandler, paymentHandler)
 }
-func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler) {
+func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler, paymentHandler *paymenthandlers.Handler) {
 	api.Post("/auth/register", authHandler.Register())
 	api.Post("/auth/verify-email/request", authHandler.RequestEmailVerification())
 	api.Post("/auth/verify-email/confirm", authHandler.VerifyEmail())
@@ -23,6 +24,7 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler) {
 	authenticated := api.Group("/auth", middleware.RequireAuth(authHandler.Service()))
 	authenticated.Get("/me", authHandler.Me())
 	authenticated.Patch("/me", middleware.RequireCSRFCookie(authHandler.Service()), authHandler.UpdateMe())
+	authenticated.Post("/email/change/request", middleware.RequireCSRFCookie(authHandler.Service()), authHandler.RequestEmailChange())
 	authenticated.Get("/traits/sets", authHandler.ListSavedTraitSets())                                                              // получить список сохраненных наборов
 	authenticated.Post("/traits/sets", middleware.RequireCSRFCookie(authHandler.Service()), authHandler.SaveTraitSet())              // сохранить набор в список
 	authenticated.Patch("/traits/sets/:id", middleware.RequireCSRFCookie(authHandler.Service()), authHandler.UpdateSavedTraitSet())  // обновление набора в списке
@@ -52,6 +54,10 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler) {
 	admin.Delete("/users/:id", middleware.RequireCSRFCookie(authHandler.Service()), authHandler.AdminDeleteUser())
 	admin.Get("/keys/search", authHandler.AdminSearchTraitKeys())
 	admin.Get("/analysis/traits-sets", authHandler.AdminTraitsSetsAnalysis())
+	admin.Get("/orders", paymentHandler.AdminListOrders())
+	admin.Get("/payments/summary", paymentHandler.AdminSummary())
+	api.Post("/payments/lookup", paymentHandler.PublicLookup())
+	api.Post("/payments/tbank/notify", paymentHandler.TBankNotification())
 	api.Get("/media/files/*", handlers.MediaGetFileHandler())                   // Получить медиафайл по ключу хранения.
 	api.Get("/kitchen/catalog", handlers.KitchenCatalogHandler())               // Каталог, фильтры и ингредиенты.
 	api.Get("/kitchen/ingredients", handlers.KitchenIngredientsHandler())       // Категории для kitchen.
@@ -77,6 +83,9 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler) {
 	kitchenAuth.Get("/admin/recipes/moderation", handlers.KitchenAdminModerationRecipesHandler())
 	kitchenAuth.Post("/admin/recipes/:id/moderate", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenAdminModerateRecipeHandler())
 	kitchenAuth.Post("/admin/recipes/:id/owner", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenAdminChangeRecipeOwnerHandler())
+	paymentsAuth := api.Group("/payments", middleware.RequireAuth(authHandler.Service()))
+	paymentsAuth.Get("/access", paymentHandler.Access())
+	paymentsAuth.Post("/init", middleware.RequireCSRFCookie(authHandler.Service()), paymentHandler.CreateOrder())
 	mediaAuth := api.Group("/media", middleware.RequireAuth(authHandler.Service()))
 	mediaAuth.Post("/upload", handlers.MediaUploadHandler())
 	api.Get("/kitchen/recipes/:id", handlers.KitchenGetRecipeHandler())   // Получить рецепт по ID.

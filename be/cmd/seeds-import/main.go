@@ -29,14 +29,15 @@ type Manifest struct {
 	Files   []ManifestFile `json:"files"`
 }
 type ManifestFile struct {
-	File      string   `json:"file"`
-	Table     string   `json:"table"`
-	Order     int      `json:"order"`
-	Mode      string   `json:"mode,omitempty"`
-	Columns   []string `json:"columns,omitempty"`
-	Delimiter string   `json:"delimiter,omitempty"`
-	Header    *bool    `json:"header,omitempty"`
-	Null      string   `json:"null,omitempty"`
+	File           string   `json:"file"`
+	Table          string   `json:"table"`
+	Order          int      `json:"order"`
+	Mode           string   `json:"mode,omitempty"`
+	Columns        []string `json:"columns,omitempty"`
+	Delimiter      string   `json:"delimiter,omitempty"`
+	Header         *bool    `json:"header,omitempty"`
+	Null           string   `json:"null,omitempty"`
+	VerifyCountSQL string   `json:"verify_count_sql,omitempty"`
 }
 type ImportPlan struct {
 	Name         string
@@ -262,7 +263,7 @@ func (i *Importer) Verify(ctx context.Context, names []string, autoSeedZero bool
 		if err != nil {
 			return results, err
 		}
-		actualRows, err := i.tableRowCount(ctx, plan.Entry.Table)
+		actualRows, err := i.tableRowCount(ctx, plan.Entry)
 		if err != nil {
 			return results, err
 		}
@@ -423,10 +424,14 @@ func (i *Importer) resetPlan(ctx context.Context, plan ImportPlan) error {
 	}
 	return nil
 }
-func (i *Importer) tableRowCount(ctx context.Context, table string) (int64, error) {
+func (i *Importer) tableRowCount(ctx context.Context, entry ManifestFile) (int64, error) {
 	var rows int64
-	if err := i.pool.QueryRow(ctx, "SELECT COUNT(*)::BIGINT FROM "+quoteIdent(table)).Scan(&rows); err != nil {
-		return 0, fmt.Errorf("count %s: %w", table, err)
+	query := "SELECT COUNT(*)::BIGINT FROM " + quoteIdent(entry.Table)
+	if verifyQuery := strings.TrimSpace(entry.VerifyCountSQL); verifyQuery != "" {
+		query = verifyQuery
+	}
+	if err := i.pool.QueryRow(ctx, query).Scan(&rows); err != nil {
+		return 0, fmt.Errorf("count %s: %w", entry.Table, err)
 	}
 	return rows, nil
 }
@@ -585,6 +590,9 @@ func validateManifestEntry(sectionDir string, entry ManifestFile) error {
 		if err := validateIdentifiers(entry.Columns); err != nil {
 			return err
 		}
+	}
+	if strings.Contains(entry.VerifyCountSQL, ";") {
+		return fmt.Errorf("verify_count_sql must contain a single statement for table %s", entry.Table)
 	}
 	return nil
 }

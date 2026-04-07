@@ -19,7 +19,13 @@
         @focus="isPrimaryControlHovered = true"
         @blur="isPrimaryControlHovered = false"
         @click="onPrimaryButtonClick">
-        <img v-if="!isCollapsedHoverToggle" :src="faviconSrc" alt="" class="h-4.5 w-4.5 object-contain" />
+        <template v-if="!isCollapsedHoverToggle">
+          <picture v-if="themePreference === 'system'">
+            <source srcset="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
+            <img src="/favicon-light.svg" alt="" class="h-4.5 w-4.5 object-contain" />
+          </picture>
+          <img v-else :src="faviconSrc" alt="" class="h-4.5 w-4.5 object-contain" />
+        </template>
         <span v-else aria-hidden="true" :class="collapseGlyphClass">
           <span class="absolute inset-y-0 left-1 w-px bg-current"></span>
         </span>
@@ -103,7 +109,7 @@
   }>()
   const router = useRouter()
   const route = useRoute()
-  const { t, faviconSrc } = useInterfacePreferences()
+  const { t, faviconSrc, themePreference } = useInterfacePreferences()
   const props = withDefaults(
     defineProps<{
       items: MenuItem[]

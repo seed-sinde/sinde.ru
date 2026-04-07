@@ -61,7 +61,7 @@
     </ClientOnly>
     <div
       v-if="showBreadcrumbRow"
-      class="border-(--lab-border) bg-(--lab-bg-overlay) sticky top-0 z-30 hidden border-b px-3 py-2 lg:block lg:px-6">
+      class="bg-(--lab-bg-overlay) sticky top-0 z-30 hidden border-b px-3 py-2 lg:block lg:px-6">
       <div class="flex min-h-9 flex-wrap items-center gap-2">
         <LabNavBreadcrumb
           v-if="resolvedBreadcrumbItems.length"

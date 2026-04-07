@@ -162,7 +162,6 @@
     const elementNumber = element.number
     if (isElementUnavailable(elementNumber) && !selectionToneMap.value[elementNumber]) {
       return {
-        borderColor: 'var(--lab-border)',
         background: 'var(--lab-bg-surface)'
       }
     }
@@ -260,27 +259,27 @@
           <div
             v-for="column in periodicTableGroups"
             :key="`column-guide:${column}`"
-            class="periodic-column-guide border-(--lab-border) pointer-events-none z-0 border-l"
+            class="periodic-column-guide pointer-events-none z-0 border-l"
             :class="column === 1 ? 'border-l-transparent' : ''"
             :style="columnGuideStyle(column)"
             aria-hidden="true"></div>
           <div
             v-for="row in visiblePeriodRows"
             :key="`row-guide:${row}`"
-            class="periodic-row-guide border-(--lab-border) pointer-events-none z-0 border-t"
+            class="periodic-row-guide pointer-events-none z-0 border-t"
             :class="row === 1 ? 'border-t-transparent' : ''"
             :style="rowGuideStyle(row)"
             aria-hidden="true"></div>
           <slot name="grid-overlay"></slot>
           <div
             v-if="showSeriesLabels"
-            class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-muted) relative z-10 flex items-center border border-dashed px-1 text-center text-[0.52rem] leading-tight sm:px-2 sm:text-[0.68rem]"
+            class="bg-(--lab-bg-surface) text-(--lab-text-muted) relative z-10 flex items-center border border-dashed px-1 text-center text-[0.52rem] leading-tight sm:px-2 sm:text-[0.68rem]"
             :style="{ gridColumn: '1 / span 2', gridRow: `${getDisplayRow(9)} / span 1` }">
             Лантаноиды
           </div>
           <div
             v-if="showSeriesLabels"
-            class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-muted) relative z-10 flex items-center border border-dashed px-1 text-center text-[0.52rem] leading-tight sm:px-2 sm:text-[0.68rem]"
+            class="bg-(--lab-bg-surface) text-(--lab-text-muted) relative z-10 flex items-center border border-dashed px-1 text-center text-[0.52rem] leading-tight sm:px-2 sm:text-[0.68rem]"
             :style="{ gridColumn: '1 / span 2', gridRow: `${getDisplayRow(10)} / span 1` }">
             Актиноиды
           </div>

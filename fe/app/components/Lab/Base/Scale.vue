@@ -131,7 +131,6 @@
 </template>
 <style scoped>
   .scale-segment-idle {
-    border-color: var(--lab-border);
     background: var(--lab-bg-control);
   }
   .scale-segment-idle:hover:enabled {

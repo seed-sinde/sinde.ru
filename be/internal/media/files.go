@@ -317,11 +317,11 @@ func upsertMetadata(ctx context.Context, imageKey string, fileHash string, targe
 			$6,
 			'runtime',
 			jsonb_build_object(
-				'storage_ext', $7,
-				'section', $8,
-				'collection', $9,
-				'user_id', NULLIF($10, ''),
-				'recipe_id', NULLIF($11, '')
+				'storage_ext', $7::text,
+				'section', $8::text,
+				'collection', $9::text,
+				'user_id', NULLIF($10::text, ''),
+				'recipe_id', NULLIF($11::text, '')
 			)
 		)
 		ON CONFLICT (storage_key) DO UPDATE

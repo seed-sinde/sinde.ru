@@ -2,7 +2,7 @@
 const themes = ['dark', 'light'] as const
 const runtimeConfig = useRuntimeConfig()
 const requestUrl = useRequestURL()
-const { localeTag, effectiveTheme, themeColor, faviconSrc } = useInterfacePreferences()
+const { localeTag, effectiveTheme, themeColor, faviconSrc, themePreference } = useInterfacePreferences()
 const siteUrl = computed(() => {
   const configured = String(runtimeConfig.public.baseURL || '').trim()
   if (configured) return configured.replace(/\/+$/, '')
@@ -10,24 +10,25 @@ const siteUrl = computed(() => {
 })
 const defaultOgImage = computed(() => `${siteUrl.value}/favicon-dark.svg`)
 const htmlThemeClass = computed(() => `theme-${effectiveTheme.value}`)
+const faviconLinks = computed(() => [
+  ...(themePreference.value === 'system' ? [] : [{ rel: 'icon', href: faviconSrc.value }]),
+  ...themes.map(t => ({
+    rel: 'icon',
+    href: t === 'dark' ? '/favicon-dark.svg' : '/favicon-light.svg',
+    media: `(prefers-color-scheme: ${t})`
+  })),
+  {
+    rel: 'apple-touch-icon',
+    href: '/pwa-180.png',
+  },
+])
 useHead({
   titleTemplate: t => t ? `${t} · sinde` : 'sinde',
   htmlAttrs: {
     lang: localeTag,
     class: htmlThemeClass
   },
-  link: [
-    { rel: 'icon', href: faviconSrc },
-    ...themes.map(t => ({
-      rel: 'icon',
-      href: `/favicon-${t}.svg`,
-      media: `(prefers-color-scheme: ${t})`
-    })),
-    {
-      rel: 'apple-touch-icon',
-      href: '/pwa-180.png',
-    },
-  ],
+  link: faviconLinks,
   meta: [
     { key: 'referrer', name: 'referrer', content: 'strict-origin-when-cross-origin' },
     {

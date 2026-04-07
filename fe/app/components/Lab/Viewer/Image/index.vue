@@ -2,59 +2,70 @@
   <div v-if="isVisible" class="viewer-shell fixed inset-0 z-60">
     <div class="flex h-full w-full flex-col">
       <div class="z-10" @click.stop>
-        <div class="viewer-toolbar flex max-w-full flex-wrap items-center justify-end gap-2.5 px-2.5 py-1.5 sm:px-3">
-          <div v-if="hasMultipleItems" class="viewer-counter px-2.5 py-1 text-xs font-medium tabular-nums">
-            {{ activeCounterLabel }}
+        <div class="relative">
+          <div
+            ref="toolbarScrollerRef"
+            class="viewer-toolbar lab-scroll-hidden overflow-x-auto overflow-y-hidden px-2.5 py-1.5 sm:px-3">
+            <div class="flex min-w-max items-center justify-end gap-2.5">
+              <div class="flex shrink-0 items-center justify-end gap-1.5">
+                <LabBaseButton
+                  icon="ic:round-swap-horiz"
+                  icon-only
+                  :title="t('viewer.flip_x')"
+                  :aria-label="t('viewer.flip_x')"
+                  variant="secondary"
+                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
+                  @click="toggleFlipX" />
+                <LabBaseButton
+                  icon="ic:round-swap-vert"
+                  icon-only
+                  :title="t('viewer.flip_y')"
+                  :aria-label="t('viewer.flip_y')"
+                  variant="secondary"
+                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
+                  @click="toggleFlipY" />
+                <LabBaseButton
+                  icon="ic:round-rotate-left"
+                  icon-only
+                  :title="t('viewer.rotate_left')"
+                  :aria-label="t('viewer.rotate_left')"
+                  variant="secondary"
+                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
+                  @click="rotateLeft" />
+                <LabBaseButton
+                  icon="ic:round-rotate-right"
+                  icon-only
+                  :title="t('viewer.rotate_right')"
+                  :aria-label="t('viewer.rotate_right')"
+                  variant="secondary"
+                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
+                  @click="rotateRight" />
+              </div>
+              <span class="viewer-divider hidden h-5 w-px shrink-0 sm:block" aria-hidden="true"></span>
+              <div class="viewer-meta flex shrink-0 items-center gap-1.5 text-sm font-medium">
+                {{ t('viewer.scale') }}
+                <p class="viewer-scale-value tabular-nums">
+                  {{ scaleLabel }}
+                </p>
+              </div>
+              <slot name="toolbar-extra" :active-index="activeIndex" :active-item="activeItem" :items="resolvedItems" />
+              <LabBaseButton
+                icon="ic:round-close"
+                icon-only
+                :title="t('viewer.close')"
+                :aria-label="t('viewer.close')"
+                variant="secondary"
+                @click="close" />
+            </div>
           </div>
-          <div class="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-            <LabBaseButton
-              icon="ic:round-swap-horiz"
-              icon-only
-              title="Отразить по горизонтали"
-              aria-label="Отразить по горизонтали"
-              variant="secondary"
-              button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-              @click="toggleFlipX" />
-            <LabBaseButton
-              icon="ic:round-swap-vert"
-              icon-only
-              title="Отразить по вертикали"
-              aria-label="Отразить по вертикали"
-              variant="secondary"
-              button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-              @click="toggleFlipY" />
-            <LabBaseButton
-              icon="ic:round-rotate-left"
-              icon-only
-              title="Повернуть против часовой стрелки на 90 градусов"
-              aria-label="Повернуть против часовой стрелки на 90 градусов"
-              variant="secondary"
-              button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-              @click="rotateLeft" />
-            <LabBaseButton
-              icon="ic:round-rotate-right"
-              icon-only
-              title="Повернуть по часовой стрелке на 90 градусов"
-              aria-label="Повернуть по часовой стрелке на 90 градусов"
-              variant="secondary"
-              button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-              @click="rotateRight" />
-          </div>
-          <span class="viewer-divider hidden h-5 w-px shrink-0 sm:block" aria-hidden="true"></span>
-          <div class="viewer-meta flex shrink-0 items-center gap-1.5 text-sm font-medium">
-            масштаб:
-            <p class="viewer-scale-value tabular-nums">
-              {{ scaleLabel }}
-            </p>
-          </div>
-          <slot name="toolbar-extra" :active-index="activeIndex" :active-item="activeItem" :items="resolvedItems" />
-          <LabBaseButton
-            icon="ic:round-close"
-            icon-only
-            title="Закрыть окно"
-            aria-label="Закрыть окно"
-            variant="secondary"
-            @click="close" />
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-left"
+            :class="{ 'lab-scroll-fade-visible': toolbarScrollState.left }"
+            aria-hidden="true"></div>
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-right"
+            :class="{ 'lab-scroll-fade-visible': toolbarScrollState.right }"
+            aria-hidden="true"></div>
         </div>
       </div>
       <div :class="viewportClass">
@@ -64,9 +75,10 @@
             icon="ic:round-navigate-before"
             size="xl"
             icon-only
-            aria-label="Предыдущее изображение"
+            :title="t('viewer.previous')"
+            :aria-label="t('viewer.previous')"
             variant="secondary"
-            button-class="viewer-nav pointer-events-auto h-full w-16 cursor-pointer sm:w-32 rounded-none"
+            button-class="viewer-nav pointer-events-auto h-full w-16 cursor-pointer opacity-100 sm:w-32 rounded-none"
             @click.stop="showPreviousImage" />
         </div>
         <div class="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-stretch">
@@ -75,9 +87,10 @@
             icon="ic:round-navigate-next"
             size="xl"
             icon-only
-            aria-label="Следующее изображение"
+            :title="t('viewer.next')"
+            :aria-label="t('viewer.next')"
             variant="secondary"
-            button-class="viewer-nav pointer-events-auto h-full w-16 cursor-pointer sm:w-32 rounded-none"
+            button-class="viewer-nav pointer-events-auto h-full w-16 cursor-pointer opacity-100 sm:w-32 rounded-none"
             @click.stop="showNextImage" />
         </div>
         <div
@@ -113,43 +126,62 @@
             </div>
           </div>
         </div>
+        <div
+          class="lab-scroll-fade lab-scroll-fade-x-left"
+          :class="{ 'viewer-edge-fade-visible': viewportScrollState.left && !showOverlayNavButtons }"
+          aria-hidden="true"></div>
+        <div
+          class="lab-scroll-fade lab-scroll-fade-x-right"
+          :class="{ 'viewer-edge-fade-visible': viewportScrollState.right && !showOverlayNavButtons }"
+          aria-hidden="true"></div>
+        <div
+          class="viewer-edge-fade viewer-edge-fade-top"
+          :class="{ 'viewer-edge-fade-visible': viewportScrollState.top }"
+          aria-hidden="true"></div>
+        <div
+          class="viewer-edge-fade viewer-edge-fade-bottom"
+          :class="{ 'viewer-edge-fade-visible': viewportScrollState.bottom }"
+          aria-hidden="true"></div>
       </div>
       <div
         v-if="hasMultipleItems || activeItemHasCredits || displayTitle"
-        class="viewer-footer px-3 py-3 sm:px-4"
+        class="viewer-footer px-3 pb-3 pt-0 sm:px-4"
         @click.stop>
         <div v-if="hasMultipleItems" class="flex items-center gap-2">
-          <div class="min-w-0 flex-1 overflow-x-auto">
-            <div class="flex min-w-max gap-2">
-              <button
-                v-for="(item, index) in resolvedItems"
-                :key="`${item.src}:${index}`"
-                type="button"
-                class="viewer-thumb relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border sm:h-18 sm:w-18"
-                :class="index === activeIndex ? 'viewer-thumb-active' : 'viewer-thumb-inactive'"
-                :aria-label="`Открыть изображение ${index + 1}`"
-                :aria-current="index === activeIndex ? 'true' : undefined"
-                @click="setActiveIndex(index)">
-                <img
-                  :src="item.thumbnailSrc || item.src"
-                  :alt="item.alt"
-                  class="h-full w-full object-cover"
-                  loading="lazy"
-                  decoding="async" />
-                <div
-                  class="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent"
-                  :class="index === activeIndex ? 'opacity-100' : 'opacity-65'"></div>
-                <div class="absolute inset-x-1.5 bottom-1.5 flex items-center justify-between gap-1">
-                  <span class="viewer-thumb-label truncate text-[10px] font-semibold">
-                    {{ index + 1 }}
-                  </span>
+          <div class="relative min-w-0 flex-1">
+            <div ref="thumbScrollerRef" class="lab-scroll-hidden min-w-0 overflow-x-auto pb-2">
+              <div class="flex min-w-max gap-2">
+                <button
+                  v-for="(item, index) in resolvedItems"
+                  :key="`${item.src}:${index}`"
+                  type="button"
+                  :data-thumb-index="index"
+                  class="viewer-thumb relative h-16 w-16 shrink-0 overflow-visible sm:h-18 sm:w-18"
+                  :class="index === activeIndex ? 'viewer-thumb-active' : 'viewer-thumb-inactive'"
+                  :aria-label="`Открыть изображение ${index + 1}`"
+                  :aria-current="index === activeIndex ? 'true' : undefined"
+                  @click="setActiveIndex(index)">
                   <span
-                    class="viewer-thumb-dot h-2.5 w-2.5 rounded-full border"
-                    :class="index === activeIndex ? 'viewer-thumb-dot-active' : 'viewer-thumb-dot-inactive'"
+                    class="viewer-thumb-indicator absolute inset-x-0 top-0 h-1"
+                    :class="index === activeIndex ? 'viewer-thumb-indicator-active' : 'viewer-thumb-indicator-inactive'"
                     aria-hidden="true"></span>
-                </div>
-              </button>
+                  <img
+                    :src="item.thumbnailSrc || item.src"
+                    :alt="item.alt"
+                    class="h-full w-full object-cover pt-1.5"
+                    loading="lazy"
+                    decoding="async" />
+                </button>
+              </div>
             </div>
+            <div
+              class="lab-scroll-fade lab-scroll-fade-x-left viewer-edge-fade-footer"
+              :class="{ 'lab-scroll-fade-visible': thumbScrollState.left }"
+              aria-hidden="true"></div>
+            <div
+              class="lab-scroll-fade lab-scroll-fade-x-right viewer-edge-fade-footer"
+              :class="{ 'lab-scroll-fade-visible': thumbScrollState.right }"
+              aria-hidden="true"></div>
           </div>
         </div>
         <LabViewerImageCredits
@@ -165,6 +197,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  const { t } = useInterfacePreferences()
   const props = withDefaults(
     defineProps<{
       modelValue?: boolean
@@ -279,12 +312,13 @@
     Boolean((props.modelValue || requestedRouteIndex.value !== null) && activeItem.value?.src)
   )
   const displayTitle = computed(() => activeItem.value?.title || normalizeViewerText(props.title))
-  const activeCounterLabel = computed(() => `${activeIndex.value + 1} / ${resolvedItems.value.length}`)
   const imageNatural = reactive({
     width: 0,
     height: 0
   })
   const viewportRef = ref<HTMLElement | null>(null)
+  const toolbarScrollerRef = ref<HTMLElement | null>(null)
+  const thumbScrollerRef = ref<HTMLElement | null>(null)
   const imageRef = ref<HTMLImageElement | null>(null)
   const VIEWER_TRANSITION_MS = 300
   const viewportSize = reactive({
@@ -329,11 +363,13 @@
   const VIEWPORT_PADDING_X = 80
   const VIEWPORT_PADDING_Y = 24
   const availableViewportSize = computed(() => {
-    const extraX = hasMultipleItems.value ? 96 : 0
+    const horizontalPadding = viewportSize.width < 640 ? 12 : VIEWPORT_PADDING_X * 2
+    const verticalPadding = viewportSize.width < 640 ? 12 : VIEWPORT_PADDING_Y * 2
+    const extraX = showOverlayNavButtons.value ? 96 : 0
     const extraY = hasMultipleItems.value || activeItemHasCredits.value || displayTitle.value ? 12 : 0
     return {
-      width: Math.max(0, viewportSize.width - VIEWPORT_PADDING_X * 2 - extraX),
-      height: Math.max(0, viewportSize.height - VIEWPORT_PADDING_Y * 2 - extraY)
+      width: Math.max(0, viewportSize.width - horizontalPadding - extraX),
+      height: Math.max(0, viewportSize.height - verticalPadding - extraY)
     }
   })
   const fitsViewport = computed(() => {
@@ -378,16 +414,16 @@
   })
   const canPanImage = computed(() => effectiveMode.value === 'original' && hasOriginalOverflow.value)
   const viewportClass = computed(() => {
-    return ['relative min-h-0 flex-1 overflow-hidden']
+    return ['viewer-viewport relative min-h-0 flex-1 overflow-hidden']
   })
   const contentViewportClass = computed(() => [
-    'h-full w-full',
+    'viewer-content-viewport h-full w-full',
     canPanImage.value ? 'overflow-auto' : 'overflow-hidden'
   ])
   const contentClass = computed(() => {
     const baseClass = [
-      'box-border flex min-h-full min-w-full px-16 py-4 sm:px-20 sm:py-6',
-      hasMultipleItems.value ? 'px-20 sm:px-24' : '',
+      'box-border flex min-h-full min-w-full px-3 py-3 sm:px-20 sm:py-6',
+      hasMultipleItems.value ? 'sm:px-24' : '',
       hasMultipleItems.value || activeItemHasCredits.value ? 'py-2 sm:py-3' : ''
     ]
       .filter(Boolean)
@@ -538,6 +574,15 @@
     swiped: false,
     animating: false
   })
+  const { edges: toolbarScrollState, sync: syncToolbarScrollState } = useScrollableEdges(toolbarScrollerRef, {
+    axis: 'x'
+  })
+  const { edges: thumbScrollState, sync: syncThumbScrollState } = useScrollableEdges(thumbScrollerRef, {
+    axis: 'x'
+  })
+  const { edges: viewportScrollState, sync: syncViewportScrollState } = useScrollableEdges(viewportRef, {
+    axis: 'both'
+  })
   let swipeResetTimer: number | null = null
   const resetViewportTouchState = () => {
     if (swipeResetTimer !== null && import.meta.client) {
@@ -683,6 +728,9 @@
     if (!viewport) return
     viewportSize.width = viewport.clientWidth
     viewportSize.height = viewport.clientHeight
+    syncViewportScrollState()
+    syncToolbarScrollState()
+    syncThumbScrollState()
   }
   const alignOriginalPosition = () => {
     if (!import.meta.client) return
@@ -693,6 +741,21 @@
     const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
     viewport.scrollLeft = maxScrollLeft > 0 ? Math.round(maxScrollLeft / 2) : 0
     viewport.scrollTop = maxScrollTop > 0 ? Math.round(maxScrollTop / 2) : 0
+    syncViewportScrollState()
+  }
+  const centerActiveThumbnail = () => {
+    if (!import.meta.client || !hasMultipleItems.value) return
+    const scroller = thumbScrollerRef.value
+    if (!scroller) return
+    const activeThumb = scroller.querySelector<HTMLElement>(`[data-thumb-index="${activeIndex.value}"]`)
+    if (!activeThumb) return
+    const targetLeft = activeThumb.offsetLeft - Math.max(0, (scroller.clientWidth - activeThumb.offsetWidth) / 2)
+    const maxScrollLeft = Math.max(0, scroller.scrollWidth - scroller.clientWidth)
+    scroller.scrollTo({
+      left: Math.min(maxScrollLeft, Math.max(0, targetLeft)),
+      behavior: 'smooth'
+    })
+    requestAnimationFrame(syncThumbScrollState)
   }
   let resizeObserver: ResizeObserver | null = null
   let revealFrameId: number | null = null
@@ -749,6 +812,8 @@
         void syncRouteQuery(activeIndex.value)
         nextTick(updateViewportSize)
         nextTick(alignOriginalPosition)
+        nextTick(syncToolbarScrollState)
+        nextTick(syncThumbScrollState)
         resetMode()
         emit('opened')
       }
@@ -787,6 +852,7 @@
       resetViewportTouchState()
       resetActiveImageState()
       queueLoadedImageStateSync()
+      nextTick(centerActiveThumbnail)
     }
   )
   watch([fitsViewport, () => stageSize.width, () => stageSize.height], () => {
@@ -802,7 +868,20 @@
     if (!next) return
     nextTick(observeViewport)
     queueLoadedImageStateSync()
+    nextTick(centerActiveThumbnail)
+    nextTick(syncToolbarScrollState)
+    nextTick(syncViewportScrollState)
   })
+  watch(
+    [() => activeIndex.value, () => viewportSize.width, resolvedItems],
+    () => {
+      if (!isVisible.value) return
+      nextTick(centerActiveThumbnail)
+      nextTick(syncToolbarScrollState)
+      nextTick(syncViewportScrollState)
+    },
+    { flush: 'post' }
+  )
   watch(
     [isVisible, () => activeItem.value?.src, () => imageRef.value],
     ([visible, src, img]) => {
@@ -830,32 +909,99 @@
 </script>
 <style scoped>
   .viewer-shell {
-    background: var(--lab-bg-canvas);
+    background-color: var(--lab-bg-canvas);
   }
+  /* 1. Область просмотра (viewport) должна быть оберткой для узора */
+  .viewer-content-viewport {
+    position: relative;
+    overflow: hidden; /* Чтобы узор не вылезал за границы */
+    background-color: var(--lab-bg-canvas); /* Фон под узором */
+  }
+
+  /* 2. Узор через ::before, чтобы он всегда был ПОД контентом */
+  .viewer-content-viewport::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    /* Уменьшаем размер сетки до 8px и делаем точки полупрозрачными */
+    background-image: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--lab-text-primary) 12%, transparent) 0.8px,
+      transparent 0.8px
+    );
+
+    /* Плотность точек: чем меньше число, тем ближе они друг к другу */
+    background-size: 8px 8px;
+
+    /* Убираем лишние наложения, оставляем чистый цвет текста с низкой прозрачностью */
+    background-repeat: repeat;
+  }
+
+  /* Гарантируем прозрачность фона у контента */
+  .viewer-content-viewport,
+  .viewer-content-viewport > div {
+    background: transparent !important;
+  }
+
+  /* 4. Чтобы узор не "дергался" при анимации фото */
+  .viewer-content-viewport .content-class,
+  .viewer-content-viewport .stage-class {
+    background: transparent !important;
+  }
+
   .viewer-toolbar,
   .viewer-loader,
   .viewer-footer {
     background: var(--lab-bg-canvas);
   }
   .viewer-toolbar {
-    border-bottom: 1px solid var(--lab-border);
+    border-bottom: 1px solid;
+    border-color: var(--lab-border);
+  }
+  .viewer-edge-fade {
+    pointer-events: none;
+    position: absolute;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+  .viewer-edge-fade-visible {
+    opacity: 1;
+  }
+  .viewer-edge-fade-top,
+  .viewer-edge-fade-bottom {
+    left: 0;
+    right: 0;
+    height: 1.5rem;
+  }
+  .viewer-edge-fade-top {
+    top: 0;
+    background: linear-gradient(to bottom, var(--lab-bg-canvas), transparent);
+  }
+  .viewer-edge-fade-bottom {
+    bottom: 0;
+    background: linear-gradient(to top, var(--lab-bg-canvas), transparent);
+  }
+  .viewer-edge-fade-footer {
+    top: 0;
+    bottom: 0.5rem;
   }
   .viewer-footer {
-    border-top: 1px solid var(--lab-border);
-  }
-  .viewer-counter {
-    background: var(--lab-bg-control);
-    color: var(--lab-text-secondary);
+    border-top: 1px solid;
+    border-color: var(--lab-border);
   }
   .viewer-action,
   .viewer-nav {
-    border-color: var(--lab-border) !important;
     background: var(--lab-bg-control) !important;
     color: var(--lab-text-primary);
   }
   .viewer-nav {
     border-top: 0 !important;
     border-bottom: 0 !important;
+    opacity: 1 !important;
   }
   .viewer-nav:first-child {
     border-left: 0 !important;
@@ -883,32 +1029,24 @@
     text-align: right;
   }
   .viewer-thumb-active {
-    border-color: var(--lab-text-primary);
-    background: color-mix(in srgb, var(--lab-text-primary) 10%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lab-text-primary) 58%, transparent);
+    opacity: 1;
   }
   .viewer-thumb-inactive {
-    border-color: color-mix(in srgb, var(--lab-border) 82%, transparent);
+    opacity: 0.72;
   }
   .viewer-thumb-inactive:hover {
-    border-color: var(--lab-border-strong);
+    opacity: 0.92;
   }
-  .viewer-thumb-label {
-    color: rgb(255 255 255);
-  }
-  .viewer-thumb-dot {
-    border-color: rgb(255 255 255);
-  }
-  .viewer-thumb-dot-active {
+  .viewer-thumb-indicator-active {
     background: var(--lab-accent);
-    border-color: color-mix(in srgb, var(--lab-accent-hover) 64%, transparent);
   }
-  .viewer-thumb-dot-inactive {
+  .viewer-thumb-indicator-inactive {
     background: transparent;
   }
   :deep(.viewer-action .iconify),
   :deep(.viewer-nav .iconify) {
     color: currentColor;
+    opacity: 1;
   }
   .viewer-slide-next-enter-active,
   .viewer-slide-next-leave-active,

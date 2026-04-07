@@ -102,7 +102,7 @@
       tone: 'danger'
     }
   ] as const
-  const privacyHref = '/dev/privacy-confidentiality'
+  const privacyHref = '/terms'
   const isEnglishLocale = computed(() => localeCode.value === 'en')
   const isLightTheme = computed(() => effectiveTheme.value === 'light')
   const tbankLogoAlt = computed(() =>
@@ -113,15 +113,15 @@
   <div class="offer-page">
     <LabNavHeader :title />
     <section class="flex w-full flex-col gap-3 p-3 sm:gap-4 sm:p-4">
-      <section class="offer-shell grid gap-3 border p-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)] sm:p-5">
-        <p class="text-(--lab-text-secondary) text-sm leading-6 sm:text-base">
+      <section class="offer-shell flex flex-wrap items-start gap-3">
+        <p class="text-(--lab-text-secondary) min-w-0 flex-1 basis-full text-sm leading-6 lg:basis-80 sm:text-base">
           Условия регулируют предоставление доступа к данным, интерфейсам, API и иному цифровому контенту платформы.
         </p>
-        <div class="grid gap-3">
+        <div class="flex flex-1 flex-wrap gap-3 basis-full">
           <article
             v-for="item in offerFacts"
             :key="item.label"
-            class="offer-fact border px-4 py-3"
+            class="offer-fact min-w-52 flex-1 border px-4 py-3"
             :class="`offer-fact-${item.tone}`">
             <p class="text-(--lab-text-muted) text-xs uppercase tracking-[0.16em]">{{ item.label }}</p>
             <p class="text-(--lab-text-primary) mt-1 text-sm leading-6 sm:text-base">{{ item.value }}</p>
@@ -153,7 +153,7 @@
             <NuxtLink
               v-if="section.title === 'Персональные данные'"
               :to="privacyHref"
-              class="border-(--lab-border) text-(--lab-text-primary) inline-flex items-center border px-3 py-2 text-sm ring-1 ring-transparent transition focus-visible:outline-none focus-visible:ring-2">
+              class="text-(--lab-text-primary) inline-flex items-center border px-3 py-2 text-sm ring-1 ring-transparent transition focus-visible:outline-none focus-visible:ring-2">
               <span>Политика конфиденциальности</span>
             </NuxtLink>
           </div>
@@ -307,10 +307,8 @@
   .offer-page {
     background: var(--lab-bg-canvas);
   }
-  .offer-shell,
   .offer-section,
   .offer-footer {
-    border-color: var(--lab-border);
     background: var(--lab-bg-surface);
   }
   .offer-fact,

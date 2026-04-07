@@ -272,6 +272,10 @@
     return extractKitchenEditSlug(route.path)
   })
   const routeEditRecipeId = computed(() => extractKitchenRecipeId(routeEditSlug.value))
+  const requestedKitchenTab = computed(() => {
+    const raw = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab
+    return String(raw || '').trim()
+  })
   const loadingRouteRecipeId = ref<string | null>(null)
   const {
     data: routeEditRecipeData,
@@ -289,7 +293,7 @@
   )
   const kitchenTabItems = computed<LabTabItem[]>(() => {
     const items: LabTabItem[] = [...kitchenBaseTabItems]
-    if (!isKitchenEditRoute.value && activeKitchenTab.value === 'create') {
+    if (!isKitchenEditRoute.value && (activeKitchenTab.value === 'create' || requestedKitchenTab.value === 'create')) {
       items.push({ value: 'create', label: 'Новый рецепт' })
     }
     if (isKitchenEditRoute.value || activeKitchenTab.value === 'edit') {

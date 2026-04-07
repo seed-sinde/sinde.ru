@@ -119,6 +119,25 @@ func (h *Handler) RequestEmailVerification() fiber.Handler {
 		return responses.Success(c, fiber.StatusAccepted, fiber.Map{"queued": true})
 	}
 }
+func (h *Handler) RequestEmailChange() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		user := middleware.CurrentUser(c)
+		if user == nil {
+			return responses.Error(c, fiber.StatusUnauthorized, "требуется аутентификация")
+		}
+		if !h.validateOrigin(c) {
+			return responses.Error(c, fiber.StatusForbidden, "источник запроса не разрешен")
+		}
+		var input auth.RequestEmailChangeInput
+		if err := c.Bind().Body(&input); err != nil {
+			return responses.Error(c, fiber.StatusBadRequest, "некорректный запрос", err.Error())
+		}
+		if err := h.service.RequestEmailChange(c.Context(), user, input.Email, deviceFromCtx(c)); err != nil {
+			return authError(c, err)
+		}
+		return responses.Success(c, fiber.StatusAccepted, fiber.Map{"queued": true})
+	}
+}
 func (h *Handler) VerifyEmail() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if !h.validateOrigin(c) {
@@ -128,10 +147,11 @@ func (h *Handler) VerifyEmail() fiber.Handler {
 		if err := c.Bind().Body(&input); err != nil {
 			return responses.Error(c, fiber.StatusBadRequest, "некорректный запрос", err.Error())
 		}
-		if err := h.service.VerifyEmail(c.Context(), input.Token); err != nil {
+		result, err := h.service.VerifyEmail(c.Context(), input.Token, deviceFromCtx(c))
+		if err != nil {
 			return authError(c, err)
 		}
-		return responses.Success(c, fiber.StatusOK, fiber.Map{"verified": true})
+		return responses.Success(c, fiber.StatusOK, result)
 	}
 }
 func (h *Handler) Login() fiber.Handler {

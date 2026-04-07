@@ -42,9 +42,7 @@ CREATE TABLE IF NOT EXISTS chemistry_elements(
   CONSTRAINT chemistry_elements_category_not_blank CHECK (btrim(category) <> ''),
   CONSTRAINT chemistry_elements_summary_not_blank CHECK (btrim(summary) <> ''),
   CONSTRAINT chemistry_elements_samples_array CHECK (jsonb_typeof(samples) = 'array'),
-  CONSTRAINT chemistry_elements_sample_fallback_object CHECK (
-    sample_fallback IS NULL OR jsonb_typeof(sample_fallback) = 'object'
-  )
+  CONSTRAINT chemistry_elements_sample_fallback_object CHECK (sample_fallback IS NULL OR jsonb_typeof(sample_fallback) = 'object')
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_chemistry_elements_symbol_unique ON chemistry_elements(symbol);
 CREATE INDEX IF NOT EXISTS idx_chemistry_elements_category ON chemistry_elements(category);

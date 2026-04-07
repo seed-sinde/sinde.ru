@@ -59,7 +59,7 @@
     }>(),
     {
       containerClass:
-        'space-y-3 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:mt-2 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:border-t max-sm:[&_.lab-tabs-root_.lab-tabs-root]:border-(--lab-border) max-sm:[&_.lab-tabs-root_.lab-tabs-root]:pt-2',
+        'space-y-3 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:mt-2 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:border-t max-sm:[&_.lab-tabs-root_.lab-tabs-root]:pt-2',
       listClass: 'scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--lab-border-strong)',
       buttonClass: '',
       activeClass:

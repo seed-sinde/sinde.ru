@@ -135,8 +135,7 @@
   <div class="space-y-4">
     <LabNavHeader :title />
     <section class="space-y-4 p-4">
-      <section
-        class="overflow-hidden border border-zinc-800 bg-zinc-950/78 p-4 sm:rounded-3xl sm:p-5">
+      <section class="overflow-hidden border border-zinc-800 bg-zinc-950/78 p-4 sm:p-5">
         <div class="grid gap-4 xl:grid-cols-5">
           <div class="space-y-4 xl:col-span-3">
             <div
@@ -221,8 +220,7 @@
         </div>
       </section>
       <section class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <article
-          class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
+        <article class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
           <div class="space-y-2">
             <div class="text-xs uppercase tracking-[0.2em] text-sky-300">Уровни представления</div>
             <h2 class="text-2xl font-semibold text-zinc-100">Глубина настраивается, модель остаётся одной</h2>
@@ -236,8 +234,7 @@
             </div>
           </div>
         </article>
-        <article
-          class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
+        <article class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
           <div class="space-y-2">
             <div class="text-xs uppercase tracking-[0.2em] text-emerald-300">Временная линия</div>
             <h2 class="text-2xl font-semibold text-zinc-100">Производство читается как последовательность этапов</h2>
@@ -284,8 +281,7 @@
         </div>
       </section>
       <section class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <article
-          class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
+        <article class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
           <div class="space-y-2">
             <div class="text-xs uppercase tracking-[0.2em] text-lime-300">Как пользоваться</div>
             <h2 class="text-2xl font-semibold text-zinc-100">Рабочий сценарий пользователя</h2>
@@ -300,8 +296,7 @@
             </article>
           </div>
         </article>
-        <article
-          class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
+        <article class="rounded-3xl border border-zinc-800 bg-zinc-950/78 p-5">
           <div class="space-y-2">
             <div class="text-xs uppercase tracking-[0.2em] text-rose-300">Что может содержать раздел</div>
             <h2 class="text-2xl font-semibold text-zinc-100">Данные и артефакты проекта</h2>

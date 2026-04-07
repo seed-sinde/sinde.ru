@@ -1,4 +1,27 @@
 -- +goose Up
+-- +goose StatementBegin
+DO $$
+BEGIN
+  IF to_regclass('public.storage_objects') IS NOT NULL AND NOT EXISTS(
+    SELECT
+      1
+    FROM
+      information_schema.columns
+    WHERE
+      table_schema = 'public' AND table_name = 'storage_objects' AND column_name = 'object_id') THEN
+    IF EXISTS(
+      SELECT
+        1
+      FROM
+        storage_objects
+      LIMIT 1) THEN
+  RAISE EXCEPTION 'legacy storage_objects table contains data; manual migration required before applying the current storage schema';
+  END IF;
+  DROP TABLE storage_objects;
+END IF;
+END
+$$;
+-- +goose StatementEnd
 CREATE TABLE IF NOT EXISTS storage_objects(
   object_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   storage_key text NOT NULL UNIQUE,
@@ -22,8 +45,8 @@ ALTER TABLE storage_objects
   ADD COLUMN IF NOT EXISTS source_kind text,
   ADD COLUMN IF NOT EXISTS metadata jsonb,
   ADD COLUMN IF NOT EXISTS updated_at timestamptz;
-
-UPDATE storage_objects
+UPDATE
+  storage_objects
 SET
   file_hash = COALESCE(file_hash, ''),
   source_kind = COALESCE(source_kind, 'runtime'),
@@ -34,7 +57,6 @@ WHERE
   OR source_kind IS NULL
   OR metadata IS NULL
   OR updated_at IS NULL;
-
 ALTER TABLE storage_objects
   ALTER COLUMN file_hash SET DEFAULT '',
   ALTER COLUMN file_hash SET NOT NULL,
@@ -44,20 +66,20 @@ ALTER TABLE storage_objects
   ALTER COLUMN metadata SET NOT NULL,
   ALTER COLUMN updated_at SET DEFAULT now(),
   ALTER COLUMN updated_at SET NOT NULL;
-
 -- +goose StatementBegin
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'chk_storage_objects_source_kind'
-      AND conrelid = 'storage_objects'::regclass
-  ) THEN
-    ALTER TABLE storage_objects
-      ADD CONSTRAINT chk_storage_objects_source_kind
-      CHECK (source_kind IN ('seed', 'runtime', 'import'));
-  END IF;
+  IF NOT EXISTS(
+    SELECT
+      1
+    FROM
+      pg_constraint
+    WHERE
+      conname = 'chk_storage_objects_source_kind'
+      AND conrelid = 'storage_objects'::regclass) THEN
+  ALTER TABLE storage_objects
+    ADD CONSTRAINT chk_storage_objects_source_kind CHECK(source_kind IN('seed', 'runtime', 'import'));
+END IF;
 END
 $$;
 -- +goose StatementEnd

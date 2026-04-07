@@ -51,11 +51,8 @@
   <div>
     <LabNavHeader :title />
     <section class="space-y-4 p-4">
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <article
-          v-for="item in principles"
-          :key="item.title"
-          class="border border-zinc-800 bg-zinc-900/50 p-4 transition ring-1 ring-transparent hover:ring-zinc-700">
+      <div class="lab-grid-table sm:grid-cols-2 xl:grid-cols-2">
+        <article v-for="item in principles" :key="item.title" class="lab-grid-table-cell p-4">
           <p class="mb-2 text-sm" :class="item.tone">{{ item.title }}</p>
           <p class="text-sm text-gray-300">{{ item.text }}</p>
         </article>

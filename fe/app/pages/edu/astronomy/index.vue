@@ -983,7 +983,7 @@
     top: 0;
     z-index: 20;
     margin-bottom: 1rem;
-    border-bottom: 1px solid var(--lab-border);
+    border-bottom: 1px solid;
     background: color-mix(in srgb, var(--lab-bg-overlay) 96%, transparent);
     backdrop-filter: blur(8px);
   }
@@ -996,7 +996,7 @@
   .astro-section {
     width: min(100%, var(--astro-page-max-width));
     margin: 0 auto 1rem;
-    border: 1px solid var(--lab-border);
+    border: 1px solid;
     background: color-mix(in srgb, var(--lab-bg-surface-muted) 92%, transparent);
     scroll-margin-top: 4rem;
   }
@@ -1082,7 +1082,7 @@
   .astro-color-card,
   .astro-card {
     min-width: 0;
-    border: 1px solid var(--lab-border);
+    border: 1px solid;
     background: var(--astro-card-bg);
     padding: 0.875rem;
   }
@@ -1119,7 +1119,7 @@
   }
   .astro-panel {
     min-width: 0;
-    border: 1px solid var(--lab-border);
+    border: 1px solid;
     background: var(--astro-panel-bg);
     padding: 0.75rem;
   }
@@ -1195,7 +1195,7 @@
     align-items: center;
     gap: 0.75rem;
     width: 100%;
-    border: 1px solid var(--lab-border);
+    border: 1px solid;
     background: color-mix(in srgb, var(--lab-bg-control) 88%, transparent);
     padding: 0.75rem;
     text-align: left;
@@ -1257,7 +1257,7 @@
     flex-direction: column;
     gap: 1rem;
     scroll-snap-align: center;
-    border: 1px solid var(--lab-border);
+    border: 1px solid;
     background: var(--astro-card-bg);
     padding: 1rem;
   }

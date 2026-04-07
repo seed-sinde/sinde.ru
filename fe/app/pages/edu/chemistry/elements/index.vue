@@ -103,11 +103,9 @@
   })
   const categoryPanelToneClass = computed(() => {
     if (!selectedCategoryEntry.value) {
-      return 'border-(--lab-border) bg-(--lab-bg-surface-muted)'
+      return 'bg-(--lab-bg-surface-muted)'
     }
-    return effectiveTheme.value === 'light'
-      ? 'border-(--lab-border) bg-(--lab-bg-surface)'
-      : 'border-(--lab-border) bg-(--lab-bg-surface-muted)'
+    return effectiveTheme.value === 'light' ? 'bg-(--lab-bg-surface)' : 'bg-(--lab-bg-surface-muted)'
   })
   const isElementDimmed = (number: number, category: string) => {
     if (!visibleElementIds.value.has(number)) return true
@@ -149,12 +147,12 @@
         ]" />
     </div>
     <section
-      class="min-h-0 h-auto overflow-auto max-h-[calc(100dvh-var(--periodic-header-height,72px)-1rem)] sm:mx-6 sm:border sm:border-(--lab-border) sm:bg-(--lab-bg-surface-muted) sm:max-h-[calc(100dvh-var(--periodic-header-height,0px)-1.5rem)]"
+      class="min-h-0 h-auto overflow-auto max-h-[calc(100dvh-var(--periodic-header-height,72px)-1rem)] sm:mx-6 sm:border sm:bg-(--lab-bg-surface-muted) sm:max-h-[calc(100dvh-var(--periodic-header-height,0px)-1.5rem)]"
       :class="isMobileViewport ? 'mx-0 border-0 bg-transparent' : 'mx-3'"
       :style="tableShellStyle">
       <div :class="isMobileViewport ? 'px-1 py-1' : 'px-2 py-2 sm:px-3 sm:py-3'">
         <div
-          class="border-(--lab-border) bg-(--lab-bg-overlay) sticky top-0 z-20 border-b px-2 py-2 lg:hidden"
+          class="bg-(--lab-bg-overlay) sticky top-0 z-20 border-b px-2 py-2 lg:hidden"
           :class="isMobileViewport ? '-mx-1 px-1.5' : '-mx-2'">
           <div class="flex flex-wrap items-center gap-2">
             <div class="min-w-0 flex-1 basis-full">
@@ -164,14 +162,14 @@
                 v-model="searchQuery"
                 placeholder="Поиск"
                 aria-label="Поиск элемента по периодической системе химических элементов"
-                input-class="border-(--lab-border) bg-(--lab-bg-control) text-(--lab-text-primary) placeholder:text-(--lab-text-soft) !min-h-10 px-3 py-2 text-xs" />
+                input-class="bg-(--lab-bg-control) text-(--lab-text-primary) placeholder:text-(--lab-text-soft) !min-h-10 px-3 py-2 text-xs" />
             </div>
             <div class="min-w-0 basis-full sm:basis-56">
               <LabBaseSelect
                 v-model="selectedCategory"
                 :options="categoryOptions"
                 aria-label="Выбор категории элементов"
-                select-class="border-(--lab-border) bg-(--lab-bg-control) text-(--lab-text-primary) !min-h-10 w-full px-3 py-2 text-xs" />
+                select-class="bg-(--lab-bg-control) text-(--lab-text-primary) !min-h-10 w-full px-3 py-2 text-xs" />
             </div>
           </div>
         </div>
@@ -194,11 +192,11 @@
                     v-model="selectedCategory"
                     :options="categoryOptions"
                     aria-label="Выбор категории элементов"
-                    select-class="border-(--lab-border) bg-(--lab-bg-control) text-(--lab-text-primary) text-xs" />
+                    select-class="bg-(--lab-bg-control) text-(--lab-text-primary) text-xs" />
                 </div>
                 <div class="text-(--lab-text-secondary) flex items-center gap-2 text-xs xl:hidden">
                   <span
-                    class="border-(--lab-border) h-2.5 w-2.5 border"
+                    class="h-2.5 w-2.5 border"
                     :style="{ backgroundColor: selectedCategoryEntry?.color || 'var(--lab-text-muted)' }"></span>
                   <LabHelpTooltip class="" :text="categoryPanelDescription" />
                 </div>

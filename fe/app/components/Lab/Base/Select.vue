@@ -178,7 +178,6 @@
   })
   const resolvedDropdownStyle = computed(() => ({
     ...panelStyle.value,
-    borderColor: 'var(--lab-border)',
     background: 'var(--lab-bg-canvas)',
     color: 'var(--lab-text-primary)'
   }))

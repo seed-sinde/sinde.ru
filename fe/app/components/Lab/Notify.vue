@@ -1,5 +1,9 @@
 <template>
-  <component :is="as" v-show="resolvedText" :class="resolvedClassWithVisibility">
+  <component
+    :is="as"
+    v-show="resolvedText"
+    :class="resolvedClassWithVisibility"
+    :aria-live="props.tone === 'error' ? 'assertive' : 'polite'">
     {{ resolvedText }}
   </component>
 </template>
@@ -25,22 +29,26 @@
     }
   )
   const toneClass: Record<NotifyTone, string> = {
-    error: 'lab-text-danger',
-    success: 'lab-text-success',
-    info: 'lab-text-secondary',
-    warning: 'lab-text-warning'
+    error:
+      'lab-text-danger bg-[color-mix(in_srgb,var(--lab-danger)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-danger)_22%,transparent)]',
+    success:
+      'lab-text-success bg-[color-mix(in_srgb,var(--lab-success)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-success)_22%,transparent)]',
+    info:
+      'lab-text-secondary bg-[color-mix(in_srgb,var(--lab-text-secondary)_10%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-text-secondary)_18%,transparent)]',
+    warning:
+      'lab-text-warning bg-[color-mix(in_srgb,var(--lab-warning)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-warning)_22%,transparent)]'
   }
   const sizeClass: Record<NotifySize, string> = {
-    xs: 'min-h-4 text-xs',
-    sm: 'min-h-5 text-sm',
-    base: 'min-h-6 text-base'
+    xs: 'min-h-4 px-2.5 py-1.5 text-xs leading-4',
+    sm: 'min-h-5 px-3 py-2 text-sm leading-5',
+    base: 'min-h-6 px-3.5 py-2.5 text-base leading-6'
   }
   const resolvedText = computed(() => String(props.text || '').trim())
   const visible = ref(false)
   let hideTimer: ReturnType<typeof setTimeout> | null = null
   const shouldAutoHide = computed(() => {
-    if (props.tone === 'error') return false
     if (typeof props.temporary === 'boolean') return props.temporary
+    if (props.tone === 'error') return false
     return props.tone === 'success'
   })
   const clearHideTimer = () => {
@@ -75,7 +83,7 @@
     sizeClass[props.size],
     toneClass[props.tone],
     props.className,
-    'transition-opacity duration-200',
+    'block max-w-full wrap-break-word transition-opacity duration-200',
     visible.value ? 'visible opacity-100' : 'invisible opacity-0'
   ])
 </script>

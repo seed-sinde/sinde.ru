@@ -18,7 +18,7 @@
   const linkClass = 'text-(--lab-text-soft) hover:text-(--lab-text-primary) shrink-0 text-xs transition-colors'
 </script>
 <template>
-  <div v-if="(showControls && !collapsed) || showLinks" class="space-y-2">
+  <div v-if="(showControls && !collapsed) || showLinks" class="min-w-0 basis-72 flex-1">
     <div v-if="showLinks" class="flex flex-wrap items-center gap-x-3 gap-y-1">
       <NuxtLink v-if="showAdminLinks" to="/auth/admin" :class="linkClass">
         {{ t('nav.admin') }}

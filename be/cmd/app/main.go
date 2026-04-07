@@ -1,5 +1,4 @@
 package main
-
 import (
 	"fmt"
 	"github.com/goccy/go-json"
@@ -15,17 +14,17 @@ import (
 	authsvc "sinde.ru/internal/auth"
 	routes "sinde.ru/internal/http"
 	authhandlers "sinde.ru/internal/http/handlers/auth"
+	paymenthandlers "sinde.ru/internal/http/handlers/payments"
 	"sinde.ru/internal/http/middleware"
+	paymentsvc "sinde.ru/internal/payments"
 	"sinde.ru/utils"
 	"strings"
 	"syscall"
 )
-
 const (
 	ansiReset = "\033[0m"
 	ansiRed   = "\033[31m"
 )
-
 func main() {
 	if err := runServer(); err != nil {
 		log.SetFlags(0)
@@ -55,11 +54,17 @@ func runServer() error {
 	}
 	defer authService.Close()
 	authHandler := authhandlers.New(authService)
+	paymentConfig, err := paymentsvc.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Payments config error: %w", err)
+	}
+	paymentService := paymentsvc.NewService(paymentsvc.NewRepository(db.PDB), paymentConfig, paymentsvc.Dependencies{})
+	paymentHandler := paymenthandlers.New(paymentService)
 	app := fiber.New(fiber.Config{
 		CaseSensitive:      true,
 		StrictRouting:      false,
 		ServerHeader:       "",
-		AppName:            "Sinde Lab.",
+		AppName:            "",
 		JSONEncoder:        json.Marshal,
 		JSONDecoder:        json.Unmarshal,
 		DisableDefaultDate: true,
@@ -90,7 +95,7 @@ func runServer() error {
 		ExposeHeaders:    []string{"Content-Length", "Content-Type", "Etag", "Vary", "Date", "Set-Cookie"},
 		AllowCredentials: true,
 	}))
-	routes.SetupRoutes(app, authHandler)
+	routes.SetupRoutes(app, authHandler, paymentHandler)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	go func() {

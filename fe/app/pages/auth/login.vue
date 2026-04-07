@@ -373,10 +373,6 @@
           :items="mfaTabItems"
           route-query-key="mfa"
           route-default-value="totp"
-          list-class="flex flex-wrap gap-2"
-          button-class="inline-flex h-9 items-center justify-center border px-3 text-xs transition-colors"
-          active-class="auth-tab-active"
-          inactive-class="auth-tab-inactive"
           panel-class="space-y-4">
           <template #panel-totp>
             <AuthCodeInput
@@ -421,7 +417,7 @@
 </template>
 <style scoped>
   .auth-panel {
-    border: 1px solid var(--lab-border);
+    border: 1px solid;
   }
   .auth-panel-warning {
     border-color: color-mix(in srgb, var(--lab-warning) 34%, transparent);
@@ -436,21 +432,6 @@
   .auth-panel-kicker {
     color: currentColor;
     opacity: 0.8;
-  }
-  .auth-tab-active {
-    border-color: color-mix(in srgb, var(--lab-accent) 34%, transparent);
-    background: color-mix(in srgb, var(--lab-accent) 12%, var(--lab-bg-surface));
-    color: var(--lab-accent);
-  }
-  .auth-tab-inactive {
-    border-color: var(--lab-border);
-    background: var(--lab-bg-control);
-    color: var(--lab-text-secondary);
-  }
-  .auth-tab-inactive:hover {
-    border-color: var(--lab-border-strong);
-    background: var(--lab-bg-control-hover);
-    color: var(--lab-text-primary);
   }
   .auth-countdown {
     border: 1px solid color-mix(in srgb, var(--lab-warning) 34%, transparent);

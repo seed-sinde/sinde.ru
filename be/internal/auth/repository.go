@@ -76,6 +76,17 @@ func (r *Repository) MarkUserEmailVerified(ctx context.Context, userID uuid.UUID
 	`, t, userID)
 	return err
 }
+func (r *Repository) UpdateUserEmail(ctx context.Context, userID uuid.UUID, email string, emailNormalized string, t time.Time) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE users
+		SET email = $1,
+			email_normalized = $2,
+			status = 'active',
+			email_verified_at = $3
+		WHERE user_id = $4
+	`, email, emailNormalized, t, userID)
+	return err
+}
 func (r *Repository) CreateActionToken(ctx context.Context, token *models.ActionToken) error {
 	const query = `
 		INSERT INTO auth_action_tokens (

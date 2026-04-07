@@ -172,8 +172,7 @@
 <template>
   <div class="bg-(--lab-bg-canvas) text-(--lab-text-secondary) min-h-screen lg:h-screen lg:overflow-hidden">
     <main class="flex min-h-screen w-full flex-col lg:h-full lg:flex-row lg:overflow-hidden">
-      <div
-        class="border-(--lab-border) bg-(--lab-bg-overlay) sticky top-0 z-40 flex items-center gap-2 border-b lg:hidden">
+      <div class="bg-(--lab-bg-overlay) sticky top-0 z-40 flex items-center gap-2 border-b lg:hidden">
         <LabBaseButton
           icon="ic:round-menu"
           icon-only
@@ -198,7 +197,7 @@
           link-class="hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover) my-1 mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center bg-transparent p-1 text-(--lab-text-primary) transition-colors" />
       </div>
       <LabNavDrawer v-model="isMenuOpen" :items="sidebar_items" />
-      <aside class="border-(--lab-border) hidden h-full min-h-0 shrink-0 border-r lg:block">
+      <aside class="hidden h-full min-h-0 shrink-0 border-r lg:block">
         <LabNavSidebar
           :items="sidebar_items"
           :collapsed="isDesktopMenuCollapsed"
@@ -209,9 +208,11 @@
       </aside>
       <div ref="pageScroll" class="min-h-0 min-w-0 lg:flex-1 lg:overflow-y-auto">
         <slot></slot>
-        <div class="flex items-center gap-2 m-4">
-          <LabLocaleSwitcher />
-          <LabThemeSwitcher />
+        <div class="m-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div class="flex shrink-0 items-center gap-2">
+            <LabLocaleSwitcher />
+            <LabThemeSwitcher />
+          </div>
           <LabNavFooter :show-controls="false" :show-links="true" />
         </div>
         <div class="h-16 lg:h-12" aria-hidden="true"></div>
