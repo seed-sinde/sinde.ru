@@ -96,7 +96,11 @@
       <div class="px-2">
         <LabAvatar
           :show-label="!collapsed"
-          :link-class="collapsed ? 'mx-auto justify-center' : ''"
+          :link-class="
+            collapsed
+              ? 'mx-auto min-h-8 justify-center px-1.5 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
+              : 'min-h-8 px-2 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
+          "
           @request-close="emit('request-close')" />
       </div>
     </div>

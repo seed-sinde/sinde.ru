@@ -42,6 +42,7 @@
   ::backdrop,
   ::file-selector-button {
     border-color: var(--lab-border);
+    --tw-ring-color: var(--lab-border);
   }
 
   html.theme-dark {
@@ -208,6 +209,10 @@
     border-color: rgb(244 63 94 / 0.92);
   }
 
+  .lab-control-borderless {
+    border-width: 0;
+  }
+
   .lab-surface {
     @apply border;
     border-color: var(--lab-border);
@@ -345,7 +350,10 @@
 
   .lab-button:focus,
   .lab-button:focus-visible {
-    border-color: color-mix(in srgb, var(--lab-accent) 72%, transparent);
+    border-color: var(--lab-text-primary);
+    background: var(--lab-bg-surface-hover);
+    color: var(--lab-text-primary);
+    outline: none;
   }
 
   .lab-button:disabled {
@@ -366,6 +374,13 @@
     background: var(--lab-accent-hover);
   }
 
+  .lab-button-primary:focus,
+  .lab-button-primary:focus-visible {
+    border-color: rgb(125 211 252);
+    background: rgb(8 145 178);
+    color: rgb(8 8 10);
+  }
+
   html.theme-light .lab-button-primary {
     border-color: rgb(37 99 235);
     background: rgb(37 99 235);
@@ -375,6 +390,13 @@
   html.theme-light .lab-button-primary:hover:enabled {
     border-color: rgb(29 78 216);
     background: rgb(29 78 216);
+  }
+
+  html.theme-light .lab-button-primary:focus,
+  html.theme-light .lab-button-primary:focus-visible {
+    border-color: rgb(14 116 144);
+    background: rgb(34 211 238);
+    color: rgb(8 47 73);
   }
 
   .lab-button-secondary {
@@ -400,6 +422,13 @@
     background: var(--lab-danger-hover);
   }
 
+  .lab-button-danger:focus,
+  .lab-button-danger:focus-visible {
+    border-color: rgb(253 224 71);
+    background: rgb(250 204 21);
+    color: rgb(67 20 7);
+  }
+
   html.theme-light .lab-button-danger {
     border-color: color-mix(in srgb, var(--lab-danger) 38%, transparent);
     background: color-mix(in srgb, var(--lab-danger) 14%, white);
@@ -423,6 +452,13 @@
     background: var(--lab-success-hover);
   }
 
+  .lab-button-success:focus,
+  .lab-button-success:focus-visible {
+    border-color: rgb(253 224 71);
+    background: rgb(250 204 21);
+    color: rgb(20 83 45);
+  }
+
   .lab-button-info {
     border-color: var(--lab-info);
     background: var(--lab-info);
@@ -432,6 +468,13 @@
   .lab-button-info:hover:enabled {
     border-color: var(--lab-info-hover);
     background: var(--lab-info-hover);
+  }
+
+  .lab-button-info:focus,
+  .lab-button-info:focus-visible {
+    border-color: rgb(253 224 71);
+    background: rgb(250 204 21);
+    color: rgb(22 78 99);
   }
 
   .lab-button-ghost {
