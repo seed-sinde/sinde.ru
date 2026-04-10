@@ -102,6 +102,7 @@
           @touchend="onViewportTouchEnd"
           @touchcancel="resetViewportTouchState">
           <div :class="contentClass" :style="contentStyle">
+            <div class="viewer-content-pattern" aria-hidden="true"></div>
             <div ref="stageRef" :class="stageClass">
               <Transition :name="slideTransitionName">
                 <div v-if="activeItem" :key="activeItem.src" :class="stageItemClass">
@@ -917,37 +918,22 @@
     background-color: var(--lab-bg-canvas); /* Фон под узором */
   }
 
-  /* 2. Узор через ::before, чтобы он всегда был ПОД контентом */
-  .viewer-content-viewport::before {
-    content: '';
+  .viewer-content-pattern {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-
-    /* Уменьшаем размер сетки до 8px и делаем точки полупрозрачными */
     background-image: radial-gradient(
       circle,
       color-mix(in srgb, var(--lab-text-primary) 12%, transparent) 0.8px,
       transparent 0.8px
     );
-
-    /* Плотность точек: чем меньше число, тем ближе они друг к другу */
     background-size: 8px 8px;
-
-    /* Убираем лишние наложения, оставляем чистый цвет текста с низкой прозрачностью */
     background-repeat: repeat;
   }
 
-  /* Гарантируем прозрачность фона у контента */
   .viewer-content-viewport,
   .viewer-content-viewport > div {
-    background: transparent !important;
-  }
-
-  /* 4. Чтобы узор не "дергался" при анимации фото */
-  .viewer-content-viewport .content-class,
-  .viewer-content-viewport .stage-class {
     background: transparent !important;
   }
 

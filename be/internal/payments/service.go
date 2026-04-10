@@ -179,7 +179,11 @@ func buildRedirectURL(baseURL string, path string, orderID uuid.UUID, token stri
 	if next := normalizeReturnTo(returnTo); next != "" {
 		values.Set("next", next)
 	}
-	return buildURL(baseURL, path, values)
+	// T-Bank expects these placeholders literally in the return URL query.
+	return strings.NewReplacer(
+		"%24%7BPaymentId%7D", "${PaymentId}",
+		"%24%7BStatus%7D", "${Status}",
+	).Replace(buildURL(baseURL, path, values))
 }
 
 func internalStatusFromProvider(providerStatus string, success bool) string {
