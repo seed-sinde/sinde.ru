@@ -975,7 +975,7 @@
                         class="inline-grid grid-cols-[max-content_2rem] items-start gap-1.5">
                         <button
                           type="button"
-                          class="text-(--lab-text-primary) border-b border-transparent hover:border-(--lab-border) focus-visible:ring-(--lab-accent) inline-flex items-center bg-transparent py-0 text-left text-xl font-semibold outline-none transition-colors ring-0"
+                          class="text-(--lab-text-primary) border-b border-transparent focus-visible:ring-(--lab-accent) inline-flex items-center bg-transparent py-0 text-left text-xl font-semibold outline-none transition-colors ring-0"
                           @click="editingDisplayName = true">
                           <span>{{ displayNameText }}</span>
                         </button>
@@ -1088,7 +1088,7 @@
                 <p class="mt-1 text-sm text-(--lab-text-muted)">До {{ paymentAccessUntilText || '—' }}.</p>
               </div>
 
-              <div v-else class="rounded-2xl border border-(--lab-border) bg-(--lab-bg-soft) p-4">
+              <div v-else class="rounded-2xl border bg-(--lab-bg-soft) p-4">
                 <div class="text-sm font-medium text-(--lab-text-primary)">Активного доступа нет</div>
                 <p class="mt-1 text-sm text-(--lab-text-muted)">
                   Можно перейти к странице оплаты и открыть доступ на месяц.

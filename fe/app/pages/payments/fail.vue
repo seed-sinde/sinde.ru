@@ -1,9 +1,10 @@
 <script setup lang="ts">
-  const title = 'Оплата не завершена'
+  const { t, localeTag } = useInterfacePreferences()
+  const title = t('payments.fail.seo_title')
 
   usePageSeo({
     title,
-    description: 'Проверка статуса неуспешного или отменённого платежа.'
+    description: t('payments.fail.seo_description')
   })
 
   const route = useRoute()
@@ -16,6 +17,8 @@
   const errorMessage = ref('')
   const order = ref<PaymentOrderView | null>(null)
 
+  const sectionClass = 'bg-(--lab-bg-elevated) p-5 sm:p-6'
+
   const orderId = computed(() => String(route.query.order_id || '').trim())
   const token = computed(() => String(route.query.token || '').trim())
   const nextPath = computed(() => normalizeInternalPath(String(route.query.next || '').trim()))
@@ -23,40 +26,56 @@
   const statusTitle = computed(() => {
     switch (order.value?.status) {
       case 'pending':
-        return 'Платёж ещё обрабатывается'
+        return t('payments.lookup.status.pending')
       case 'failed':
-        return 'Платёж завершился ошибкой'
+        return t('payments.lookup.status.failed')
       case 'canceled':
-        return 'Платёж отменён'
+        return t('payments.lookup.status.canceled')
       case 'refunded':
-        return 'Платёж возвращён'
+        return t('payments.lookup.status.refunded')
       case 'success':
-        return 'Платёж всё же подтверждён'
+        return t('payments.lookup.success_from_fail')
       default:
-        return 'Оплата не завершена'
+        return t('payments.fail.title')
     }
   })
 
   const statusDescription = computed(() => {
     switch (order.value?.status) {
       case 'pending':
-        return 'Финальный статус ещё не получен. Можно повторить проверку.'
+        return t('payments.lookup.pending_from_fail')
       case 'failed':
-        return 'Банк не подтвердил платёж.'
+        return t('payments.lookup.failed_from_fail')
       case 'canceled':
-        return 'Пользователь или платёжный провайдер отменил операцию.'
+        return t('payments.lookup.canceled_from_fail')
       case 'refunded':
-        return 'По заказу зарегистрирован возврат.'
+        return t('payments.lookup.refunded_from_fail')
       case 'success':
         return order.value?.access_until
-          ? `Оплата подтверждена, доступ активен до ${formatAbsoluteDateTime(order.value.access_until)}.`
-          : 'Оплата всё же завершилась успешно.'
+          ? t('payments.lookup.success_from_fail_description', { date: formatAbsoluteDateTime(order.value.access_until) })
+          : t('payments.lookup.success_from_fail_default')
       default:
-        return 'Не удалось определить состояние заказа.'
+        return t('payments.lookup.unknown_status')
     }
   })
 
-  const amountText = computed(() => formatPrice(order.value?.amount || 0))
+  const amountText = computed(() => formatPaymentAmount(order.value?.amount || 0, localeTag.value))
+  const orderStatusLabel = computed(() => {
+    switch (order.value?.status) {
+      case 'success':
+        return t('payments.status.success')
+      case 'pending':
+        return t('payments.status.pending')
+      case 'failed':
+        return t('payments.status.failed')
+      case 'canceled':
+        return t('payments.status.canceled')
+      case 'refunded':
+        return t('payments.status.refunded')
+      default:
+        return t('payments.status.unknown')
+    }
+  })
 
   function normalizeInternalPath(value: string) {
     if (!value) return ''
@@ -64,14 +83,9 @@
     return value.startsWith('/') ? value : `/${value}`
   }
 
-  function formatPrice(amount: number) {
-    const rub = Math.floor(Number(amount || 0) / 100)
-    return new Intl.NumberFormat('ru-RU').format(rub) + ' ₽'
-  }
-
   async function loadOrder(syncState = true) {
     if (!orderId.value || !token.value) {
-      errorMessage.value = 'Недостаточно данных для проверки платежа'
+      errorMessage.value = t('payments.lookup.missing_data')
       loading.value = false
       return
     }
@@ -93,8 +107,7 @@
 
       order.value = res?.data?.order || null
     } catch (error: any) {
-      errorMessage.value =
-        String(error?.data?.message || error?.message || '').trim() || 'Не удалось получить состояние заказа'
+      errorMessage.value = String(error?.data?.message || error?.message || '').trim() || t('payments.lookup.error_generic')
     } finally {
       loading.value = false
       syncing.value = false
@@ -105,100 +118,114 @@
 </script>
 
 <template>
-  <div class="space-y-8">
-    <LabNavHeader :title />
+  <div class="space-y-6">
+    <LabNavHeader :title="t('payments.fail.title')" />
 
-    <section v-if="loading" class="border bg-(--lab-bg-elevated) p-5 text-sm text-(--lab-text-muted)">
-      Проверка статуса платежа…
-    </section>
+    <LabBaseSection v-if="loading" variant="plain" :section-class="sectionClass">
+      <p class="text-sm text-(--lab-text-secondary)">{{ t('payments.lookup.retrying') }}</p>
+    </LabBaseSection>
 
-    <section v-else-if="errorMessage" class="space-y-4 border border-(--lab-danger)/30 bg-(--lab-danger)/8 p-5">
-      <div class="text-base font-medium text-(--lab-text-primary)">Ошибка проверки платежа</div>
-      <p class="text-sm text-(--lab-text-muted)">
+    <LabBaseSection
+      v-else-if="errorMessage"
+      :title="t('payments.lookup.error_title')"
+      variant="plain"
+      section-class="bg-(--lab-danger)/10 p-5 sm:p-6"
+      content-class="space-y-4">
+      <p class="text-sm leading-6 text-(--lab-text-primary)">
         {{ errorMessage }}
       </p>
 
       <div class="flex flex-wrap gap-3">
-        <button
-          type="button"
-          class="inline-flex min-h-11 items-center justify-center border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)"
-          @click="loadOrder(true)">
-          Повторить проверку
-        </button>
-
-        <NuxtLink
-          to="/payments"
-          class="inline-flex min-h-11 items-center justify-center border px-4 text-sm text-(--lab-text-primary)">
-          Назад к оплате
-        </NuxtLink>
+        <LabBaseButton
+          variant="secondary"
+          size="lg"
+          :label="t('payments.lookup.retry')"
+          :button-style="{ borderWidth: '0px' }"
+          button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+          @click="loadOrder(true)" />
+        <LabBaseButton
+          variant="plain"
+          size="lg"
+          :label="t('payments.lookup.back')"
+          :button-style="{ borderWidth: '0px' }"
+          button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+          @click="navigateTo('/payments')" />
       </div>
-    </section>
+    </LabBaseSection>
 
     <template v-else-if="order">
-      <section class="space-y-3 border bg-(--lab-bg-elevated) p-5">
-        <h1 class="text-lg font-medium text-(--lab-text-primary)">
-          {{ statusTitle }}
-        </h1>
-        <p class="text-sm text-(--lab-text-muted)">
-          {{ statusDescription }}
-        </p>
-
-        <div class="flex flex-wrap gap-3 pt-2">
-          <button
-            v-if="order.status === 'pending'"
-            type="button"
-            class="inline-flex min-h-11 items-center justify-center border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary) disabled:opacity-60"
-            :disabled="syncing"
-            @click="loadOrder(true)">
-            {{ syncing ? 'Проверка…' : 'Проверить снова' }}
-          </button>
-
-          <NuxtLink
-            v-if="order.status === 'success' && nextPath"
-            :to="nextPath"
-            class="inline-flex min-h-11 items-center justify-center border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)">
-            Продолжить
-          </NuxtLink>
-
-          <NuxtLink
-            to="/payments"
-            class="inline-flex min-h-11 items-center justify-center border px-4 text-sm text-(--lab-text-primary)">
-            Попробовать снова
-          </NuxtLink>
+      <LabBaseSection variant="plain" :section-class="sectionClass" content-class="space-y-5">
+        <div class="space-y-3">
+          <p class="text-xs uppercase tracking-[0.22em] text-(--lab-danger)">{{ t('payments.fail.title') }}</p>
+          <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ statusTitle }}</h1>
+          <p class="max-w-2xl text-sm leading-6 text-(--lab-text-secondary)">{{ statusDescription }}</p>
         </div>
-      </section>
 
-      <section class="border bg-(--lab-bg-elevated) p-5">
-        <dl class="grid gap-3 sm:grid-cols-2">
-          <div class="space-y-1">
-            <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Заказ</dt>
-            <dd class="wrap-break-word text-sm text-(--lab-text-primary)">
-              {{ order.order_id }}
-            </dd>
+        <div class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div>
+            <p class="text-xs uppercase tracking-[0.18em] text-(--lab-danger)">{{ t('payments.lookup.status') }}</p>
+            <p class="mt-2 text-sm font-medium text-(--lab-text-primary)">{{ orderStatusLabel }}</p>
           </div>
 
-          <div class="space-y-1">
-            <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Статус</dt>
-            <dd class="text-sm text-(--lab-text-primary)">
-              {{ order.status }}
-            </dd>
-          </div>
+          <div class="flex flex-wrap gap-3">
+            <LabBaseButton
+              v-if="order.status === 'pending'"
+              variant="secondary"
+              size="lg"
+              :loading="syncing"
+              :loading-label="t('payments.lookup.retrying')"
+              :label="t('payments.lookup.retry_short')"
+              :button-style="{ borderWidth: '0px' }"
+              button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+              @click="loadOrder(true)" />
 
-          <div class="space-y-1">
-            <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Сумма</dt>
-            <dd class="text-sm text-(--lab-text-primary)">
-              {{ amountText }}
-            </dd>
-          </div>
+            <LabBaseButton
+              v-if="order.status === 'success' && nextPath"
+              variant="primary"
+              size="lg"
+              :label="t('payments.lookup.continue')"
+              :button-style="{ borderWidth: '0px' }"
+              button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+              @click="navigateTo(nextPath)" />
 
-          <div class="space-y-1">
-            <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Создан</dt>
-            <dd class="text-sm text-(--lab-text-primary)">
-              {{ order.created_at ? formatAbsoluteDateTime(order.created_at) : '—' }}
-            </dd>
+            <LabBaseButton
+              variant="plain"
+              size="lg"
+              :label="t('payments.lookup.try_again')"
+              :button-style="{ borderWidth: '0px' }"
+              button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+              @click="navigateTo('/payments')" />
           </div>
-        </dl>
-      </section>
+        </div>
+      </LabBaseSection>
+
+      <LabBaseSection
+        :title="t('payments.index.latest_order_title')"
+        variant="plain"
+        :section-class="sectionClass"
+        content-class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+        <div>
+          <p class="text-xs uppercase tracking-[0.18em] text-(--lab-danger)">{{ t('payments.lookup.order') }}</p>
+          <p class="mt-2 wrap-break-word text-sm text-(--lab-text-primary)">{{ order.order_id }}</p>
+        </div>
+
+        <div>
+          <p class="text-xs uppercase tracking-[0.18em] text-(--lab-danger)">{{ t('payments.lookup.status') }}</p>
+          <p class="mt-2 text-sm text-(--lab-text-primary)">{{ orderStatusLabel }}</p>
+        </div>
+
+        <div>
+          <p class="text-xs uppercase tracking-[0.18em] text-(--lab-danger)">{{ t('payments.lookup.amount') }}</p>
+          <p class="mt-2 text-sm text-(--lab-text-primary)">{{ amountText }}</p>
+        </div>
+
+        <div>
+          <p class="text-xs uppercase tracking-[0.18em] text-(--lab-danger)">{{ t('payments.lookup.created') }}</p>
+          <p class="mt-2 text-sm text-(--lab-text-primary)">
+            {{ order.created_at ? formatAbsoluteDateTime(order.created_at) : t('payments.status.unknown') }}
+          </p>
+        </div>
+      </LabBaseSection>
     </template>
   </div>
 </template>

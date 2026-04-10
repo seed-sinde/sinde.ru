@@ -21,6 +21,9 @@
     adminSearchKeys,
     adminTraitsSetsAnalysis
   } = useAuth()
+  const { adminSummary: loadPaymentsAdminSummary } = usePayments()
+  const { formatAbsoluteDateTime } = useLocalizedDateTime()
+  const { localeTag } = useInterfacePreferences()
   const users = ref<AdminUserView[]>([])
   const usersTotal = ref(0)
   const usersLimit = ref(50)
@@ -59,6 +62,9 @@
   const summaryLoading = ref(false)
   const summaryError = ref('')
   const summaryInfo = ref('')
+  const paymentsSummaryLoading = ref(false)
+  const paymentsSummaryError = ref('')
+  const paymentsSummary = ref<PaymentAdminOrdersSummary | null>(null)
   const summary = computed(() => sharedAdminSummary.value)
   const summaryReadPending = ref(false)
   const adminTab = ref<AdminTab>('users')
@@ -152,6 +158,24 @@
   const hasNextPage = computed(() => usersOffset.value + usersLimit.value < usersTotal.value)
   const formatPercent = (value?: number) => `${Math.round(Math.max(0, Number(value || 0)) * 100)}%`
   const displayNumber = (value?: number | null) => (value === null || value === undefined ? '—' : value)
+  const displayMoney = (value?: number | null) => formatPaymentAmount(Number(value || 0), localeTag.value)
+  const displayDateTime = (value?: string | null) => (value ? formatAbsoluteDateTime(value) : '—')
+  const paymentsStats = computed(() => [
+    { key: 'orders_total', label: 'Всего заказов', value: displayNumber(paymentsSummary.value?.orders_total) },
+    { key: 'orders_success', label: 'Успешных', value: displayNumber(paymentsSummary.value?.orders_success) },
+    { key: 'orders_pending', label: 'В обработке', value: displayNumber(paymentsSummary.value?.orders_pending) },
+    { key: 'orders_failed', label: 'Неуспешных', value: displayNumber(paymentsSummary.value?.orders_failed) },
+    { key: 'orders_refunded', label: 'Возвратов', value: displayNumber(paymentsSummary.value?.orders_refunded) },
+    { key: 'paid_users_total', label: 'Платящих пользователей', value: displayNumber(paymentsSummary.value?.paid_users_total) },
+    { key: 'patron_users_total', label: 'Поддержавших проект', value: displayNumber(paymentsSummary.value?.patron_users_total) },
+    { key: 'active_access_users', label: 'Активный доступ', value: displayNumber(paymentsSummary.value?.active_access_users) },
+    { key: 'gross_revenue', label: 'Оборот', value: displayMoney(paymentsSummary.value?.gross_revenue) },
+    { key: 'net_revenue', label: 'Чистая выручка', value: displayMoney(paymentsSummary.value?.net_revenue) },
+    { key: 'tip_revenue', label: 'Донаты', value: displayMoney(paymentsSummary.value?.tip_revenue) },
+    { key: 'mrr', label: 'MRR', value: displayMoney(paymentsSummary.value?.mrr) },
+    { key: 'churn_rate', label: 'Churn', value: formatPercent(paymentsSummary.value?.churn_rate) },
+    { key: 'patron_share', label: 'Доля поддержавших', value: formatPercent(paymentsSummary.value?.patron_share) }
+  ])
   const currentRole = (item: AdminUserView): 'admin' | 'user' => (item.roles.includes('admin') ? 'admin' : 'user')
   const userStatusLabel = (value?: string) => {
     const key = String(value || '').trim()
@@ -556,6 +580,19 @@
       summaryLoading.value = false
     }
   }
+  const loadPaymentsSummary = async () => {
+    paymentsSummaryLoading.value = true
+    paymentsSummaryError.value = ''
+    try {
+      const res = await loadPaymentsAdminSummary()
+      paymentsSummary.value = res.data || null
+    } catch (err: any) {
+      paymentsSummaryError.value = err?.data?.message || err?.message || 'Не удалось загрузить payments summary.'
+      paymentsSummary.value = null
+    } finally {
+      paymentsSummaryLoading.value = false
+    }
+  }
   const markSummaryRead = async () => {
     if (summaryReadPending.value) return
     summaryReadPending.value = true
@@ -610,6 +647,9 @@
       }
       if (!summary.value && !summaryLoading.value) {
         await loadAdminSummary()
+      }
+      if (!paymentsSummary.value && !paymentsSummaryLoading.value) {
+        await loadPaymentsSummary()
       }
     },
     { immediate: true }
@@ -1033,8 +1073,11 @@
         </div>
         <LabNotify :text="analysisError" tone="error" size="xs" />
         <LabNotify :text="summaryError" tone="error" size="xs" />
+        <LabNotify :text="paymentsSummaryError" tone="error" size="xs" />
         <LabNotify :text="summaryInfo" tone="success" size="xs" />
-        <p v-if="analysisLoading || summaryLoading" class="text-xs text-zinc-400">Обновление данных...</p>
+        <p v-if="analysisLoading || summaryLoading || paymentsSummaryLoading" class="text-xs text-zinc-400">
+          Обновление данных...
+        </p>
         <div :class="adminSubsectionClass">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-zinc-200">Сводка уведомлений</p>
@@ -1053,6 +1096,24 @@
             <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 p-2.5">
               <p class="text-zinc-500">Новых рецептов на модерации</p>
               <p class="text-zinc-100">{{ displayNumber(summary?.new_pending_recipes_since_last_login) }}</p>
+            </div>
+          </div>
+        </div>
+        <div :class="adminSubsectionClass">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="space-y-1">
+              <p class="text-zinc-200">Payments</p>
+              <p :class="adminMetaTextClass">Сводка заказов, выручки, активного доступа и доли поддержки проекта.</p>
+            </div>
+            <p :class="adminMetaTextClass">
+              Последний успешный платёж:
+              <span class="text-zinc-300">{{ displayDateTime(paymentsSummary?.last_successful_paid) }}</span>
+            </p>
+          </div>
+          <div class="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div v-for="item in paymentsStats" :key="item.key" :class="adminStatCardClass">
+              <p class="text-zinc-500">{{ item.label }}</p>
+              <p class="text-zinc-100">{{ item.value }}</p>
             </div>
           </div>
         </div>

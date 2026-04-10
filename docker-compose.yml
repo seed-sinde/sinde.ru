@@ -1,4 +1,4 @@
-name: app
+name: sinde
 services:
   postgres:
     image: postgres:18-alpine
@@ -9,8 +9,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - private
   redis:
     image: redis:8-alpine
     restart: unless-stopped
@@ -28,6 +31,8 @@ services:
         exec redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    networks:
+      - private
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
     restart: unless-stopped
@@ -46,7 +51,12 @@ services:
       - :9001
     volumes:
       - minio_data:/data
+    networks:
+      - private
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+
+networks:
+  private:

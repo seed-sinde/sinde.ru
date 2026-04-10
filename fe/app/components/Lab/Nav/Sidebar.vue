@@ -93,12 +93,12 @@
       <div v-if="!collapsed" class="px-1">
         <LabNavFooter :collapsed="collapsed" :show-controls="true" :show-links="false" />
       </div>
-      <div class="px-2">
+      <div :class="collapsed ? 'px-1' : 'px-2'">
         <LabAvatar
           :show-label="!collapsed"
           :link-class="
             collapsed
-              ? 'mx-auto min-h-8 justify-center px-1.5 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
+              ? 'mx-auto h-8 w-8 justify-center hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
               : 'min-h-8 px-2 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
           "
           @request-close="emit('request-close')" />

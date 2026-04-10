@@ -2,14 +2,11 @@
 import { env, isDev, runtimeConfig } from './config/nuxt-env'
 import { pwaConfig } from './config/nuxt-pwa'
 import { viteConfig, viteHooks } from './config/nuxt-vite'
-
 const isVitest = env.VITEST === '1' || env.VITEST === 'true' || env.NODE_ENV === 'test'
 const modules = ['@nuxt/fonts', '@nuxt/icon', '@pinia/nuxt', '@vite-pwa/nuxt']
-
 if (!isVitest) {
   modules.splice(2, 0, 'nuxt-security')
 }
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },

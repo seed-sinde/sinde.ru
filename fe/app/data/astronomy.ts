@@ -1,3 +1,5 @@
+const astronomyModelSrc = (fileName: string) => buildMediaFileUrl(`astronomy/models/${fileName}`)
+
 export type AstronomyPlanet = {
   id: string
   symbol: string
@@ -48,7 +50,7 @@ export const ASTRONOMY_SUN: AstronomyBody = {
   color: '#fbbf24',
   description:
     'Солнце содержит почти всю массу Солнечной системы и определяет орбитальную динамику планет, астероидов и комет.',
-  modelSrc: '/astronomy/models/sun.glb',
+  modelSrc: astronomyModelSrc('sun.glb'),
   modelSizeLabel: '2.1 МБ'
 }
 export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
@@ -62,7 +64,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 87.97,
     color: '#a1a1aa',
     description: 'Ближайшая к Солнцу планета с коротким годом и выраженными перепадами температуры.',
-    modelSrc: '/astronomy/models/mercury_planet.glb',
+    modelSrc: astronomyModelSrc('mercury_planet.glb'),
     modelSizeLabel: '3.6 МБ'
   },
   {
@@ -75,7 +77,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 224.7,
     color: '#d4a373',
     description: 'Плотная атмосфера Венеры создаёт мощный парниковый эффект и экстремально горячую поверхность.',
-    modelSrc: '/astronomy/models/venus.glb',
+    modelSrc: astronomyModelSrc('venus.glb'),
     modelSizeLabel: '1.4 МБ'
   },
   {
@@ -88,7 +90,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 365.256,
     color: '#60a5fa',
     description: 'Единственная известная планета с устойчивой жидкой водой на поверхности и сложной биосферой.',
-    modelSrc: '/astronomy/models/earth_new.glb',
+    modelSrc: astronomyModelSrc('earth_new.glb'),
     modelSizeLabel: '20.3 МБ',
     modelRotationPerSecond: '10deg'
   },
@@ -102,7 +104,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 686.98,
     color: '#f97316',
     description: 'Холодная каменистая планета с тонкой атмосферой, полярными шапками и древними следами воды.',
-    modelSrc: '/astronomy/models/mars.glb',
+    modelSrc: astronomyModelSrc('mars.glb'),
     modelSizeLabel: '6.0 МБ'
   },
   {
@@ -115,7 +117,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 4332.59,
     color: '#f59e0b',
     description: 'Крупнейшая планета системы, газовый гигант с мощной магнитосферой и многочисленными спутниками.',
-    modelSrc: '/astronomy/models/jupiter.glb',
+    modelSrc: astronomyModelSrc('jupiter.glb'),
     modelSizeLabel: '2.4 МБ'
   },
   {
@@ -128,7 +130,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 10759.22,
     color: '#eab308',
     description: 'Газовый гигант с выраженной кольцевой системой и богатым семейством ледяных спутников.',
-    modelSrc: '/astronomy/models/saturn.glb',
+    modelSrc: astronomyModelSrc('saturn.glb'),
     modelSizeLabel: '3.3 МБ'
   },
   {
@@ -141,7 +143,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 30688.5,
     color: '#67e8f9',
     description: 'Ледяной гигант, ось которого заметно наклонена, поэтому сезонные изменения здесь необычайно резкие.',
-    modelSrc: '/astronomy/models/uranus.glb',
+    modelSrc: astronomyModelSrc('uranus.glb'),
     modelSizeLabel: '229 КБ'
   },
   {
@@ -154,7 +156,7 @@ export const ASTRONOMY_PLANETS: AstronomyPlanet[] = [
     orbitalPeriodDays: 60182,
     color: '#38bdf8',
     description: 'Самая удалённая планета с быстрыми ветрами, глубокими облачными слоями и крупным спутником Тритоном.',
-    modelSrc: '/astronomy/models/neptune.glb',
+    modelSrc: astronomyModelSrc('neptune.glb'),
     modelSizeLabel: '1.7 МБ'
   }
 ]
@@ -170,7 +172,7 @@ export const ASTRONOMY_MOONS: AstronomyMoon[] = [
     orbitalPeriodDays: 27.32,
     color: '#d4d4d8',
     description: 'Спутник Земли, стабилизирующий наклон оси и заметно влияющий на приливы.',
-    modelSrc: '/astronomy/models/moon.glb',
+    modelSrc: astronomyModelSrc('moon.glb'),
     modelSizeLabel: '5.7 МБ'
   },
   {
