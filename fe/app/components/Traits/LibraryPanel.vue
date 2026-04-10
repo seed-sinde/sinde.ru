@@ -190,14 +190,14 @@
     </div>
   </div>
   <div v-else class="px-3 pb-4 sm:px-4 lg:px-5">
-    <div class="traits-library-layout mx-auto max-w-6xl gap-4">
-      <article class="traits-library-card space-y-4 p-4">
+    <div class="mx-auto grid max-w-6xl gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)]">
+      <article class="space-y-4 border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_88%,transparent)] p-4">
         <div class="flex flex-wrap items-center gap-2">
           <span class="lab-text-muted text-sm">Основной набор:</span>
           <NuxtLink
             v-if="hasPrimaryTrait"
             :to="`/traits/${primaryTraitUuid}`"
-            class="traits-library-link font-mono text-sm">
+            class="font-mono text-sm text-(--lab-text-primary) transition hover:text-(--lab-accent) focus-visible:text-(--lab-accent)">
             {{ formatShortUuid(primaryTraitUuid, 6) }}
           </NuxtLink>
           <span v-else class="lab-text-muted text-sm">ещё не назначен</span>
@@ -214,7 +214,7 @@
             Сделать основным набором
           </LabBaseButton>
         </div>
-        <div class="space-y-3 border-t border-zinc-800/80 pt-4">
+        <div class="space-y-3 border-t border-(--lab-border) pt-4">
           <div class="space-y-1">
             <h3 class="lab-text-primary text-sm font-medium">
               {{ currentSavedSet ? 'Редактировать запись текущего набора' : 'Сохранить текущий набор' }}
@@ -264,32 +264,37 @@
           </p>
         </div>
       </article>
-      <article class="traits-library-card space-y-3 p-4">
+      <article class="space-y-3 border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_88%,transparent)] p-4">
         <div class="flex items-center justify-between gap-3">
           <h3 class="lab-text-primary text-sm font-medium">Сохранённые наборы</h3>
           <span class="lab-text-muted text-xs">Всего: {{ savedSets.length }}</span>
         </div>
-        <div v-if="savedSets.length === 0" class="traits-library-empty px-4 py-3 text-sm">
+        <div
+          v-if="savedSets.length === 0"
+          class="border border-dashed border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_52%,transparent)] px-4 py-3 text-sm text-(--lab-text-muted)">
           Пока нет ни одного сохранённого набора.
         </div>
         <div v-else class="space-y-2">
-          <div v-for="item in savedSets" :key="item.saved_set_id" class="traits-library-item px-3 py-3">
+          <div
+            v-for="item in savedSets"
+            :key="item.saved_set_id"
+            class="border-[color-mix(in_srgb,var(--lab-border)_78%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_68%,transparent)] px-3 py-3">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0 flex-1 space-y-1">
                 <div class="flex flex-wrap items-center gap-2">
                   <NuxtLink
                     :to="`/traits/${item.set_uuid}`"
-                    class="traits-library-link min-w-0 truncate text-sm font-medium">
+                    class="min-w-0 truncate text-sm font-medium text-(--lab-text-primary) transition hover:text-(--lab-accent) focus-visible:text-(--lab-accent)">
                     {{ item.name }}
                   </NuxtLink>
                   <span
                     v-if="item.set_uuid === primaryTraitUuid"
-                    class="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs uppercase tracking-wide text-emerald-200">
+                    class="inline-flex items-center border border-(--lab-accent) bg-[color-mix(in_srgb,var(--lab-accent)_10%,transparent)] px-2 py-0.5 text-xs uppercase tracking-wide text-(--lab-accent)">
                     Основной
                   </span>
                   <span
                     v-if="item.set_uuid === currentTraitUuid"
-                    class="inline-flex items-center rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-xs uppercase tracking-wide text-amber-100">
+                    class="inline-flex items-center border border-(--lab-border) bg-(--lab-bg-surface-muted) px-2 py-0.5 text-xs uppercase tracking-wide text-(--lab-text-primary)">
                     Открыт
                   </span>
                 </div>
@@ -318,34 +323,3 @@
     </div>
   </div>
 </template>
-<style scoped>
-  .traits-library-layout {
-    display: grid;
-  }
-  @media (min-width: 1280px) {
-    .traits-library-layout {
-      grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr);
-    }
-  }
-  .traits-library-card {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 82%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface) 88%, transparent);
-  }
-  .traits-library-item {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 78%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface-subtle) 68%, transparent);
-  }
-  .traits-library-empty {
-    border: 1px dashed color-mix(in srgb, var(--lab-border) 82%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface-subtle) 52%, transparent);
-    color: var(--lab-text-muted);
-  }
-  .traits-library-link {
-    color: var(--lab-text-primary);
-    transition: color 0.15s ease;
-  }
-  .traits-library-link:hover,
-  .traits-library-link:focus-visible {
-    color: var(--lab-accent);
-  }
-</style>

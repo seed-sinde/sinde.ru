@@ -16,7 +16,9 @@
   )
   const resolvedButtonClass = computed(() => [
     'inline-flex items-center gap-1 whitespace-nowrap',
-    model.value ? 'kitchen-group-by-category-toggle-active' : '',
+    model.value
+      ? 'border-[color-mix(in_srgb,var(--lab-accent)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-accent)_14%,var(--lab-bg-control))] text-(--lab-text-primary) hover:enabled:border-[color-mix(in_srgb,var(--lab-accent)_56%,var(--lab-border-strong))] hover:enabled:bg-[color-mix(in_srgb,var(--lab-accent)_20%,var(--lab-bg-control-hover))]'
+      : '',
     props.buttonClass
   ])
   const resolvedTextClass = computed(() => props.textClass || 'text-xs lab-text-muted')
@@ -40,15 +42,3 @@
     {{ label }}
   </label>
 </template>
-<style scoped>
-  :deep(.kitchen-group-by-category-toggle-active) {
-    border-color: color-mix(in srgb, var(--lab-success) 42%, var(--lab-border));
-    background: color-mix(in srgb, var(--lab-success) 14%, var(--lab-bg-control));
-    color: var(--lab-text-primary);
-  }
-  :deep(.kitchen-group-by-category-toggle-active:hover:enabled) {
-    border-color: color-mix(in srgb, var(--lab-success) 56%, var(--lab-border-strong));
-    background: color-mix(in srgb, var(--lab-success) 20%, var(--lab-bg-control-hover));
-    color: var(--lab-text-primary);
-  }
-</style>

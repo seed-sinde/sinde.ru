@@ -1,14 +1,18 @@
 package main
+
 import (
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/etag"
 	"github.com/gofiber/fiber/v3/middleware/favicon"
-	"log"
-	"os"
-	"os/signal"
 	"sinde.ru/db"
 	"sinde.ru/db/services"
 	authsvc "sinde.ru/internal/auth"
@@ -18,13 +22,13 @@ import (
 	"sinde.ru/internal/http/middleware"
 	paymentsvc "sinde.ru/internal/payments"
 	"sinde.ru/utils"
-	"strings"
-	"syscall"
 )
+
 const (
 	ansiReset = "\033[0m"
 	ansiRed   = "\033[31m"
 )
+
 func main() {
 	if err := runServer(); err != nil {
 		log.SetFlags(0)

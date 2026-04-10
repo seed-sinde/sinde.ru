@@ -50,6 +50,22 @@
   )
   const isSelected = (value: string) => value === normalizedValue.value
   const isActive = (index: number) => selectedIndex.value >= 0 && index <= selectedIndex.value
+  const segmentClass = (option: { value: string; label: string; activeColor: string }, index: number) => [
+    'h-8 min-w-0 border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-(--lab-accent)',
+    props.disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+    isActive(index)
+      ? props.disabled
+        ? 'border-[color-mix(in_srgb,var(--scale-segment-color)_28%,var(--lab-border))] bg-[color-mix(in_srgb,var(--scale-segment-color)_12%,var(--lab-bg-control))] hover:enabled:border-[color-mix(in_srgb,var(--scale-segment-color)_28%,var(--lab-border))] hover:enabled:bg-[color-mix(in_srgb,var(--scale-segment-color)_12%,var(--lab-bg-control))]'
+        : 'border-[color-mix(in_srgb,var(--scale-segment-color)_55%,var(--lab-border))] bg-[color-mix(in_srgb,var(--scale-segment-color)_20%,var(--lab-bg-control))] hover:enabled:border-[color-mix(in_srgb,var(--scale-segment-color)_72%,var(--lab-border))] hover:enabled:bg-[color-mix(in_srgb,var(--scale-segment-color)_28%,var(--lab-bg-control))]'
+      : props.disabled
+        ? 'border-[color-mix(in_srgb,var(--lab-border)_85%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-control)_78%,transparent)]'
+        : 'bg-(--lab-bg-control) hover:enabled:border-(--lab-border-strong) hover:enabled:bg-(--lab-bg-surface-hover)',
+    isSelected(option.value)
+      ? props.disabled
+        ? 'border-[color-mix(in_srgb,var(--lab-text-primary)_50%,var(--lab-border))]'
+        : 'border-(--lab-text-primary)'
+      : ''
+  ]
   const selectValue = (index: number) => {
     if (props.disabled || index < 0 || index >= normalizedOptions.value.length) return
     const nextValue = normalizedOptions.value[index]?.value || ''
@@ -89,7 +105,6 @@
       :aria-disabled="disabled ? 'true' : 'false'"
       :aria-labelledby="labelId"
       class="grid gap-1"
-      :class="disabled ? 'scale-disabled' : ''"
       :style="{ gridTemplateColumns: `repeat(${normalizedOptions.length}, minmax(0, 1fr))` }"
       role="radiogroup"
       @keydown="onKeydown">
@@ -101,12 +116,7 @@
         :disabled="disabled"
         :style="{ '--scale-segment-color': option.activeColor }"
         :title="option.label"
-        class="h-8 min-w-0 rounded border outline-none transition-colors"
-        :class="[
-          isActive(index) ? 'scale-segment-active' : 'scale-segment-idle',
-          isSelected(option.value) ? 'scale-segment-selected' : '',
-          disabled ? 'scale-segment-disabled' : 'cursor-pointer'
-        ]"
+        :class="segmentClass(option, index)"
         role="radio"
         type="button"
         @click="selectValue(index)">
@@ -116,7 +126,7 @@
     <div
       v-if="normalizedOptions.length"
       class="grid gap-1"
-      :class="disabled ? 'scale-labels-disabled' : ''"
+      :class="disabled ? 'opacity-55' : ''"
       :style="{ gridTemplateColumns: `repeat(${normalizedOptions.length}, minmax(0, 1fr))` }">
       <div
         v-for="option in normalizedOptions"
@@ -129,46 +139,3 @@
     <input v-if="name" type="hidden" :name="name" :value="normalizedValue" />
   </LabField>
 </template>
-<style scoped>
-  .scale-segment-idle {
-    background: var(--lab-bg-control);
-  }
-  .scale-segment-idle:hover:enabled {
-    border-color: var(--lab-border-strong);
-    background: var(--lab-bg-surface-hover);
-  }
-  .scale-segment-idle:focus-visible {
-    border-color: var(--lab-accent);
-  }
-  .scale-segment-active {
-    border-color: color-mix(in srgb, var(--scale-segment-color) 55%, var(--lab-border));
-    background: color-mix(in srgb, var(--scale-segment-color) 20%, var(--lab-bg-control));
-  }
-  .scale-segment-active:hover:enabled {
-    border-color: color-mix(in srgb, var(--scale-segment-color) 72%, var(--lab-border));
-    background: color-mix(in srgb, var(--scale-segment-color) 28%, var(--lab-bg-control));
-  }
-  .scale-segment-active:focus-visible {
-    border-color: var(--scale-segment-color);
-  }
-  .scale-segment-selected {
-    border-color: var(--lab-text-primary);
-  }
-  .scale-segment-disabled {
-    cursor: not-allowed;
-  }
-  .scale-disabled .scale-segment-idle {
-    border-color: color-mix(in srgb, var(--lab-border) 85%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-control) 78%, transparent);
-  }
-  .scale-disabled .scale-segment-active {
-    border-color: color-mix(in srgb, var(--scale-segment-color) 28%, var(--lab-border));
-    background: color-mix(in srgb, var(--scale-segment-color) 12%, var(--lab-bg-control));
-  }
-  .scale-disabled .scale-segment-selected {
-    border-color: color-mix(in srgb, var(--lab-text-primary) 50%, var(--lab-border));
-  }
-  .scale-labels-disabled {
-    opacity: 0.55;
-  }
-</style>

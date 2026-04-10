@@ -4,8 +4,12 @@
     role="checkbox"
     :aria-checked="selected ? 'true' : 'false'"
     tabindex="0"
-    class="traits-card group cursor-pointer select-none p-3 focus-visible:outline-none"
-    :class="selected ? 'traits-card-selected' : 'traits-card-idle'"
+    class="group cursor-pointer select-none border p-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--lab-focus-ring)"
+    :class="
+      selected
+        ? 'border-[color-mix(in_srgb,var(--lab-accent)_52%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))]'
+        : 'border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_88%,transparent)] hover:border-[color-mix(in_srgb,var(--lab-border-strong)_88%,transparent)] hover:bg-[color-mix(in_srgb,var(--lab-bg-surface-hover)_78%,transparent)]'
+    "
     @click="toggleSelection"
     @keydown.enter.prevent="toggleSelection"
     @keydown.space.prevent="toggleSelection">
@@ -28,7 +32,7 @@
               <span class="lab-text-secondary inline-flex min-w-0 items-center gap-1.5 text-sm">
                 <span
                   v-if="colorInfo"
-                  class="h-2 w-2 shrink-0 rounded-full border border-zinc-500/70"
+                  class="h-2 w-2 shrink-0 rounded-full border border-(--lab-border)"
                   :style="{ backgroundColor: colorInfo.css }"
                   aria-hidden="true"></span>
                 <span class="min-w-0 wrap-break-word leading-5">
@@ -49,7 +53,7 @@
           </div>
           <NuxtLink
             :to="detailLinkTo"
-            class="traits-card-link shrink-0 text-xs uppercase tracking-[0.14em] focus-visible:outline-none"
+            class="shrink-0 text-xs uppercase tracking-[0.14em] text-(--lab-text-muted) transition hover:text-(--lab-accent) focus-visible:outline-none focus-visible:text-(--lab-accent)"
             :aria-label="`Открыть особенность ${trait.t_key}`"
             title="Открыть отдельную особенность"
             @click.stop
@@ -106,32 +110,3 @@
     return resolveColorPreviewInfo(trait.t_value, metaRaw.value)
   })
 </script>
-<style scoped>
-  .traits-card {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 82%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface) 88%, transparent);
-    transition:
-      border-color 0.15s ease,
-      background-color 0.15s ease,
-      color 0.15s ease;
-  }
-  .traits-card-idle:hover {
-    border-color: color-mix(in srgb, var(--lab-border-strong) 88%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface-hover) 78%, transparent);
-  }
-  .traits-card-selected {
-    border-color: color-mix(in srgb, var(--lab-accent) 52%, var(--lab-border));
-    background: color-mix(in srgb, var(--lab-accent) 10%, var(--lab-bg-surface));
-  }
-  .traits-card:focus-visible {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--lab-focus-ring) 100%, transparent);
-  }
-  .traits-card-link {
-    color: var(--lab-text-muted);
-    transition: color 0.15s ease;
-  }
-  .traits-card-link:hover,
-  .traits-card-link:focus-visible {
-    color: var(--lab-accent);
-  }
-</style>

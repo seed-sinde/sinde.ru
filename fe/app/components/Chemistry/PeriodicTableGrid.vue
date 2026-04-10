@@ -115,10 +115,25 @@
   const frameStyle = computed(() => ({
     '--periodic-row-label-size': props.showPeriodHeaders ? undefined : '0px',
     '--periodic-column-label-size': props.showGroupHeaders ? undefined : '0px',
+    '--periodic-gap': '0.25rem',
+    '--periodic-highlight-reserve': '6px',
+    '--periodic-mobile-cell-width': '2.85rem',
+    '--periodic-mobile-cell-height': '2.2rem',
     '--periodic-compact-cell-height': props.compactCellHeight || undefined,
     '--periodic-compact-cell-height-wide': props.compactCellHeightWide || undefined,
     '--periodic-row-count': String(visiblePeriodRows.value.length)
   }))
+  const frameClass = computed(() => [
+    'box-border shrink-0 p-(--periodic-highlight-reserve) [--periodic-cell-width:var(--periodic-mobile-cell-width)] [--periodic-cell-height:var(--periodic-mobile-cell-height)] [--periodic-series-gap-height:0rem] w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+18*var(--periodic-cell-width)+17*var(--periodic-gap))] h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-count)*var(--periodic-gap))]',
+    props.compact
+      ? 'lg:[--periodic-gap:0.2rem] lg:[--periodic-row-label-size:1rem] lg:[--periodic-column-label-size:1rem] lg:[--periodic-compact-cell-width:1.65rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.45rem)] xl:[--periodic-gap:0.24rem] xl:[--periodic-compact-cell-width:1.75rem] xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))] 2xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))]'
+      : 'lg:[--periodic-gap:0.35rem] lg:[--periodic-row-label-size:1.5rem] lg:[--periodic-column-label-size:1.5rem] lg:[--periodic-compact-cell-width:2.1rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.8rem)] xl:[--periodic-gap:0.4rem] xl:[--periodic-compact-cell-width:2.2rem] 2xl:[--periodic-full-cell-height:4.75rem] 2xl:[--periodic-cell-height:var(--periodic-full-cell-height)]',
+    props.preserveCompactCellWidth
+      ? props.compactScrollBreakpoint === 'md'
+        ? 'md:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+18*var(--periodic-cell-width)+17*var(--periodic-gap))] lg:w-full'
+        : 'lg:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+18*var(--periodic-cell-width)+17*var(--periodic-gap))]'
+      : 'lg:min-h-0 lg:min-w-0 lg:w-full'
+  ])
   const layoutStyle = computed(() => ({
     gridTemplateColumns: hasVisibleHeaders.value
       ? `${props.showPeriodHeaders ? 'var(--periodic-row-label-size)' : '0px'} minmax(0, 1fr)`
@@ -221,65 +236,61 @@
     isElementUnavailable(elementNumber) && !selectionToneMap.value[elementNumber]
   const elementUnavailableClass = (elementNumber: number) => {
     if (!isElementUnavailable(elementNumber) || selectionToneMap.value[elementNumber]) return ''
-    return 'text-zinc-500 ring-1 ring-inset ring-zinc-900'
+    return 'text-(--lab-text-muted) ring-1 ring-inset ring-(--lab-border)'
   }
 </script>
 <template>
-  <div
-    class="periodic-table-scroll flex min-h-0 w-full max-w-full items-start justify-start"
-    :class="[
-      { 'periodic-table-scroll-compact': compact },
-      preserveCompactCellWidth
-        ? compactScrollBreakpoint === 'md'
-          ? 'periodic-table-scroll-fixed-md'
-          : 'periodic-table-scroll-fixed-lg'
-        : ''
-    ]">
-    <div class="periodic-table-frame" :class="{ 'periodic-table-frame-compact': compact }" :style="frameStyle">
-      <div class="periodic-table-layout" :style="layoutStyle">
+  <div class="flex min-h-0 w-full max-w-full items-start justify-start overflow-x-auto overflow-y-hidden">
+    <div :class="frameClass" :style="frameStyle">
+      <div class="grid h-full w-full gap-(--periodic-gap)" :style="layoutStyle">
         <div v-if="hasVisibleHeaders" aria-hidden="true"></div>
-        <div v-if="showGroupHeaders" class="periodic-column-headers text-center" :style="tableColumnHeaderStyle">
+        <div v-if="showGroupHeaders" class="grid gap-(--periodic-gap) text-center" :style="tableColumnHeaderStyle">
           <div
             v-for="group in visibleGroupHeaders"
             :key="`group-header:${group}`"
-            class="flex items-center justify-center text-[0.55rem] font-medium tracking-[0.12em] text-zinc-500 sm:text-[0.68rem]">
+            class="flex items-center justify-center font-medium tracking-[0.12em] text-(--lab-text-muted) text-[0.55rem] sm:text-[0.68rem]"
+            :class="compact ? 'lg:text-[0.5rem]' : ''">
             {{ group }}
           </div>
         </div>
-        <div v-if="showPeriodHeaders" class="periodic-row-headers text-right" :style="tableRowHeaderStyle">
+        <div
+          v-if="showPeriodHeaders"
+          class="grid h-full min-h-0 gap-(--periodic-gap) text-right"
+          :style="tableRowHeaderStyle">
           <div
             v-for="(period, index) in periodHeaders"
             :key="`period-header:${visiblePeriodRows[index]}`"
-            class="flex items-center justify-end pr-1 text-[0.55rem] font-medium tracking-[0.12em] text-zinc-500 sm:text-[0.68rem]"
+            class="flex items-center justify-end pr-1 font-medium tracking-[0.12em] text-(--lab-text-muted) text-[0.55rem] sm:text-[0.68rem]"
+            :class="compact ? 'lg:text-[0.5rem]' : ''"
             aria-hidden="true">
             {{ period }}
           </div>
         </div>
-        <div class="periodic-grid" :style="tableGridStyle">
+        <div class="relative h-full min-h-0 min-w-0 grid gap-(--periodic-gap)" :style="tableGridStyle">
           <div
             v-for="column in periodicTableGroups"
             :key="`column-guide:${column}`"
-            class="periodic-column-guide pointer-events-none z-0 border-l"
+            class="pointer-events-none z-0 border-l border-(--lab-border) max-sm:hidden"
             :class="column === 1 ? 'border-l-transparent' : ''"
             :style="columnGuideStyle(column)"
             aria-hidden="true"></div>
           <div
             v-for="row in visiblePeriodRows"
             :key="`row-guide:${row}`"
-            class="periodic-row-guide pointer-events-none z-0 border-t"
+            class="pointer-events-none z-0 border-t border-(--lab-border) max-sm:hidden"
             :class="row === 1 ? 'border-t-transparent' : ''"
             :style="rowGuideStyle(row)"
             aria-hidden="true"></div>
           <slot name="grid-overlay"></slot>
           <div
             v-if="showSeriesLabels"
-            class="bg-(--lab-bg-surface) text-(--lab-text-muted) relative z-10 flex items-center border border-dashed px-1 text-center text-[0.52rem] leading-tight sm:px-2 sm:text-[0.68rem]"
+            class="relative z-10 flex items-center border border-dashed border-(--lab-border) bg-(--lab-bg-surface) px-1 text-center text-[0.52rem] leading-tight text-(--lab-text-muted) sm:px-2 sm:text-[0.68rem]"
             :style="{ gridColumn: '1 / span 2', gridRow: `${getDisplayRow(9)} / span 1` }">
             Лантаноиды
           </div>
           <div
             v-if="showSeriesLabels"
-            class="bg-(--lab-bg-surface) text-(--lab-text-muted) relative z-10 flex items-center border border-dashed px-1 text-center text-[0.52rem] leading-tight sm:px-2 sm:text-[0.68rem]"
+            class="relative z-10 flex items-center border border-dashed border-(--lab-border) bg-(--lab-bg-surface) px-1 text-center text-[0.52rem] leading-tight text-(--lab-text-muted) sm:px-2 sm:text-[0.68rem]"
             :style="{ gridColumn: '1 / span 2', gridRow: `${getDisplayRow(10)} / span 1` }">
             Актиноиды
           </div>
@@ -287,11 +298,11 @@
             v-for="element in visibleElements"
             :key="element.number"
             :style="elementSlotStyle(element.xpos, element.ypos)"
-            class="relative z-10 min-h-0">
+            class="relative z-10 flex min-h-0 items-center justify-center p-0.5 lg:p-1">
             <button
               type="button"
               :style="elementCardStyle(element)"
-              class="periodic-element-card relative flex h-full w-full min-w-0 flex-col overflow-hidden border px-1 py-1 text-left sm:px-2 sm:py-1.5"
+              class="relative flex h-full w-full min-w-0 flex-col overflow-hidden border px-1 py-1 text-left sm:px-2 sm:py-1.5"
               :disabled="isElementDisabled(element.number)"
               :class="[
                 elementUnavailableClass(element.number),
@@ -306,41 +317,51 @@
                     ? 'ring-1 ring-white/60'
                     : '',
                 isElementDisabled(element.number)
-                  ? 'cursor-not-allowed ring-1 ring-inset ring-zinc-800'
+                  ? 'cursor-not-allowed ring-1 ring-inset ring-(--lab-border)'
                   : interactive
-                    ? 'cursor-pointer hover:ring-1 hover:ring-white/35'
+                    ? 'cursor-pointer hover:ring-1 hover:ring-(--lab-accent)'
                     : 'cursor-default'
               ]"
               @click="onElementClick(element, $event)">
-              <div class="periodic-element-compact flex flex-1 items-center justify-center">
+              <div class="flex flex-1 items-center justify-center" :class="compact ? 'flex' : '2xl:hidden'">
                 <span
-                  class="periodic-element-compact-symbol font-semibold leading-none"
-                  :class="isElementDisabled(element.number) ? 'text-zinc-500' : 'text-(--lab-text-primary)'">
+                  class="font-semibold leading-none"
+                  :class="[
+                    compact ? 'text-[1.05rem] lg:text-[0.82rem]' : 'text-[1.05rem]',
+                    isElementDisabled(element.number) ? 'text-(--lab-text-muted)' : 'text-(--lab-text-primary)'
+                  ]">
                   {{ element.displaySymbol }}
                 </span>
               </div>
-              <div class="periodic-element-full h-full min-w-0 flex-col">
+              <div class="hidden h-full min-w-0 flex-col" :class="compact ? 'hidden' : '2xl:flex'">
                 <div class="flex items-start justify-between gap-2">
                   <span
-                    class="periodic-element-symbol font-semibold leading-none"
-                    :class="isElementDisabled(element.number) ? 'text-zinc-500' : 'text-(--lab-text-primary)'">
+                    class="font-semibold leading-none"
+                    style="font-size: clamp(0.95rem, 0.55vw + 0.65rem, 1.45rem)"
+                    :class="
+                      isElementDisabled(element.number) ? 'text-(--lab-text-muted)' : 'text-(--lab-text-primary)'
+                    ">
                     {{ element.displaySymbol }}
                   </span>
                   <span
-                    class="periodic-element-number pt-0.5 font-medium leading-none"
-                    :class="isElementDisabled(element.number) ? 'text-zinc-600' : 'text-(--lab-text-muted)'">
+                    class="pt-0.5 text-[0.68rem] font-medium leading-none"
+                    :class="isElementDisabled(element.number) ? 'text-(--lab-text-muted)' : 'text-(--lab-text-muted)'">
                     {{ element.number }}
                   </span>
                 </div>
                 <div class="mt-1 min-w-0">
                   <span
-                    class="periodic-element-name"
-                    :class="isElementDisabled(element.number) ? 'text-zinc-500' : 'text-(--lab-text-primary)'">
+                    class="block overflow-hidden text-ellipsis whitespace-nowrap font-medium leading-[1.2]"
+                    style="font-size: clamp(0.6rem, 0.18vw + 0.5rem, 0.82rem)"
+                    :class="
+                      isElementDisabled(element.number) ? 'text-(--lab-text-muted)' : 'text-(--lab-text-primary)'
+                    ">
                     {{ element.name }}
                   </span>
                   <span
-                    class="periodic-element-russian-name mt-0.5"
-                    :class="isElementDisabled(element.number) ? 'text-zinc-600' : 'text-(--lab-text-muted)'">
+                    class="mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap leading-[1.2]"
+                    style="font-size: clamp(0.56rem, 0.14vw + 0.48rem, 0.74rem)"
+                    :class="isElementDisabled(element.number) ? 'text-(--lab-text-muted)' : 'text-(--lab-text-muted)'">
                     {{ element.russianName }}
                   </span>
                 </div>
@@ -352,203 +373,3 @@
     </div>
   </div>
 </template>
-<style scoped>
-  .periodic-table-scroll {
-    align-items: flex-start;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-  .periodic-table-frame {
-    --periodic-gap: 0.25rem;
-    --periodic-highlight-reserve: 6px;
-    --periodic-row-label-size: 1rem;
-    --periodic-column-label-size: 1rem;
-    --periodic-mobile-cell-width: 2.85rem;
-    --periodic-mobile-cell-height: 2.2rem;
-    --periodic-cell-width: var(--periodic-mobile-cell-width);
-    --periodic-cell-height: var(--periodic-mobile-cell-height);
-    --periodic-series-gap-height: 0rem;
-    width: calc(
-      var(--periodic-row-label-size) + var(--periodic-gap) + 18 * var(--periodic-cell-width) + 17 * var(--periodic-gap)
-    );
-    height: calc(
-      var(--periodic-column-label-size) + var(--periodic-gap) + var(--periodic-row-count) *
-        var(--periodic-cell-height) + var(--periodic-series-gap-height) + var(--periodic-row-count) *
-        var(--periodic-gap)
-    );
-    padding: var(--periodic-highlight-reserve);
-    box-sizing: border-box;
-    flex: none;
-  }
-  .periodic-table-layout {
-    display: grid;
-    grid-template-columns: var(--periodic-row-label-size) minmax(0, 1fr);
-    grid-template-rows: var(--periodic-column-label-size) minmax(0, 1fr);
-    gap: var(--periodic-gap);
-    width: 100%;
-    height: 100%;
-  }
-  .periodic-column-headers,
-  .periodic-row-headers,
-  .periodic-grid {
-    gap: var(--periodic-gap);
-  }
-  .periodic-row-headers,
-  .periodic-grid {
-    min-height: 0;
-    height: 100%;
-  }
-  .periodic-grid {
-    position: relative;
-    min-width: 0;
-  }
-  .periodic-element-card {
-    min-height: 0;
-  }
-  @media (max-width: 639px) {
-    .periodic-column-guide,
-    .periodic-row-guide {
-      display: none;
-    }
-  }
-  .periodic-element-compact {
-    display: flex;
-  }
-  .periodic-element-full {
-    display: none;
-  }
-  .periodic-element-compact-symbol {
-    font-size: 1.05rem;
-  }
-  .periodic-element-symbol {
-    font-size: clamp(0.95rem, 0.55vw + 0.65rem, 1.45rem);
-  }
-  .periodic-element-number {
-    font-size: 0.68rem;
-  }
-  .periodic-element-name,
-  .periodic-element-russian-name {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .periodic-element-name {
-    font-size: clamp(0.6rem, 0.18vw + 0.5rem, 0.82rem);
-    line-height: 1.2;
-    font-weight: 500;
-  }
-  .periodic-element-russian-name {
-    font-size: clamp(0.56rem, 0.14vw + 0.48rem, 0.74rem);
-    line-height: 1.2;
-  }
-  @media (min-width: 960px) {
-    .periodic-table-frame {
-      --periodic-gap: 0.35rem;
-      --periodic-row-label-size: 1.5rem;
-      --periodic-column-label-size: 1.5rem;
-      --periodic-compact-cell-width: 2.1rem;
-      --periodic-compact-cell-height: var(--periodic-compact-cell-height, 1.8rem);
-      --periodic-cell-width: var(--periodic-compact-cell-width);
-      --periodic-cell-height: var(--periodic-compact-cell-height);
-      --periodic-series-gap-height: 0rem;
-      width: 100%;
-      min-width: 0;
-      min-height: 0;
-      height: calc(
-        var(--periodic-column-label-size) + var(--periodic-gap) + var(--periodic-row-count) *
-          var(--periodic-cell-height) + var(--periodic-series-gap-height) + var(--periodic-row-count) *
-          var(--periodic-gap)
-      );
-      flex: none;
-    }
-    .periodic-table-frame-compact {
-      --periodic-gap: 0.2rem;
-      --periodic-row-label-size: 1rem;
-      --periodic-column-label-size: 1rem;
-      --periodic-compact-cell-width: 1.65rem;
-      --periodic-compact-cell-height: var(--periodic-compact-cell-height, 1.45rem);
-      --periodic-cell-width: var(--periodic-compact-cell-width);
-      --periodic-cell-height: var(--periodic-compact-cell-height);
-      --periodic-series-gap-height: 0rem;
-    }
-    .periodic-table-frame-compact .periodic-element-compact-symbol {
-      font-size: 0.82rem;
-    }
-    .periodic-table-frame-compact .periodic-column-headers > div,
-    .periodic-table-frame-compact .periodic-row-headers > div {
-      font-size: 0.5rem;
-    }
-    .periodic-table-scroll-fixed-lg .periodic-table-frame {
-      width: calc(
-        var(--periodic-row-label-size) + var(--periodic-gap) + 18 * var(--periodic-cell-width) + 17 *
-          var(--periodic-gap)
-      );
-      min-width: auto;
-    }
-  }
-  @media (min-width: 768px) and (max-width: 959px) {
-    .periodic-table-scroll-fixed-md .periodic-table-frame {
-      width: calc(
-        var(--periodic-row-label-size) + var(--periodic-gap) + 18 * var(--periodic-cell-width) + 17 *
-          var(--periodic-gap)
-      );
-      min-width: auto;
-    }
-  }
-  @media (min-width: 1280px) {
-    .periodic-table-frame {
-      --periodic-gap: 0.4rem;
-      --periodic-compact-cell-width: 2.2rem;
-    }
-    .periodic-table-frame-compact {
-      --periodic-gap: 0.24rem;
-      --periodic-compact-cell-width: 1.75rem;
-      --periodic-compact-cell-height: var(
-        --periodic-compact-cell-height-wide,
-        var(--periodic-compact-cell-height, 1.55rem)
-      );
-    }
-  }
-  @media (min-width: 1400px) {
-    .periodic-table-scroll {
-      align-items: flex-start;
-    }
-    .periodic-table-frame {
-      --periodic-full-cell-height: 4.75rem;
-      --periodic-cell-height: var(--periodic-full-cell-height);
-      --periodic-series-gap-height: 0rem;
-      height: calc(
-        var(--periodic-column-label-size) + var(--periodic-gap) + var(--periodic-row-count) *
-          var(--periodic-cell-height) + var(--periodic-series-gap-height) + var(--periodic-row-count) *
-          var(--periodic-gap)
-      );
-      flex: none;
-    }
-    .periodic-element-compact {
-      display: none;
-    }
-    .periodic-element-full {
-      display: flex;
-    }
-    .periodic-table-frame-compact {
-      --periodic-full-cell-height: var(
-        --periodic-compact-cell-height-wide,
-        var(--periodic-compact-cell-height, 1.55rem)
-      );
-      --periodic-cell-height: var(--periodic-full-cell-height);
-      --periodic-series-gap-height: 0rem;
-      height: calc(
-        var(--periodic-column-label-size) + var(--periodic-gap) + var(--periodic-row-count) *
-          var(--periodic-cell-height) + var(--periodic-series-gap-height) + var(--periodic-row-count) *
-          var(--periodic-gap)
-      );
-    }
-    .periodic-table-frame-compact .periodic-element-compact {
-      display: flex;
-    }
-    .periodic-table-frame-compact .periodic-element-full {
-      display: none;
-    }
-  }
-</style>

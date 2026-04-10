@@ -1,6 +1,6 @@
 <template>
   <section class="px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
-    <div class="traits-manager-layout gap-4 xl:items-start">
+    <div class="grid gap-4 xl:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] xl:items-start">
       <aside class="space-y-3 xl:sticky xl:top-4">
         <TraitsFormAdd @add="onAdd" />
         <LabNotify
@@ -50,23 +50,13 @@
         </div>
         <div
           v-if="traits.length === 0"
-          class="border border-dashed border-zinc-800 px-4 py-4 text-sm italic text-zinc-500">
+          class="border border-dashed border-(--lab-border) px-4 py-4 text-sm italic text-(--lab-text-muted)">
           Список особенностей пустой.
         </div>
       </section>
     </div>
   </section>
 </template>
-<style scoped>
-  .traits-manager-layout {
-    display: grid;
-  }
-  @media (min-width: 1280px) {
-    .traits-manager-layout {
-      grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
-    }
-  }
-</style>
 <script setup lang="ts">
   const store = useTraitsStore()
   const route = useRoute()

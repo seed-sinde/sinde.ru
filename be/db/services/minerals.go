@@ -219,12 +219,12 @@ func buildMineralsFilterSQL(params models.MineralsListQuery) (string, []any) {
 		args = append(args, params.CrystalSystems)
 		if params.CrystalSystemMode == models.MineralCrystalSystemModeAll {
 			clauses = append(clauses, fmt.Sprintf(
-				"COALESCE(crystal_systems, ARRAY[]::text[]) @> $%d::text[]",
+				"COALESCE(crystal_systems, ARRAY[]::mineral_crystal_system[]) @> $%d::mineral_crystal_system[]",
 				len(args),
 			))
 		} else {
 			clauses = append(clauses, fmt.Sprintf(
-				"COALESCE(crystal_systems, ARRAY[]::text[]) && $%d::text[]",
+				"COALESCE(crystal_systems, ARRAY[]::mineral_crystal_system[]) && $%d::mineral_crystal_system[]",
 				len(args),
 			))
 		}

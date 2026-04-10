@@ -1,21 +1,25 @@
 package payments
+
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
-	"time"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"sinde.ru/internal/models"
+	"strings"
+	"time"
 )
+
 type Repository struct {
 	db *pgxpool.Pool
 }
+
 func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
+
 const paymentOrderSelect = `
 	order_id, public_token, user_id, user_email, user_display_name, provider,
 	plan_code, base_amount, amount, tip_amount, currency, subscription_type, status,
@@ -24,6 +28,7 @@ const paymentOrderSelect = `
 	return_to, success_url, fail_url, payment_url, last_checked_at, notified_at,
 	paid_at, failed_at, refunded_at, created_at, updated_at
 `
+
 func paymentJSONOrDefault(raw json.RawMessage) []byte {
 	if len(strings.TrimSpace(string(raw))) == 0 {
 		return []byte("{}")
@@ -277,6 +282,36 @@ func (r *Repository) GetLatestOrderByUser(ctx context.Context, userID uuid.UUID)
 		LIMIT 1
 	`, userID))
 }
+
+func (r *Repository) ListOrdersByUser(ctx context.Context, userID uuid.UUID, limit int) ([]models.PaymentOrder, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT `+paymentOrderSelect+`
+		FROM payment_orders
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2
+	`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]models.PaymentOrder, 0, limit)
+	for rows.Next() {
+		item, scanErr := scanPaymentOrder(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		items = append(items, *item)
+	}
+	return items, rows.Err()
+}
+
 func (r *Repository) ListOrdersForAdmin(ctx context.Context, search string, status string, planCode string, limit int, offset int) ([]models.PaymentOrder, error) {
 	if limit <= 0 {
 		limit = 50

@@ -6,16 +6,16 @@ import (
 )
 
 const (
-	ProviderTBank           = "tbank"
-	PlanPro                 = "pro"
-	PlanDonation            = "donation"
-	SubscriptionTypeOneTime = "one_time"
-	StatusPending           = "pending"
-	StatusSuccess           = "success"
-	StatusFailed            = "failed"
-	StatusRefunded          = "refunded"
-	StatusCanceled          = "canceled"
-	ProAmountKopecks  int64 = 39900
+	ProviderTBank                 = "tbank"
+	PlanPro                       = "pro"
+	PlanDonation                  = "donation"
+	SubscriptionTypeOneTime       = "one_time"
+	StatusPending                 = "pending"
+	StatusSuccess                 = "success"
+	StatusFailed                  = "failed"
+	StatusRefunded                = "refunded"
+	StatusCanceled                = "canceled"
+	ProAmountKopecks        int64 = 39900
 )
 
 type UserSnapshot struct {
@@ -35,15 +35,15 @@ type CreateOrderInput struct {
 }
 
 type AccessSummary struct {
-	HasActiveAccess bool        `json:"has_active_access"`
-	PlanCode        string      `json:"plan_code"`
-	Amount          int64       `json:"amount"`
-	TipAmount       int64       `json:"tip_amount"`
-	Currency        string      `json:"currency"`
-	AccessFrom      *time.Time  `json:"access_from,omitempty"`
-	AccessUntil     *time.Time  `json:"access_until,omitempty"`
-	OrderID         *uuid.UUID  `json:"order_id,omitempty"`
-	LatestOrder     *OrderView  `json:"latest_order,omitempty"`
+	HasActiveAccess bool       `json:"has_active_access"`
+	PlanCode        string     `json:"plan_code"`
+	Amount          int64      `json:"amount"`
+	TipAmount       int64      `json:"tip_amount"`
+	Currency        string     `json:"currency"`
+	AccessFrom      *time.Time `json:"access_from,omitempty"`
+	AccessUntil     *time.Time `json:"access_until,omitempty"`
+	OrderID         *uuid.UUID `json:"order_id,omitempty"`
+	LatestOrder     *OrderView `json:"latest_order,omitempty"`
 }
 
 type OrderView struct {
@@ -75,6 +75,7 @@ type OrderView struct {
 	PaidAt             *time.Time `json:"paid_at,omitempty"`
 	FailedAt           *time.Time `json:"failed_at,omitempty"`
 	RefundedAt         *time.Time `json:"refunded_at,omitempty"`
+	CanRefund          bool       `json:"can_refund"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
@@ -94,6 +95,14 @@ type PublicOrderLookupResult struct {
 	Order OrderView `json:"order"`
 }
 
+type UserOrdersListResult struct {
+	Items []OrderView `json:"items"`
+}
+
+type RefundOrderResult struct {
+	Order OrderView `json:"order"`
+}
+
 type AdminOrdersListResult struct {
 	Items  []OrderView `json:"items"`
 	Total  int         `json:"total"`
@@ -102,20 +111,20 @@ type AdminOrdersListResult struct {
 }
 
 type AdminOrdersSummary struct {
-	OrdersTotal        int       `json:"orders_total"`
-	OrdersSuccess      int       `json:"orders_success"`
-	OrdersPending      int       `json:"orders_pending"`
-	OrdersFailed       int       `json:"orders_failed"`
-	OrdersRefunded     int       `json:"orders_refunded"`
-	PaidUsersTotal     int       `json:"paid_users_total"`
-	PatronUsersTotal   int       `json:"patron_users_total"`
-	ActiveAccessUsers  int       `json:"active_access_users"`
-	GrossRevenue       int64     `json:"gross_revenue"`
-	NetRevenue         int64     `json:"net_revenue"`
-	TipRevenue         int64     `json:"tip_revenue"`
-	MRR                int64     `json:"mrr"`
-	ChurnRate          float64   `json:"churn_rate"`
-	PatronShare        float64   `json:"patron_share"`
+	OrdersTotal        int        `json:"orders_total"`
+	OrdersSuccess      int        `json:"orders_success"`
+	OrdersPending      int        `json:"orders_pending"`
+	OrdersFailed       int        `json:"orders_failed"`
+	OrdersRefunded     int        `json:"orders_refunded"`
+	PaidUsersTotal     int        `json:"paid_users_total"`
+	PatronUsersTotal   int        `json:"patron_users_total"`
+	ActiveAccessUsers  int        `json:"active_access_users"`
+	GrossRevenue       int64      `json:"gross_revenue"`
+	NetRevenue         int64      `json:"net_revenue"`
+	TipRevenue         int64      `json:"tip_revenue"`
+	MRR                int64      `json:"mrr"`
+	ChurnRate          float64    `json:"churn_rate"`
+	PatronShare        float64    `json:"patron_share"`
 	LastSuccessfulPaid *time.Time `json:"last_successful_paid,omitempty"`
 }
 
@@ -140,4 +149,17 @@ type tBankStateResponse struct {
 	PaymentID   string `json:"PaymentId"`
 	OrderID     string `json:"OrderId"`
 	Amount      int64  `json:"Amount"`
+}
+
+type tBankCancelResponse struct {
+	Success        bool   `json:"Success"`
+	ErrorCode      string `json:"ErrorCode"`
+	Message        string `json:"Message"`
+	Details        string `json:"Details"`
+	TerminalKey    string `json:"TerminalKey"`
+	Status         string `json:"Status"`
+	PaymentID      string `json:"PaymentId"`
+	OrderID        string `json:"OrderId"`
+	OriginalAmount int64  `json:"OriginalAmount"`
+	NewAmount      int64  `json:"NewAmount"`
 }

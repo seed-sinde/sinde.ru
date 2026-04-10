@@ -3,7 +3,9 @@
     <LabField label="Тип данных" for-id="keyType" class="w-full min-w-0">
       <LabBaseSelect id="keyType" v-model="form.meta.dataType" :options="dataTypeOptions" />
     </LabField>
-    <div v-if="form.meta.dataType === 'enum'" class="traits-meta-group space-y-2">
+    <div
+      v-if="form.meta.dataType === 'enum'"
+      class="space-y-2 border-[color-mix(in_srgb,var(--lab-border)_78%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_72%,transparent)] p-3">
       <LabField label="Тип опции" for-id="enumOptionType" class="w-full min-w-0">
         <LabBaseSelect id="enumOptionType" v-model="form.meta.optionType" :options="optionTypeOptions" />
       </LabField>
@@ -11,14 +13,16 @@
         <LabBaseInput id="enumOptions" v-model="enumRaw" placeholder="красный, зелёный, синий" class="w-full min-w-0" />
       </LabField>
     </div>
-    <div v-else-if="form.meta.dataType === 'color'" class="traits-meta-group">
+    <div
+      v-else-if="form.meta.dataType === 'color'"
+      class="border-[color-mix(in_srgb,var(--lab-border)_78%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_72%,transparent)] p-3">
       <LabField label="Режим цвета" for-id="colorMode" class="w-full min-w-0">
         <LabBaseSelect id="colorMode" v-model="form.meta.mode" :options="colorModeSelectOptions" />
       </LabField>
     </div>
     <div
       v-else-if="form.meta.dataType === 'number'"
-      class="traits-meta-group grid grid-cols-1 gap-2 md:grid-cols-2">
+      class="grid grid-cols-1 gap-2 border-[color-mix(in_srgb,var(--lab-border)_78%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_72%,transparent)] p-3 md:grid-cols-2">
       <LabField label="Категория" for-id="numberUnitCategory" class="w-full min-w-0">
         <LabBaseSelect id="numberUnitCategory" v-model="form.meta.unitCategory" :options="unitCategoryOptions" />
       </LabField>
@@ -186,10 +190,3 @@
     requestToken += 1
   })
 </script>
-<style scoped>
-  .traits-meta-group {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 78%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface-subtle) 72%, transparent);
-    padding: 0.75rem;
-  }
-</style>

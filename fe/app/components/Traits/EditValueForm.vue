@@ -1,5 +1,7 @@
 <template>
-  <section v-if="trait" class="traits-edit-form mx-auto w-full max-w-3xl p-3 sm:p-4">
+  <section
+    v-if="trait"
+    class="mx-auto w-full max-w-3xl border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_84%,transparent)] p-3 sm:p-4">
     <form @submit.prevent="onSubmit" class="space-y-4">
       <div class="space-y-1">
         <h4 class="lab-text-primary text-sm font-medium sm:text-base">Редактирование значения</h4>
@@ -182,9 +184,3 @@
     })
   }
 </script>
-<style scoped>
-  .traits-edit-form {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 82%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface) 84%, transparent);
-  }
-</style>

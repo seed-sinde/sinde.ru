@@ -15,7 +15,28 @@ permissions:
   contents: write
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Check workflow guard
+        id: check
+        run: |
+          if [[ -f .github/workflows-disabled ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "ci workflow is disabled by .github/workflows-disabled"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
   backend:
+    if: ${{ needs.guard.outputs.enabled == 'true' }}
+    needs:
+      - guard
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -35,6 +56,9 @@ jobs:
           go build -buildvcs=true -trimpath -o ./seeds-import ./cmd/seeds-import
 
   frontend:
+    if: ${{ needs.guard.outputs.enabled == 'true' }}
+    needs:
+      - guard
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -54,8 +78,9 @@ jobs:
         run: bun run check
 
   release:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.guard.outputs.enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs:
+      - guard
       - backend
       - frontend
     runs-on: ubuntu-latest

@@ -137,7 +137,7 @@
         <NuxtLink
           v-if="setUuid && !compact"
           :to="`/traits/${setUuid}`"
-          class="lab-text-muted min-w-0 truncate font-mono text-sm transition-colors hover:text-zinc-200"
+          class="lab-text-muted min-w-0 truncate font-mono text-sm transition hover:text-(--lab-text-primary)"
           :title="`Открыть набор ${setUuid}`">
           {{ formatShortUuid(setUuid, 5) || '—' }}
         </NuxtLink>
@@ -152,8 +152,8 @@
     </LabNavHeader>
     <LabNotify :text="pasteError" tone="error" class-name="px-4" />
     <section class="space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-5">
-      <article class="trait-detail-card mx-auto max-w-5xl">
-        <div class="border-b border-zinc-800/80 px-4 py-3 sm:px-5">
+      <article class="mx-auto max-w-5xl border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_84%,transparent)]">
+        <div class="border-b border-(--lab-border) px-4 py-3 sm:px-5">
           <LabCopyBlock
             label="UUID"
             :value="trait.t_uuid"
@@ -161,7 +161,7 @@
             title-success="UUID скопирован"
             title-error="Ошибка копирования" />
         </div>
-        <div class="border-b border-zinc-800/80 px-4 py-4 sm:px-5">
+        <div class="border-b border-(--lab-border) px-4 py-4 sm:px-5">
           <div
             class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
             <div class="min-w-0 flex-1">
@@ -172,7 +172,7 @@
                   <div class="lab-text-primary flex items-center gap-2 text-base sm:text-xl">
                     <span
                       v-if="colorInfo"
-                      class="inline-block h-2.5 w-2.5 shrink-0 self-center rounded-full border border-zinc-500/70"
+                      class="inline-block h-2.5 w-2.5 shrink-0 self-center rounded-full border border-(--lab-border)"
                       :style="{ backgroundColor: colorInfo.css }"
                       aria-hidden="true" />
                     <span class="min-w-0 whitespace-pre-wrap wrap-break-word leading-relaxed">
@@ -193,7 +193,7 @@
                 <span
                   v-for="entry in metaInfoEntries"
                   :key="entry.key"
-                  class="trait-meta-chip inline-flex items-center gap-1 px-2 py-1">
+                  class="inline-flex items-center gap-1 border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_62%,transparent)] px-2 py-1">
                   <span class="lab-text-muted">{{ entry.label }}:</span>
                   <span class="lab-text-secondary">{{ entry.value }}</span>
                 </span>
@@ -206,13 +206,3 @@
     </section>
   </div>
 </template>
-<style scoped>
-  .trait-detail-card {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 82%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface) 84%, transparent);
-  }
-  .trait-meta-chip {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 72%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface-subtle) 62%, transparent);
-  }
-</style>

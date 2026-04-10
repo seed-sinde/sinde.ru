@@ -27,6 +27,7 @@ export type PaymentOrderView = {
   paid_at?: string | null
   failed_at?: string | null
   refunded_at?: string | null
+  can_refund: boolean
   created_at: string
   updated_at: string
 }
@@ -46,6 +47,12 @@ export type PaymentCreateOrderResult = {
   payment_url: string
 }
 export type PaymentPublicLookupResult = {
+  order: PaymentOrderView
+}
+export type PaymentUserOrdersListResult = {
+  items: PaymentOrderView[]
+}
+export type PaymentRefundOrderResult = {
   order: PaymentOrderView
 }
 export type PaymentAdminOrdersSummary = {

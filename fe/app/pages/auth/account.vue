@@ -30,7 +30,8 @@
     disableTwoFactor
   } = useAuth()
 
-  const { access, accessLoading, ensureAccessLoaded } = usePayments()
+  const { access, accessLoading, ensureAccessLoaded, history, historyLoading, loadHistory, refundOrder, loadAccess } =
+    usePayments()
 
   await ensureLoaded()
   await ensureAccessLoaded()
@@ -43,6 +44,7 @@
 
   const accountTabItems: LabTabItem[] = [
     { value: 'profile', label: t('auth.account.tab.profile') },
+    { value: 'balance', label: t('auth.account.tab.balance') },
     { value: 'security', label: t('auth.account.tab.security') }
   ]
   const activityTabItems: LabTabItem[] = [
@@ -55,7 +57,7 @@
     { value: 'backup', label: t('auth.login.mfa_backup') }
   ]
 
-  const accountTab = ref<'profile' | 'security'>('profile')
+  const accountTab = ref<'profile' | 'balance' | 'security'>('profile')
   const activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
   const disableMethodTab = ref<'totp' | 'backup'>('totp')
 
@@ -64,6 +66,7 @@
   const showLogoutActions = ref(false)
   const showDisable2faForm = ref(false)
   const avatarUploading = ref(false)
+  const refundPendingOrderId = ref('')
 
   const sessions = ref<AuthSessionView[]>([])
   const loginAttempts = ref<AuthLoginAttemptView[]>([])
@@ -83,6 +86,8 @@
   const activityError = ref('')
   const actionError = ref('')
   const actionInfo = ref('')
+  const paymentHistoryError = ref('')
+  const paymentHistoryInfo = ref('')
   const twofaError = ref('')
   const twofaInfo = ref('')
 
@@ -147,26 +152,9 @@
     if (!access.value?.access_until) return ''
     return formatAbsoluteDateTime(access.value.access_until)
   })
-  const paymentLatestOrderStatusLabel = computed(() => {
-    const status = String(access.value?.latest_order?.status || '').trim()
-    switch (status) {
-      case 'success':
-        return 'Оплачен'
-      case 'pending':
-        return 'Ожидает подтверждения'
-      case 'failed':
-        return 'Неуспешен'
-      case 'canceled':
-        return 'Отменён'
-      case 'refunded':
-        return 'Возвращён'
-      default:
-        return '—'
-    }
-  })
+  const paymentLatestOrderStatusLabel = computed(() => paymentStatusLabel(access.value?.latest_order?.status))
   const paymentLatestOrderAmountText = computed(() => {
-    const amount = Number(access.value?.latest_order?.amount || 0)
-    return new Intl.NumberFormat('ru-RU').format(Math.floor(amount / 100)) + ' ₽'
+    return formatPaymentAmount(access.value?.latest_order?.amount)
   })
   const avatarGallery = computed(() => getAuthAvatarGallery(user.value))
   const avatarGalleryItems = computed(() => avatarGallery.value.items)
@@ -258,6 +246,34 @@
 
   const formatDateTime = (value?: string | null) =>
     formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
+  const formatPaymentAmount = (value?: number | null) => {
+    const amount = Number(value || 0)
+    return new Intl.NumberFormat('ru-RU').format(Math.floor(amount / 100)) + ' ₽'
+  }
+  const paymentStatusLabel = (status?: string | null) => {
+    switch (String(status || '').trim()) {
+      case 'success':
+        return t('payments.status.success')
+      case 'pending':
+        return t('payments.status.pending')
+      case 'failed':
+        return t('payments.status.failed')
+      case 'canceled':
+        return t('payments.status.canceled')
+      case 'refunded':
+        return t('payments.status.refunded')
+      default:
+        return t('payments.status.unknown')
+    }
+  }
+  const paymentPlanLabel = (planCode?: string | null) =>
+    String(planCode || '').trim() === 'donation' ? t('payments.plan.donation') : t('payments.plan.pro')
+  const paymentTimelineLabel = (order: PaymentOrderView) => {
+    if (order.refunded_at) return `Возврат ${formatDateTime(order.refunded_at)}`
+    if (order.paid_at) return `Оплата ${formatDateTime(order.paid_at)}`
+    if (order.failed_at) return `Завершено ${formatDateTime(order.failed_at)}`
+    return `Создано ${formatDateTime(order.created_at)}`
+  }
   const browserLabelFromUserAgent = (userAgent?: string) => {
     const raw = String(userAgent || '').toLowerCase()
     if (!raw) return 'Браузер'
@@ -621,6 +637,29 @@
   const goToAdmin = async () => {
     await router.push('/auth/admin')
   }
+  const loadPaymentHistoryState = async (force = false) => {
+    paymentHistoryError.value = ''
+    try {
+      await loadHistory(force)
+    } catch (err) {
+      paymentHistoryError.value = extractApiErrorMessage(err, 'Не удалось загрузить историю оплат.')
+    }
+  }
+  const submitRefund = async (orderID: string) => {
+    if (!orderID || refundPendingOrderId.value) return
+    paymentHistoryError.value = ''
+    paymentHistoryInfo.value = ''
+    refundPendingOrderId.value = orderID
+    try {
+      await refundOrder(orderID)
+      await Promise.all([loadAccess(true), loadPaymentHistoryState(true)])
+      paymentHistoryInfo.value = 'Возврат отправлен в платёжную систему.'
+    } catch (err) {
+      paymentHistoryError.value = extractApiErrorMessage(err, 'Не удалось выполнить возврат.')
+    } finally {
+      refundPendingOrderId.value = ''
+    }
+  }
   const leave = async (all: boolean) => {
     showLogoutActions.value = false
     all ? await logoutAll() : await logout()
@@ -858,8 +897,13 @@
   watch(
     [accountTab, user],
     ([tab, currentUser]) => {
-      if (tab !== 'security' || !currentUser) return
-      void loadActivityState()
+      if (!currentUser) return
+      if (tab === 'security') {
+        void loadActivityState()
+      }
+      if (tab === 'balance') {
+        void loadPaymentHistoryState()
+      }
     },
     { immediate: true }
   )
@@ -1119,6 +1163,136 @@
                 </NuxtLink>
               </div>
             </template>
+          </section>
+        </template>
+        <template #panel-balance>
+          <section class="space-y-4 text-(--lab-text-primary)">
+            <section class="space-y-4 border bg-(--lab-bg-elevated) p-5">
+              <div class="space-y-1">
+                <h2 class="text-base font-medium text-(--lab-text-primary)">Баланс и оплаты</h2>
+                <p class="text-sm text-(--lab-text-muted)">
+                  История ваших платежей и доступных возвратов по уже подтверждённым операциям.
+                </p>
+              </div>
+
+              <div v-if="accessLoading" class="border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
+                Загрузка сведений о доступе…
+              </div>
+
+              <template v-else>
+                <div
+                  v-if="access?.has_active_access"
+                  class="space-y-1 border border-(--lab-success)/30 bg-(--lab-success)/8 p-4">
+                  <div class="text-sm font-medium text-(--lab-text-primary)">Доступ активен</div>
+                  <p class="text-sm text-(--lab-text-muted)">До {{ paymentAccessUntilText || '—' }}.</p>
+                </div>
+
+                <div v-else class="space-y-1 border bg-(--lab-bg-soft) p-4">
+                  <div class="text-sm font-medium text-(--lab-text-primary)">Активного доступа нет</div>
+                  <p class="text-sm text-(--lab-text-muted)">Можно перейти к странице оплаты и открыть доступ на месяц.</p>
+                </div>
+              </template>
+
+              <div class="pt-1">
+                <NuxtLink
+                  to="/payments"
+                  class="inline-flex min-h-11 items-center justify-center border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)">
+                  Перейти к оплате
+                </NuxtLink>
+              </div>
+            </section>
+
+            <section class="space-y-4 border bg-(--lab-bg-elevated) p-5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <h2 class="text-base font-medium text-(--lab-text-primary)">История операций</h2>
+                  <p class="text-sm text-(--lab-text-muted)">
+                    Здесь видны ваши заказы, статусы оплаты и полный возврат для подтверждённых платежей.
+                  </p>
+                </div>
+                <LabBaseButton
+                  variant="secondary"
+                  size="sm"
+                  icon="ic:round-refresh"
+                  label="Обновить"
+                  :disabled="historyLoading || refundPendingOrderId !== ''"
+                  @click="loadPaymentHistoryState(true)" />
+              </div>
+
+              <LabNotify :text="paymentHistoryError" tone="error" size="xs" />
+              <LabNotify :text="paymentHistoryInfo" tone="success" size="xs" />
+
+              <div v-if="historyLoading" class="border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
+                Загрузка истории оплат…
+              </div>
+
+              <div v-else-if="!history.length" class="border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
+                У вас пока нет завершённых или созданных платёжных операций.
+              </div>
+
+              <div v-else class="space-y-3">
+                <article
+                  v-for="item in history"
+                  :key="item.order_id"
+                  class="space-y-3 border bg-(--lab-bg-soft) p-4">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="space-y-1">
+                      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                        <span class="font-medium text-(--lab-text-primary)">
+                          {{ formatPaymentAmount(item.amount) }}
+                        </span>
+                        <span class="text-(--lab-text-muted)">
+                          {{ paymentPlanLabel(item.plan_code) }}
+                        </span>
+                      </div>
+                      <p class="text-xs uppercase tracking-wide text-(--lab-text-muted)">
+                        {{ paymentTimelineLabel(item) }}
+                      </p>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-sm font-medium text-(--lab-text-primary)">
+                        {{ paymentStatusLabel(item.status) }}
+                      </div>
+                      <p class="text-xs text-(--lab-text-muted)">
+                        {{ item.order_id }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                    <div class="space-y-1">
+                      <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Создан</dt>
+                      <dd class="text-(--lab-text-primary)">{{ formatDateTime(item.created_at) }}</dd>
+                    </div>
+                    <div class="space-y-1">
+                      <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Провайдер</dt>
+                      <dd class="text-(--lab-text-primary)">{{ item.provider_status || '—' }}</dd>
+                    </div>
+                  </dl>
+
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-(--lab-text-muted)">
+                      {{
+                        item.can_refund
+                          ? 'Доступен полный возврат этой оплаты.'
+                          : item.refunded_at
+                            ? 'Возврат уже выполнен.'
+                            : 'Возврат недоступен для текущего статуса.'
+                      }}
+                    </p>
+                    <LabConfirmActionButton
+                      v-if="item.can_refund"
+                      icon="ic:round-undo"
+                      confirm-icon="ic:round-check"
+                      label="Оформить возврат"
+                      confirm-label="Подтвердить"
+                      tooltip="Вернуть этот платёж?"
+                      :disabled="refundPendingOrderId !== ''"
+                      @confirm="submitRefund(item.order_id)" />
+                  </div>
+                </article>
+              </div>
+            </section>
           </section>
         </template>
         <template #panel-security>

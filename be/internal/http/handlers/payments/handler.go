@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 	"sinde.ru/internal/http/middleware"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/payments"
@@ -53,6 +54,26 @@ func (h *Handler) Access() fiber.Handler {
 	}
 }
 
+func (h *Handler) History() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		user := middleware.CurrentUser(c)
+		if user == nil {
+			return responses.Error(c, fiber.StatusUnauthorized, "требуется аутентификация")
+		}
+		limit := 100
+		if raw := strings.TrimSpace(c.Query("limit")); raw != "" {
+			if value, err := strconv.Atoi(raw); err == nil {
+				limit = value
+			}
+		}
+		result, err := h.service.ListUserOrders(c.Context(), user.UserID, limit)
+		if err != nil {
+			return paymentError(c, err)
+		}
+		return responses.Success(c, fiber.StatusOK, result)
+	}
+}
+
 func (h *Handler) PublicLookup() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		var input payments.PublicOrderLookupInput
@@ -60,6 +81,24 @@ func (h *Handler) PublicLookup() fiber.Handler {
 			return responses.Error(c, fiber.StatusBadRequest, "некорректный запрос", err.Error())
 		}
 		result, err := h.service.LookupPublicOrder(c.Context(), input)
+		if err != nil {
+			return paymentError(c, err)
+		}
+		return responses.Success(c, fiber.StatusOK, result)
+	}
+}
+
+func (h *Handler) Refund() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		user := middleware.CurrentUser(c)
+		if user == nil {
+			return responses.Error(c, fiber.StatusUnauthorized, "требуется аутентификация")
+		}
+		orderID, err := uuid.Parse(strings.TrimSpace(c.Params("orderId")))
+		if err != nil {
+			return responses.Error(c, fiber.StatusBadRequest, "некорректный идентификатор заказа")
+		}
+		result, err := h.service.RefundOrder(c.Context(), user.UserID, orderID)
 		if err != nil {
 			return paymentError(c, err)
 		}
@@ -139,6 +178,8 @@ func paymentError(c fiber.Ctx, err error) error {
 		return responses.Error(c, fiber.StatusNotFound, "заказ не найден")
 	case errors.Is(err, payments.ErrOrderAccessDenied):
 		return responses.Error(c, fiber.StatusForbidden, "доступ к заказу запрещен")
+	case errors.Is(err, payments.ErrRefundNotAllowed):
+		return responses.Error(c, fiber.StatusConflict, "возврат для этого платежа недоступен")
 	case errors.Is(err, payments.ErrUserUnavailable):
 		return responses.Error(c, fiber.StatusForbidden, "аккаунт не готов к оплате")
 	case errors.Is(err, payments.ErrRequestOriginEmpty):

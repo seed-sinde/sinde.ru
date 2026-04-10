@@ -118,11 +118,11 @@
     props.iconOnly ? '' : 'overflow-hidden',
     armed.value
       ? [
-          'border-[var(--lab-warning)]',
-          'bg-[var(--lab-warning)]',
+          'border-(--lab-warning)',
+          'bg-(--lab-warning)',
           'text-white',
-          'hover:enabled:border-[var(--lab-warning-hover)]',
-          'hover:enabled:bg-[var(--lab-warning-hover)]',
+          'hover:enabled:border-(--lab-warning-hover)',
+          'hover:enabled:bg-(--lab-warning-hover)',
           'hover:enabled:text-white'
         ]
       : '',

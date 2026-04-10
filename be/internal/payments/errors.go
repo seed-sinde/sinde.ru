@@ -8,6 +8,7 @@ var (
 	ErrInvalidAmount      = errors.New("invalid payment amount")
 	ErrOrderNotFound      = errors.New("payment order not found")
 	ErrOrderAccessDenied  = errors.New("payment order access denied")
+	ErrRefundNotAllowed   = errors.New("payment refund is not allowed")
 	ErrProviderRejected   = errors.New("payment provider rejected request")
 	ErrNotificationToken  = errors.New("invalid payment notification token")
 	ErrUnsupportedStatus  = errors.New("unsupported payment status")

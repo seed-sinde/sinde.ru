@@ -1,12 +1,16 @@
 type PaymentsApiResult<T> = ApiResponseWithData<T>
 
 let paymentAccessInFlight: Promise<PaymentAccessSummary | null> | null = null
+let paymentHistoryInFlight: Promise<PaymentOrderView[]> | null = null
 
 export const usePayments = () => {
   const { json: useApiJson } = useAPI()
   const { isAuthenticated, isAdmin } = useAuth()
   const access = useState<PaymentAccessSummary | null>('payments-access', () => null)
   const accessLoading = useState<boolean>('payments-access-loading', () => false)
+  const history = useState<PaymentOrderView[]>('payments-history', () => [])
+  const historyLoading = useState<boolean>('payments-history-loading', () => false)
+  const historyLoaded = useState<boolean>('payments-history-loaded', () => false)
   const hasActiveAccess = computed(() => Boolean(access.value?.has_active_access))
 
   const clearAccess = () => {
@@ -15,11 +19,19 @@ export const usePayments = () => {
     paymentAccessInFlight = null
   }
 
-  const loadAccess = async () => {
+  const clearHistory = () => {
+    history.value = []
+    historyLoading.value = false
+    historyLoaded.value = false
+    paymentHistoryInFlight = null
+  }
+
+  const loadAccess = async (force = false) => {
     if (!isAuthenticated.value) {
       clearAccess()
       return null
     }
+    if (force) clearAccess()
     if (accessLoading.value && paymentAccessInFlight) return await paymentAccessInFlight
     accessLoading.value = true
     paymentAccessInFlight = (async () => {
@@ -43,6 +55,35 @@ export const usePayments = () => {
   const ensureAccessLoaded = async () => {
     if (access.value || !isAuthenticated.value) return access.value
     return await loadAccess()
+  }
+
+  const loadHistory = async (force = false) => {
+    if (!isAuthenticated.value) {
+      clearHistory()
+      return []
+    }
+    if (force) clearHistory()
+    if (historyLoading.value && paymentHistoryInFlight) return await paymentHistoryInFlight
+    if (historyLoaded.value) return history.value
+    historyLoading.value = true
+    paymentHistoryInFlight = (async () => {
+      try {
+        const res = await useApiJson<PaymentsApiResult<PaymentUserOrdersListResult>>('/payments/history', {
+          method: 'GET'
+        })
+        history.value = res.data?.items || []
+        historyLoaded.value = true
+        return history.value
+      } catch (err) {
+        history.value = []
+        historyLoaded.value = false
+        throw err
+      } finally {
+        historyLoading.value = false
+        paymentHistoryInFlight = null
+      }
+    })()
+    return await paymentHistoryInFlight
   }
 
   const createOrder = async (input: {
@@ -75,6 +116,12 @@ export const usePayments = () => {
         token: input.token,
         sync_state: Boolean(input.sync_state)
       }
+    })
+  }
+
+  const refundOrder = async (orderID: string) => {
+    return await useApiJson<PaymentsApiResult<PaymentRefundOrderResult>>(`/payments/${encodeURIComponent(orderID)}/refund`, {
+      method: 'POST'
     })
   }
 
@@ -115,6 +162,7 @@ export const usePayments = () => {
     authed => {
       if (!authed) {
         clearAccess()
+        clearHistory()
       }
     },
     { immediate: true }
@@ -123,13 +171,19 @@ export const usePayments = () => {
   return {
     access,
     accessLoading,
+    history,
+    historyLoading,
+    historyLoaded,
     hasActiveAccess,
     isAdmin,
     clearAccess,
+    clearHistory,
     loadAccess,
     ensureAccessLoaded,
+    loadHistory,
     createOrder,
     lookupPublicOrder,
+    refundOrder,
     adminListOrders,
     adminSummary
   }

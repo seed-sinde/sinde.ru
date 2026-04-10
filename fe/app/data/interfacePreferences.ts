@@ -135,6 +135,7 @@ export const INTERFACE_MESSAGES = {
     'auth.account.title': 'Аккаунт',
     'auth.account.description': 'Профиль аккаунта, настройки и безопасность.',
     'auth.account.tab.profile': 'Профиль',
+    'auth.account.tab.balance': 'Баланс',
     'auth.account.tab.security': 'Безопасность',
     'auth.account.email.title': 'Email',
     'auth.account.email.description':
@@ -365,6 +366,7 @@ export const INTERFACE_MESSAGES = {
     'auth.account.title': 'Account',
     'auth.account.description': 'Account profile, preferences and security.',
     'auth.account.tab.profile': 'Profile',
+    'auth.account.tab.balance': 'Balance',
     'auth.account.tab.security': 'Security',
     'auth.account.email.title': 'Email',
     'auth.account.email.description':
@@ -594,6 +596,7 @@ export const INTERFACE_MESSAGES = {
     'auth.account.title': '账户',
     'auth.account.description': '账户资料、偏好与安全设置。',
     'auth.account.tab.profile': '资料',
+    'auth.account.tab.balance': '余额',
     'auth.account.tab.security': '安全',
     'auth.account.email.title': '邮箱',
     'auth.account.email.description': '当前地址：{email}。新邮箱会在邮件链接确认后立即生效。',
@@ -819,6 +822,7 @@ export const INTERFACE_MESSAGES = {
     'auth.account.title': 'アカウント',
     'auth.account.description': 'アカウント情報、設定、安全性。',
     'auth.account.tab.profile': 'プロフィール',
+    'auth.account.tab.balance': '残高',
     'auth.account.tab.security': 'セキュリティ',
     'auth.account.email.title': 'メール',
     'auth.account.email.description': '現在のアドレス: {email}。新しいメールは確認リンクの完了後に反映されます。',

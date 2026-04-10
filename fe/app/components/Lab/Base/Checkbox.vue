@@ -61,7 +61,7 @@ const checkboxAttrs = computed(() => {
 const externalClass = computed(() => String(attrs.class || '').trim())
 const checkboxClassList = computed(() => {
   return [
-    'lab-checkbox h-4 w-4 rounded accent-amber-400',
+    'h-4 w-4 border bg-(--lab-bg-control) text-(--lab-accent) accent-(--lab-accent) transition hover:enabled:border-(--lab-border-strong) hover:enabled:bg-(--lab-bg-control-hover) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--lab-accent) disabled:cursor-not-allowed disabled:opacity-60',
     props.checkboxClass,
     externalClass.value
   ]
@@ -72,23 +72,3 @@ const onChange = (event: Event) => {
   emit('change', event)
 }
 </script>
-<style scoped>
-  .lab-checkbox {
-    border: 1px solid;
-    background: var(--lab-bg-control);
-    color: var(--lab-accent);
-  }
-  .lab-checkbox:hover:enabled {
-    border-color: var(--lab-border-strong);
-    background: var(--lab-bg-control-hover);
-  }
-  .lab-checkbox:focus,
-  .lab-checkbox:focus-visible {
-    border-color: var(--lab-accent);
-    outline: none;
-  }
-  .lab-checkbox:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-</style>

@@ -1,7 +1,7 @@
 <template>
-  <div v-if="hasContent" class="viewer-credits mt-2 space-y-0.5 text-[11px] leading-4">
+  <div v-if="hasContent" class="mt-2 space-y-0.5 text-[11px] leading-4 text-(--lab-text-muted)">
     <p class="line-clamp-2 space-x-2">
-      <span v-if="title" class="viewer-credits-title text-sm font-semibold sm:text-base">
+      <span v-if="title" class="text-sm font-semibold text-(--lab-text-primary) sm:text-base">
         {{ title }}
       </span>
       <span v-if="attribution">{{ attribution }}</span>
@@ -9,7 +9,7 @@
       <NuxtLink
         v-if="sourceUrl"
         :to="sourceUrl"
-        class="viewer-credits-link underline underline-offset-2"
+        class="text-(--lab-accent) underline underline-offset-2 decoration-[color-mix(in_srgb,var(--lab-accent)_48%,transparent)] transition hover:text-(--lab-accent-hover) hover:decoration-[color-mix(in_srgb,var(--lab-accent-hover)_56%,transparent)]"
         target="_blank"
         rel="noopener noreferrer">
         источник
@@ -18,7 +18,7 @@
         <NuxtLink
           v-if="licenseUrl"
           :to="licenseUrl"
-          class="viewer-credits-link underline underline-offset-2"
+          class="text-(--lab-accent) underline underline-offset-2 decoration-[color-mix(in_srgb,var(--lab-accent)_48%,transparent)] transition hover:text-(--lab-accent-hover) hover:decoration-[color-mix(in_srgb,var(--lab-accent-hover)_56%,transparent)]"
           target="_blank"
           rel="noopener noreferrer">
           {{ license }}
@@ -41,20 +41,3 @@
     Boolean(props.title || props.author || props.attribution || props.sourceUrl || props.license)
   )
 </script>
-<style scoped>
-  .viewer-credits {
-    color: var(--lab-text-secondary);
-  }
-  .viewer-credits-title {
-    color: var(--lab-text-primary);
-  }
-  .viewer-credits-link {
-    color: var(--lab-accent);
-    text-decoration-color: color-mix(in srgb, var(--lab-accent) 48%, transparent);
-    transition: color 0.2s ease, text-decoration-color 0.2s ease;
-  }
-  .viewer-credits-link:hover {
-    color: var(--lab-accent-hover);
-    text-decoration-color: color-mix(in srgb, var(--lab-accent-hover) 56%, transparent);
-  }
-</style>

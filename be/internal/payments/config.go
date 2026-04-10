@@ -12,6 +12,15 @@ type Config struct {
 	TBankAPIURL          string
 	TBankTerminalKey     string
 	TBankPassword        string
+	TaxMode              string
+	ReceiptEnabled       bool
+	ReceiptTaxation      string
+	ReceiptTax           string
+	ReceiptPaymentMethod string
+	ReceiptPaymentObject string
+	ReceiptProTitle      string
+	ReceiptDonationTitle string
+	ReceiptSendOnCancel  bool
 	PublicBaseURL        string
 	Currency             string
 	FeePercent           float64
@@ -30,6 +39,15 @@ func LoadConfig() (Config, error) {
 		TBankAPIURL:          fallbackString(get("TBANK_API_URL"), "https://rest-api-test.tinkoff.ru/v2"),
 		TBankTerminalKey:     get("TBANK_TERMINAL_KEY"),
 		TBankPassword:        get("TBANK_PASSWORD"),
+		TaxMode:              strings.ToLower(fallbackString(get("TBANK_TAX_MODE"), "generic")),
+		ReceiptEnabled:       strings.EqualFold(get("TBANK_RECEIPT_ENABLED"), "true"),
+		ReceiptTaxation:      get("TBANK_RECEIPT_TAXATION"),
+		ReceiptTax:           fallbackString(get("TBANK_RECEIPT_TAX"), "none"),
+		ReceiptPaymentMethod: fallbackString(get("TBANK_RECEIPT_PAYMENT_METHOD"), "full_payment"),
+		ReceiptPaymentObject: fallbackString(get("TBANK_RECEIPT_PAYMENT_OBJECT"), "service"),
+		ReceiptProTitle:      fallbackString(get("TBANK_RECEIPT_ITEM_NAME_PRO"), "Доступ sinde.ru Pro"),
+		ReceiptDonationTitle: fallbackString(get("TBANK_RECEIPT_ITEM_NAME_DONATION"), "Поддержка проекта sinde.ru"),
+		ReceiptSendOnCancel:  strings.EqualFold(get("TBANK_RECEIPT_SEND_ON_CANCEL"), "true"),
 		PublicBaseURL:        fallbackString(get("PAYMENTS_PUBLIC_BASE_URL"), get("AUTH_PUBLIC_BASE_URL")),
 		Currency:             fallbackString(get("TBANK_CURRENCY"), "RUB"),
 		FeePercent:           0,
@@ -63,9 +81,27 @@ func LoadConfig() (Config, error) {
 	if cfg.TBankAPIURL == "" {
 		return Config{}, fmt.Errorf("TBANK_API_URL is required")
 	}
+	if cfg.UsesProviderReceipt() {
+		if cfg.ReceiptTaxation == "" {
+			return Config{}, fmt.Errorf("TBANK_RECEIPT_TAXATION is required when TBANK_RECEIPT_ENABLED=true")
+		}
+		if cfg.ReceiptTax == "" {
+			return Config{}, fmt.Errorf("TBANK_RECEIPT_TAX is required when TBANK_RECEIPT_ENABLED=true")
+		}
+		if cfg.ReceiptPaymentMethod == "" {
+			return Config{}, fmt.Errorf("TBANK_RECEIPT_PAYMENT_METHOD is required when TBANK_RECEIPT_ENABLED=true")
+		}
+		if cfg.ReceiptPaymentObject == "" {
+			return Config{}, fmt.Errorf("TBANK_RECEIPT_PAYMENT_OBJECT is required when TBANK_RECEIPT_ENABLED=true")
+		}
+	}
 	return cfg, nil
 }
 
 func (c Config) Enabled() bool {
 	return c.TBankTerminalKey != "" && c.TBankPassword != ""
+}
+
+func (c Config) UsesProviderReceipt() bool {
+	return c.ReceiptEnabled && c.TaxMode != "npd"
 }

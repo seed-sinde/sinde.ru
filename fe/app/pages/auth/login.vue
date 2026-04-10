@@ -345,9 +345,11 @@
           </LabField>
           <LabBaseButton type="submit" variant="primary" size="xl" :disabled="pending" :label="t('auth.login.submit')" />
         </form>
-        <div v-if="verificationEmail" class="auth-panel auth-panel-warning space-y-4 p-4">
+        <div
+          v-if="verificationEmail"
+          class="space-y-4 border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))] p-4 text-(--lab-text-primary)">
           <div class="space-y-2">
-            <p class="auth-panel-kicker text-xs font-semibold uppercase tracking-[0.14em]">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-(--lab-accent)">
               {{ t('auth.verify.title') }}
             </p>
             <p class="text-sm">{{ t('auth.login.verify_email_description') }}</p>
@@ -365,7 +367,8 @@
         </div>
       </template>
       <div v-else class="space-y-4">
-        <div class="auth-panel auth-panel-success p-3 text-sm">
+        <div
+          class="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_8%,var(--lab-bg-surface))] p-3 text-sm text-(--lab-text-primary)">
           <p>{{ t('auth.login.mfa_description') }}</p>
         </div>
         <LabNavTabs
@@ -402,57 +405,20 @@
         <LabNotify
           :text="mfaTicket ? `до сброса авторизации: ${mfaCountdownLabel}` : ''"
           tone="warning"
-          class-name="auth-countdown px-3 py-2 font-mono" />
+          class-name='border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))] px-3 py-2 font-mono text-(--lab-accent)' />
         <p v-if="pending" class="text-sm lab-text-muted">Проверяем код…</p>
       </div>
       <LabNotify :text="errorText" tone="error" />
       <div class="flex flex-wrap gap-3 text-sm lab-text-muted">
-        <NuxtLink to="/auth/register" class="auth-link">{{ t('auth.login.register') }}</NuxtLink>
-        <NuxtLink to="/auth/forgot-password" class="auth-link-secondary">
+        <NuxtLink to="/auth/register" class="text-(--lab-accent) transition hover:text-(--lab-accent-hover)">
+          {{ t('auth.login.register') }}
+        </NuxtLink>
+        <NuxtLink
+          to="/auth/forgot-password"
+          class="text-(--lab-text-muted) transition hover:text-(--lab-text-primary)">
           {{ t('auth.login.forgot') }}
         </NuxtLink>
       </div>
     </section>
   </div>
 </template>
-<style scoped>
-  .auth-panel {
-    border: 1px solid;
-  }
-  .auth-panel-warning {
-    border-color: color-mix(in srgb, var(--lab-warning) 34%, transparent);
-    background: color-mix(in srgb, var(--lab-warning) 10%, var(--lab-bg-surface));
-    color: var(--lab-warning);
-  }
-  .auth-panel-success {
-    border-color: color-mix(in srgb, var(--lab-success) 34%, transparent);
-    background: color-mix(in srgb, var(--lab-success) 10%, var(--lab-bg-surface));
-    color: var(--lab-success);
-  }
-  .auth-panel-kicker {
-    color: currentColor;
-    opacity: 0.8;
-  }
-  .auth-countdown {
-    border: 1px solid color-mix(in srgb, var(--lab-warning) 34%, transparent);
-    background: color-mix(in srgb, var(--lab-warning) 10%, var(--lab-bg-surface));
-    color: var(--lab-warning);
-  }
-  .auth-link,
-  .auth-link-secondary {
-    text-decoration: none;
-    transition: color 0.2s ease;
-  }
-  .auth-link {
-    color: var(--lab-accent);
-  }
-  .auth-link:hover {
-    color: var(--lab-accent-hover);
-  }
-  .auth-link-secondary {
-    color: var(--lab-text-secondary);
-  }
-  .auth-link-secondary:hover {
-    color: var(--lab-text-primary);
-  }
-</style>

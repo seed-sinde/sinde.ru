@@ -1,5 +1,8 @@
 <template>
-  <form ref="formRef" class="traits-add-form mx-auto flex w-full max-w-2xl flex-col gap-4" @submit.prevent="onSubmit">
+  <form
+    ref="formRef"
+    class="mx-auto flex w-full max-w-2xl flex-col gap-4 border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_86%,transparent)] p-4 sm:p-5"
+    @submit.prevent="onSubmit">
     <div class="space-y-3">
       <LabField label="Имя ключа" for-id="trait-key" class="w-full min-w-0">
         <LabBaseInput
@@ -200,15 +203,3 @@
     keyInput.value?.focus()
   })
 </script>
-<style scoped>
-  .traits-add-form {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 82%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface) 86%, transparent);
-    padding: 1rem;
-  }
-  @media (min-width: 640px) {
-    .traits-add-form {
-      padding: 1.25rem;
-    }
-  }
-</style>

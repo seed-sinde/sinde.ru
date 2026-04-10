@@ -1,31 +1,35 @@
 <template>
-  <section :class="['lab-spoiler', containerClass]">
-    <div
+  <section
+    :class="[
+      'min-w-0 w-full space-y-3',
+      isOpen ? 'bg-(--lab-bg-surface)' : '',
+      containerClass
+    ]">
+    <button
+      type="button"
+      :aria-expanded="isOpen ? 'true' : 'false'"
+      :aria-label="isOpen ? hideLabel : showLabel"
       :class="[
-        'flex cursor-pointer flex-wrap items-center gap-3',
-        inlineToggle ? 'justify-start' : 'justify-between',
+        'flex min-w-0 w-full items-center justify-between gap-3 text-left text-(--lab-text-primary) transition focus:outline-none focus-visible:ring-2 focus-visible:ring-(--lab-accent)',
         headerClass
       ]"
-      role="button"
-      tabindex="0"
-      :aria-expanded="isOpen ? 'true' : 'false'"
-      @click="toggle"
-      @keydown.enter.prevent="toggle"
-      @keydown.space.prevent="toggle">
-      <h2 :class="titleClass">{{ title }}</h2>
-      <LabBaseButton
-        :aria-expanded="isOpen ? 'true' : 'false'"
-        :label="isOpen ? hideLabel : showLabel"
-        :icon="isOpen ? collapseIcon : expandIcon"
-        :button-class="toggleButtonClass"
-        icon-class="text-sm"
-        @click.stop="toggle" />
-    </div>
-    <div v-if="isOpen" :class="contentClass">
-      <slot :expanded="isOpen" />
+      @click="toggle">
+      <span class="min-w-0 flex-1">
+        <span :class="['inline-flex max-w-full border-b border-(--lab-text-primary) pb-0.5', titleClass]">
+          {{ title }}
+        </span>
+      </span>
+      <span class="shrink-0 text-(--lab-text-secondary)" aria-hidden="true">
+        <Icon :name="isOpen ? collapseIcon : expandIcon" class="text-xl" />
+      </span>
+    </button>
+
+    <div v-if="isOpen" :class="['min-w-0', contentClass]">
+      <slot :expanded="isOpen"></slot>
     </div>
   </section>
 </template>
+
 <script setup lang="ts">
   const props = withDefaults(
     defineProps<{
@@ -39,31 +43,31 @@
       containerClass?: string
       headerClass?: string
       titleClass?: string
-      toggleButtonClass?: string
       contentClass?: string
-      inlineToggle?: boolean
     }>(),
     {
+      title: 'Спойлер',
       defaultExpanded: false,
       showLabel: 'Показать',
-      hideLabel: 'Свернуть',
+      hideLabel: 'Скрыть',
       expandIcon: 'ic:round-keyboard-double-arrow-down',
       collapseIcon: 'ic:round-keyboard-double-arrow-up',
-      containerClass: 'space-y-3',
+      containerClass: '',
       headerClass: '',
-      titleClass: 'lab-text-primary text-base font-semibold',
-      toggleButtonClass: 'h-8 rounded-lg px-2.5 text-xs',
-      contentClass: 'space-y-3',
-      inlineToggle: false
+      titleClass: '',
+      contentClass: ''
     }
   )
+
   const emit = defineEmits<{
     'update:modelValue': [value: boolean]
     toggle: [value: boolean]
   }>()
+
   const internalExpanded = ref(Boolean(props.defaultExpanded))
   const controlled = computed(() => typeof props.modelValue === 'boolean')
   const isOpen = computed(() => (controlled.value ? Boolean(props.modelValue) : internalExpanded.value))
+
   const setOpen = (value: boolean) => {
     if (!controlled.value) {
       internalExpanded.value = value
@@ -71,12 +75,8 @@
     emit('update:modelValue', value)
     emit('toggle', value)
   }
+
   const toggle = () => {
     setOpen(!isOpen.value)
   }
 </script>
-<style scoped>
-  .lab-spoiler {
-    color: var(--lab-text-primary);
-  }
-</style>

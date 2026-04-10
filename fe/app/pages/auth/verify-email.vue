@@ -47,17 +47,9 @@ onMounted(async () => {
       <p v-if="pending" class="text-sm lab-text-secondary">{{ t('auth.verify.pending') }}</p>
       <LabNotify :text="errorText" tone="error" />
       <LabNotify :text="successText" tone="success" />
-      <NuxtLink to="/auth/login" class="auth-verify-link text-sm">{{ t('auth.verify.login_link') }}</NuxtLink>
+      <NuxtLink to="/auth/login" class="text-sm text-(--lab-accent) transition hover:text-(--lab-accent-hover)">
+        {{ t('auth.verify.login_link') }}
+      </NuxtLink>
     </section>
   </div>
 </template>
-<style scoped>
-  .auth-verify-link {
-    color: var(--lab-accent);
-    text-decoration: none;
-    transition: color 0.2s ease;
-  }
-  .auth-verify-link:hover {
-    color: var(--lab-accent-hover);
-  }
-</style>

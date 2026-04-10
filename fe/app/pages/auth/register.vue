@@ -63,9 +63,11 @@
 </script>
 <template>
   <div class="px-3 py-6 md:px-5">
-    <section class="max-w-xl p-5 space-y-5">
+    <section class="max-w-xl space-y-5 p-5">
       <div class="space-y-2">
-        <div class="auth-register-badge inline-flex px-2.5 py-1 text-xs font-semibold uppercase">Регистрация</div>
+        <div class="inline-flex bg-[color-mix(in_srgb,var(--lab-accent)_10%,transparent)] px-2.5 py-1 text-xs font-semibold uppercase text-(--lab-accent)">
+          Регистрация
+        </div>
         <h1 class="text-2xl font-semibold lab-text-primary">{{ t('auth.register.title') }}</h1>
         <p class="text-sm lab-text-muted">{{ t('auth.register.description') }}</p>
       </div>
@@ -136,23 +138,9 @@
       </form>
       <LabNotify :text="errorText" tone="error" />
       <LabNotify :text="successText" tone="success" />
-      <NuxtLink to="/auth/login" class="auth-link text-sm">
+      <NuxtLink to="/auth/login" class="text-sm text-(--lab-accent) transition hover:text-(--lab-accent-hover)">
         {{ t('auth.register.has_account') }}
       </NuxtLink>
     </section>
   </div>
 </template>
-<style scoped>
-  .auth-register-badge {
-    color: var(--lab-info);
-    background: color-mix(in srgb, var(--lab-info) 10%, transparent);
-  }
-  .auth-link {
-    color: var(--lab-accent);
-    text-decoration: none;
-    transition: color 0.2s ease;
-  }
-  .auth-link:hover {
-    color: var(--lab-accent-hover);
-  }
-</style>

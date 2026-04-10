@@ -6,38 +6,49 @@
     aria-busy="true"
     role="status">
     <template v-if="iconOnly">
-      <Icon :name="iconName" class="lab-loader-icon-spin" />
+      <Icon :name="iconName" class="h-6 w-6 shrink-0 animate-spin" />
     </template>
     <template v-else-if="inline">
-      <div class="lab-loader-icon"></div>
-      <div class="lab-loader-block h-4 w-32"></div>
+      <div
+        class="h-4 w-4 shrink-0 rounded-full bg-[color-mix(in_srgb,var(--lab-text-muted)_24%,var(--lab-bg-surface))]"></div>
+      <div class="h-4 w-32 bg-[color-mix(in_srgb,var(--lab-text-muted)_24%,var(--lab-bg-surface))]"></div>
     </template>
     <template v-else-if="variant === 'list'">
-      <div v-for="item in normalizedCount" :key="`list-${item}`" class="lab-loader-surface flex items-start gap-3 p-3">
-        <div v-if="showAvatar" class="lab-loader-block h-10 w-10 shrink-0" />
+      <div
+        v-for="item in normalizedCount"
+        :key="`list-${item}`"
+        class="flex items-start gap-3 border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_92%,transparent)] p-3">
+        <div
+          v-if="showAvatar"
+          class="h-10 w-10 shrink-0 bg-[color-mix(in_srgb,var(--lab-text-muted)_24%,var(--lab-bg-surface))]" />
         <div class="min-w-0 flex-1 space-y-2">
-          <div class="lab-loader-block h-4 w-2/5" />
-          <div class="lab-loader-block-soft h-3 w-full" />
-          <div class="lab-loader-block-soft h-3 w-4/5" />
+          <div class="h-4 w-2/5 bg-[color-mix(in_srgb,var(--lab-text-muted)_24%,var(--lab-bg-surface))]" />
+          <div class="h-3 w-full bg-[color-mix(in_srgb,var(--lab-text-muted)_20%,var(--lab-bg-surface))]" />
+          <div class="h-3 w-4/5 bg-[color-mix(in_srgb,var(--lab-text-muted)_20%,var(--lab-bg-surface))]" />
         </div>
         <div v-if="showMeta" class="hidden w-16 shrink-0 sm:block">
-          <div class="lab-loader-block-soft ml-auto h-3 w-12" />
+          <div class="ml-auto h-3 w-12 bg-[color-mix(in_srgb,var(--lab-text-muted)_20%,var(--lab-bg-surface))]" />
         </div>
       </div>
     </template>
     <template v-else>
       <div :class="gridClass">
-        <div v-for="item in normalizedCount" :key="`card-${item}`" class="lab-loader-surface p-4">
-          <div v-if="showMedia" class="lab-loader-block mb-4 h-32 w-full" />
+        <div
+          v-for="item in normalizedCount"
+          :key="`card-${item}`"
+          class="border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_92%,transparent)] p-4">
+          <div
+            v-if="showMedia"
+            class="mb-4 h-32 w-full bg-[color-mix(in_srgb,var(--lab-text-muted)_24%,var(--lab-bg-surface))]" />
           <div class="space-y-3">
-            <div class="lab-loader-block h-5 w-3/5" />
-            <div class="lab-loader-block-soft h-3 w-full" />
-            <div class="lab-loader-block-soft h-3 w-5/6" />
-            <div class="lab-loader-block-soft h-3 w-2/3" />
+            <div class="h-5 w-3/5 bg-[color-mix(in_srgb,var(--lab-text-muted)_24%,var(--lab-bg-surface))]" />
+            <div class="h-3 w-full bg-[color-mix(in_srgb,var(--lab-text-muted)_20%,var(--lab-bg-surface))]" />
+            <div class="h-3 w-5/6 bg-[color-mix(in_srgb,var(--lab-text-muted)_20%,var(--lab-bg-surface))]" />
+            <div class="h-3 w-2/3 bg-[color-mix(in_srgb,var(--lab-text-muted)_20%,var(--lab-bg-surface))]" />
           </div>
           <div v-if="showFooter" class="mt-4 flex items-center justify-between gap-3">
-            <div class="lab-loader-block h-8 w-20" />
-            <div class="lab-loader-block-soft h-4 w-12" />
+            <div class="h-8 w-20 bg-[color-mix(in_srgb,var(--lab-text-muted)_24%,var(--lab-bg-surface))]" />
+            <div class="h-4 w-12 bg-[color-mix(in_srgb,var(--lab-text-muted)_20%,var(--lab-bg-surface))]" />
           </div>
         </div>
       </div>
@@ -91,38 +102,3 @@
     return ['grid gap-4', columnClassMap[props.columns]]
   })
 </script>
-<style scoped>
-  .lab-loader-surface {
-    border: 1px solid color-mix(in srgb, var(--lab-border) 72%, transparent);
-    background: color-mix(in srgb, var(--lab-bg-surface) 92%, transparent);
-  }
-  .lab-loader-block,
-  .lab-loader-block-soft,
-  .lab-loader-icon {
-    background: color-mix(in srgb, var(--lab-text-muted) 24%, var(--lab-bg-surface));
-  }
-  .lab-loader-block-soft {
-    background: color-mix(in srgb, var(--lab-text-soft) 20%, var(--lab-bg-surface));
-  }
-  .lab-loader-block,
-  .lab-loader-block-soft {
-    border-radius: 0;
-  }
-  .lab-loader-icon {
-    height: 1rem;
-    width: 1rem;
-    flex-shrink: 0;
-    border-radius: 9999px;
-  }
-  .lab-loader-icon-spin {
-    height: 1.5rem;
-    width: 1.5rem;
-    flex-shrink: 0;
-    animation: lab-loader-icon-spin 0.8s linear infinite;
-  }
-  @keyframes lab-loader-icon-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-</style>

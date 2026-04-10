@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -31,6 +32,11 @@ type Service struct {
 type Dependencies struct {
 	Client *http.Client
 	Now    func() time.Time
+}
+
+type receiptItem struct {
+	Name   string
+	Amount int64
 }
 
 func NewService(repo *Repository, cfg Config, deps Dependencies) *Service {
@@ -95,8 +101,12 @@ func hashTBankToken(payload map[string]any, password string) string {
 		if strings.EqualFold(strings.TrimSpace(key), "Token") {
 			continue
 		}
-		switch value.(type) {
-		case map[string]any, []any, nil:
+		if value == nil {
+			continue
+		}
+		kind := reflect.TypeOf(value).Kind()
+		switch kind {
+		case reflect.Map, reflect.Slice, reflect.Array, reflect.Struct:
 			continue
 		}
 		pairs[key] = fmt.Sprint(value)
@@ -148,6 +158,23 @@ func redactOrderLookupToken(raw string) string {
 	return parsed.String()
 }
 
+func redactReceiptForLog(value any) any {
+	receipt, ok := value.(map[string]any)
+	if !ok || receipt == nil {
+		return value
+	}
+	clone := make(map[string]any, len(receipt))
+	for key, item := range receipt {
+		switch strings.TrimSpace(key) {
+		case "Email":
+			clone[key] = "[redacted]"
+		default:
+			clone[key] = item
+		}
+	}
+	return clone
+}
+
 func debugPayloadForLog(payload map[string]any) map[string]any {
 	if payload == nil {
 		return map[string]any{}
@@ -159,6 +186,8 @@ func debugPayloadForLog(payload map[string]any) map[string]any {
 			debugPayload[key] = "[redacted]"
 		case "SuccessURL", "FailURL", "NotificationURL":
 			debugPayload[key] = redactOrderLookupToken(fmt.Sprint(value))
+		case "Receipt":
+			debugPayload[key] = redactReceiptForLog(value)
 		default:
 			debugPayload[key] = value
 		}
@@ -184,6 +213,78 @@ func buildRedirectURL(baseURL string, path string, orderID uuid.UUID, token stri
 		"%24%7BPaymentId%7D", "${PaymentId}",
 		"%24%7BStatus%7D", "${Status}",
 	).Replace(buildURL(baseURL, path, values))
+}
+
+func normalizeReceiptEmail(email string) string {
+	return strings.TrimSpace(email)
+}
+
+func (s *Service) buildReceiptItems(order *models.PaymentOrder) []receiptItem {
+	if order == nil || order.Amount <= 0 {
+		return nil
+	}
+	items := make([]receiptItem, 0, 2)
+	baseAmount := order.Amount
+	if order.BaseAmount > 0 && order.BaseAmount < baseAmount {
+		baseAmount = order.BaseAmount
+	}
+	if baseAmount > 0 {
+		items = append(items, receiptItem{
+			Name:   s.cfg.ReceiptProTitle,
+			Amount: baseAmount,
+		})
+	}
+	if order.TipAmount > 0 {
+		items = append(items, receiptItem{
+			Name:   s.cfg.ReceiptDonationTitle,
+			Amount: order.TipAmount,
+		})
+	}
+	if len(items) == 0 {
+		items = append(items, receiptItem{
+			Name:   s.cfg.ReceiptProTitle,
+			Amount: order.Amount,
+		})
+	}
+	return items
+}
+
+func (s *Service) buildReceipt(order *models.PaymentOrder, email string) map[string]any {
+	if !s.cfg.UsesProviderReceipt() || order == nil {
+		return nil
+	}
+	email = normalizeReceiptEmail(email)
+	if email == "" {
+		return nil
+	}
+	sourceItems := s.buildReceiptItems(order)
+	if len(sourceItems) == 0 {
+		return nil
+	}
+	items := make([]map[string]any, 0, len(sourceItems))
+	for _, item := range sourceItems {
+		if item.Amount <= 0 {
+			continue
+		}
+		items = append(items, map[string]any{
+			"Name":          item.Name,
+			"Price":         item.Amount,
+			"Quantity":      1,
+			"Amount":        item.Amount,
+			"Tax":           s.cfg.ReceiptTax,
+			"PaymentMethod": s.cfg.ReceiptPaymentMethod,
+			"PaymentObject": s.cfg.ReceiptPaymentObject,
+		})
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	return map[string]any{
+		"Email":    email,
+		"Taxation": s.cfg.ReceiptTaxation,
+		"Items":    items,
+		"Payments": map[string]any{"Electronic": order.Amount},
+	}
 }
 
 func internalStatusFromProvider(providerStatus string, success bool) string {
@@ -282,9 +383,19 @@ func (s *Service) buildOrderView(item *models.PaymentOrder) OrderView {
 		PaidAt:             item.PaidAt,
 		FailedAt:           item.FailedAt,
 		RefundedAt:         item.RefundedAt,
+		CanRefund:          s.canRefundOrder(item),
 		CreatedAt:          item.CreatedAt,
 		UpdatedAt:          item.UpdatedAt,
 	}
+}
+
+func (s *Service) canRefundOrder(item *models.PaymentOrder) bool {
+	if item == nil {
+		return false
+	}
+	return item.Provider == ProviderTBank &&
+		strings.TrimSpace(item.ProviderPaymentID) != "" &&
+		strings.EqualFold(strings.TrimSpace(item.Status), StatusSuccess)
 }
 
 func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, input CreateOrderInput) (*CreateOrderResult, error) {
@@ -380,6 +491,9 @@ func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, input Creat
 	}
 	if notificationURL != "" {
 		payload["NotificationURL"] = notificationURL
+	}
+	if receipt := s.buildReceipt(order, user.Email); receipt != nil {
+		payload["Receipt"] = receipt
 	}
 	var response tBankInitResponse
 	rawResponse, err := s.callTBank(ctx, "Init", payload, &response)
@@ -533,6 +647,21 @@ func (s *Service) GetAccessSummary(ctx context.Context, userID uuid.UUID) (*Acce
 	return summary, nil
 }
 
+func (s *Service) ListUserOrders(ctx context.Context, userID uuid.UUID, limit int) (*UserOrdersListResult, error) {
+	items, err := s.repo.ListOrdersByUser(ctx, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]OrderView, 0, len(items))
+	for _, item := range items {
+		copyItem := item
+		out = append(out, s.buildOrderView(&copyItem))
+	}
+	return &UserOrdersListResult{
+		Items: out,
+	}, nil
+}
+
 func (s *Service) LookupPublicOrder(ctx context.Context, input PublicOrderLookupInput) (*PublicOrderLookupResult, error) {
 	orderID, err := uuid.Parse(strings.TrimSpace(input.OrderID))
 	if err != nil {
@@ -550,6 +679,54 @@ func (s *Service) LookupPublicOrder(ctx context.Context, input PublicOrderLookup
 	}
 	return &PublicOrderLookupResult{
 		Order: s.buildOrderView(order),
+	}, nil
+}
+
+func (s *Service) RefundOrder(ctx context.Context, userID uuid.UUID, orderID uuid.UUID) (*RefundOrderResult, error) {
+	if !s.cfg.Enabled() {
+		return nil, ErrPaymentsDisabled
+	}
+	order, err := s.repo.GetOrderByIDAndUser(ctx, orderID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !s.canRefundOrder(order) {
+		return nil, ErrRefundNotAllowed
+	}
+	now := s.now().UTC()
+	payload := map[string]any{
+		"PaymentId": order.ProviderPaymentID,
+		"Amount":    order.Amount,
+	}
+	if s.cfg.UsesProviderReceipt() && s.cfg.ReceiptSendOnCancel {
+		if receipt := s.buildReceipt(order, order.UserEmail); receipt != nil {
+			payload["Receipt"] = receipt
+		}
+	}
+	var response tBankCancelResponse
+	rawResponse, err := s.callTBank(ctx, "Cancel", payload, &response)
+	order.ProviderResponse = rawResponse
+	order.ProviderStatus = strings.ToUpper(strings.TrimSpace(response.Status))
+	order.ProviderPaymentID = fallbackString(strings.TrimSpace(response.PaymentID), order.ProviderPaymentID)
+	order.ProviderErrorCode = strings.TrimSpace(response.ErrorCode)
+	order.ProviderMessage = fallbackString(strings.TrimSpace(response.Message), strings.TrimSpace(response.Details))
+	order.LastCheckedAt = ptrTime(now)
+	if err != nil {
+		_ = s.repo.UpdateOrder(ctx, order)
+		return nil, err
+	}
+	if updateErr := s.repo.UpdateOrder(ctx, order); updateErr != nil {
+		return nil, updateErr
+	}
+	if !response.Success || order.ProviderErrorCode != "" && order.ProviderErrorCode != "0" {
+		return nil, ErrProviderRejected
+	}
+	syncedOrder, syncErr := s.syncOrderState(ctx, order)
+	if syncErr != nil {
+		return nil, syncErr
+	}
+	return &RefundOrderResult{
+		Order: s.buildOrderView(syncedOrder),
 	}, nil
 }
 

@@ -85,7 +85,9 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler, paym
 	kitchenAuth.Post("/admin/recipes/:id/owner", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenAdminChangeRecipeOwnerHandler())
 	paymentsAuth := api.Group("/payments", middleware.RequireAuth(authHandler.Service()))
 	paymentsAuth.Get("/access", paymentHandler.Access())
+	paymentsAuth.Get("/history", paymentHandler.History())
 	paymentsAuth.Post("/init", middleware.RequireCSRFCookie(authHandler.Service()), paymentHandler.CreateOrder())
+	paymentsAuth.Post("/:orderId/refund", middleware.RequireCSRFCookie(authHandler.Service()), paymentHandler.Refund())
 	mediaAuth := api.Group("/media", middleware.RequireAuth(authHandler.Service()))
 	mediaAuth.Post("/upload", handlers.MediaUploadHandler())
 	api.Get("/kitchen/recipes/:id", handlers.KitchenGetRecipeHandler())   // Получить рецепт по ID.

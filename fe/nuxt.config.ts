@@ -18,7 +18,9 @@ export default defineNuxtConfig({
     typeCheck: true,
     strict: true,
     tsConfig: {
+      exclude: ['../node_modules', '../.git', '../.output', '../dist', '../coverage', '../.cache'],
       compilerOptions: {
+        skipLibCheck: true,
         noUnusedLocals: true,
         noUnusedParameters: true,
         noUncheckedIndexedAccess: true,
@@ -27,6 +29,12 @@ export default defineNuxtConfig({
         noFallthroughCasesInSwitch: true,
         noImplicitOverride: true
       }
+    },
+    sharedTsConfig: {
+      exclude: ['../node_modules', '../.git', '../.output', '../dist', '../coverage', '../.cache']
+    },
+    nodeTsConfig: {
+      exclude: ['../node_modules', '../.git', '../.output', '../dist', '../coverage', '../.cache']
     }
   },
   experimental: {
@@ -59,6 +67,7 @@ export default defineNuxtConfig({
     typescript: {
       strict: true,
       tsConfig: {
+        exclude: ['../node_modules', '../.git', '../.output', '../dist', '../coverage', '../.cache'],
         compilerOptions: {
           noUnusedLocals: true,
           noUnusedParameters: true,
