@@ -914,7 +914,6 @@
   /* 1. Область просмотра (viewport) должна быть оберткой для узора */
   .viewer-content-viewport {
     position: relative;
-    overflow: hidden; /* Чтобы узор не вылезал за границы */
     background-color: var(--lab-bg-canvas); /* Фон под узором */
   }
 

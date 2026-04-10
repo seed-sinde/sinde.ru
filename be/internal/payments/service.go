@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"sort"
@@ -130,6 +131,41 @@ func buildURL(baseURL string, path string, values url.Values) string {
 	return parsed.String()
 }
 
+func redactOrderLookupToken(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return value
+	}
+	query := parsed.Query()
+	if query.Has("token") {
+		query.Set("token", "[redacted]")
+		parsed.RawQuery = query.Encode()
+	}
+	return parsed.String()
+}
+
+func debugPayloadForLog(payload map[string]any) map[string]any {
+	if payload == nil {
+		return map[string]any{}
+	}
+	debugPayload := make(map[string]any, len(payload))
+	for key, value := range payload {
+		switch strings.TrimSpace(key) {
+		case "Token":
+			debugPayload[key] = "[redacted]"
+		case "SuccessURL", "FailURL", "NotificationURL":
+			debugPayload[key] = redactOrderLookupToken(fmt.Sprint(value))
+		default:
+			debugPayload[key] = value
+		}
+	}
+	return debugPayload
+}
+
 func buildRedirectURL(baseURL string, path string, orderID uuid.UUID, token string, paymentID string, status string, returnTo string) string {
 	values := url.Values{}
 	values.Set("order_id", orderID.String())
@@ -173,6 +209,12 @@ func (s *Service) callTBank(ctx context.Context, method string, payload map[stri
 	}
 	payload["TerminalKey"] = s.cfg.TBankTerminalKey
 	payload["Token"] = hashTBankToken(payload, s.cfg.TBankPassword)
+	debugBody, debugErr := json.Marshal(debugPayloadForLog(payload))
+	if debugErr != nil {
+		log.Printf("[payments:tbank] request method=%s payload_log_error=%v", method, debugErr)
+	} else {
+		log.Printf("[payments:tbank] request method=%s url=%s payload=%s", method, strings.TrimRight(s.cfg.TBankAPIURL, "/")+"/"+strings.TrimLeft(method, "/"), string(debugBody))
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -184,15 +226,19 @@ func (s *Service) callTBank(ctx context.Context, method string, payload map[stri
 	req.Header.Set("Content-Type", "application/json")
 	res, err := s.client.Do(req)
 	if err != nil {
+		log.Printf("[payments:tbank] transport_error method=%s err=%v", method, err)
 		return nil, err
 	}
 	defer res.Body.Close()
 	raw, err := io.ReadAll(res.Body)
 	if err != nil {
+		log.Printf("[payments:tbank] read_error method=%s err=%v", method, err)
 		return nil, err
 	}
+	log.Printf("[payments:tbank] response method=%s status_code=%d body=%s", method, res.StatusCode, strings.TrimSpace(string(raw)))
 	if out != nil {
 		if err := json.Unmarshal(raw, out); err != nil {
+			log.Printf("[payments:tbank] decode_error method=%s err=%v", method, err)
 			return raw, err
 		}
 	}
@@ -341,6 +387,17 @@ func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, input Creat
 	order.PaymentURL = strings.TrimSpace(response.PaymentURL)
 	order.LastCheckedAt = ptrTime(now)
 	if err != nil {
+		log.Printf("[payments:init] rejected order_id=%s user_id=%s plan=%s amount=%d err=%v provider_status=%s provider_error_code=%s provider_message=%q payment_url=%s",
+			order.OrderID.String(),
+			order.UserID.String(),
+			order.PlanCode,
+			order.Amount,
+			err,
+			order.ProviderStatus,
+			order.ProviderErrorCode,
+			order.ProviderMessage,
+			strings.TrimSpace(order.PaymentURL),
+		)
 		order.Status = StatusFailed
 		order.FailedAt = ptrTime(now)
 		_ = s.repo.UpdateOrder(ctx, order)
@@ -354,6 +411,18 @@ func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, input Creat
 		return nil, updateErr
 	}
 	if !response.Success || strings.TrimSpace(response.ErrorCode) != "" && strings.TrimSpace(response.ErrorCode) != "0" {
+		log.Printf("[payments:init] provider_declined order_id=%s user_id=%s plan=%s amount=%d provider_status=%s provider_error_code=%s provider_message=%q success=%t payment_id=%s payment_url=%s",
+			order.OrderID.String(),
+			order.UserID.String(),
+			order.PlanCode,
+			order.Amount,
+			order.ProviderStatus,
+			order.ProviderErrorCode,
+			order.ProviderMessage,
+			response.Success,
+			order.ProviderPaymentID,
+			strings.TrimSpace(order.PaymentURL),
+		)
 		return nil, ErrProviderRejected
 	}
 	return &CreateOrderResult{
