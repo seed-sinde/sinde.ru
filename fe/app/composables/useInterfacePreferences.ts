@@ -4,6 +4,16 @@ const formatMessage = (template: string, params?: Record<string, string | number
   return template.replace(/\{([a-z0-9_]+)\}/gi, (_, key: string) => String(params[key] ?? ''))
 }
 const themeColorFor = (theme: 'dark' | 'light') => (theme === 'light' ? '#f4f4f5' : '#0c0c0f')
+const toPublicAssetUrl = (baseURL: string, path: string) => {
+  const normalizedBaseURL = String(baseURL || '')
+    .trim()
+    .replace(/\/+$/, '')
+  const normalizedPath = String(path || '')
+    .trim()
+    .replace(/^\/+/, '')
+  if (!normalizedPath) return normalizedBaseURL || '/'
+  return normalizedBaseURL ? `${normalizedBaseURL}/${normalizedPath}` : `/${normalizedPath}`
+}
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 const readThemePreferenceFromSettings = (settings: unknown): ThemePreference => {
@@ -12,6 +22,7 @@ const readThemePreferenceFromSettings = (settings: unknown): ThemePreference => 
   return normalizeThemePreference(appearance?.theme_preference)
 }
 export const useInterfacePreferences = () => {
+  const runtimeConfig = useRuntimeConfig()
   const store = useUiPreferencesStore()
   const systemTheme = useState<'dark' | 'light'>('interface-system-theme', () => 'dark')
   const syncSystemTheme = () => {
@@ -39,8 +50,11 @@ export const useInterfacePreferences = () => {
   const effectiveTheme = computed<'dark' | 'light'>(() =>
     themePreference.value === 'system' ? systemTheme.value : themePreference.value
   )
+  const publicAsset = (path: string) => toPublicAssetUrl(String(runtimeConfig.public.baseURL || ''), path)
+  const faviconLightSrc = computed(() => publicAsset('/favicon-light.svg'))
+  const faviconDarkSrc = computed(() => publicAsset('/favicon-dark.svg'))
   const themeColor = computed(() => themeColorFor(effectiveTheme.value))
-  const faviconSrc = computed(() => `/favicon-${effectiveTheme.value}.svg`)
+  const faviconSrc = computed(() => (effectiveTheme.value === 'light' ? faviconLightSrc.value : faviconDarkSrc.value))
   const t = (key: InterfaceMessageKey, params?: Record<string, string | number>) => {
     const messages = INTERFACE_MESSAGES[localeCode.value] || INTERFACE_MESSAGES.ru
     const fallback = INTERFACE_MESSAGES.ru[key] || key
@@ -75,7 +89,10 @@ export const useInterfacePreferences = () => {
     themePreference,
     effectiveTheme,
     themeColor,
+    publicAsset,
     faviconSrc,
+    faviconLightSrc,
+    faviconDarkSrc,
     localeOptions,
     themeOptions,
     t,

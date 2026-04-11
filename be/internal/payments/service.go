@@ -603,6 +603,8 @@ func (s *Service) syncOrderState(ctx context.Context, order *models.PaymentOrder
 			accessUntil := accessStart.AddDate(0, s.cfg.AccessDurationMonths, 0)
 			order.AccessFrom = ptrTime(accessStart)
 			order.AccessUntil = ptrTime(accessUntil)
+			// TODO(payments): when access logging is introduced, record activation IP, activation timestamp,
+			// and subsequent paid-feature usage from this access-grant point.
 		}
 	case StatusRefunded:
 		if order.RefundedAt == nil {
@@ -779,6 +781,8 @@ func (s *Service) HandleNotification(ctx context.Context, payload map[string]any
 			accessUntil := accessStart.AddDate(0, s.cfg.AccessDurationMonths, 0)
 			order.AccessFrom = ptrTime(accessStart)
 			order.AccessUntil = ptrTime(accessUntil)
+			// TODO(payments): when access logging is introduced, record activation IP, activation timestamp,
+			// and subsequent paid-feature usage from this access-grant point.
 		}
 	case StatusRefunded:
 		if order.RefundedAt == nil {

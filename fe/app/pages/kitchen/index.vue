@@ -53,11 +53,13 @@
     loadSharedUserSummary,
     markUserSummaryRead
   } = useAuth()
+  const authUiReady = computed(() => searchUiHydrated.value && authLoaded.value)
   const isCurrentUserAdmin = computed(() => Boolean(user.value?.roles?.includes('admin')))
+  const kitchenTheme = computed<'dark' | 'light'>(() => (searchUiHydrated.value ? effectiveTheme.value : 'dark'))
   const catalogStore = useKitchenCatalogStore()
-  await callOnce('kitchen-catalog', async () => {
+  const ensureKitchenCatalogLoaded = async () => {
     await catalogStore.ensureLoaded()
-  })
+  }
   const userAttentionSummary = computed(() => sharedUserSummary.value)
   const difficultyOptions = computed(() => catalogStore.getOptions('difficulty'))
   const defaultRecipeDifficulty = computed(() => difficultyOptions.value[0]?.code || 'easy')
@@ -432,14 +434,14 @@
     return `Режим поиска: ${modeText}.${excludedText}${favoriteText}${favoriteOnlyText} Найдено рецептов: ${count}.`
   })
   const recipeAdvancedSearchContainerClass = computed(() =>
-    recipeAdvancedSearchOpen.value
-      ? 'space-y-0 fixed inset-0 z-60 bg-zinc-950 md:static md:z-auto md:bg-transparent'
-      : 'space-y-0'
+    recipeAdvancedSearchOpen.value ?
+      'space-y-0 fixed inset-0 z-60 bg-zinc-950 md:static md:z-auto md:bg-transparent'
+    : 'space-y-0'
   )
   const recipeAdvancedSearchContentClass = computed(() =>
-    recipeAdvancedSearchOpen.value
-      ? 'flex h-full min-h-0 flex-col gap-4 overflow-y-auto px-3 pb-4 pt-4 md:block md:space-y-3 md:px-0 md:pb-2 md:pt-3'
-      : 'space-y-3'
+    recipeAdvancedSearchOpen.value ?
+      'flex h-full min-h-0 flex-col gap-4 overflow-y-auto px-3 pb-4 pt-4 md:block md:space-y-3 md:px-0 md:pb-2 md:pt-3'
+    : 'space-y-3'
   )
   const recipeAdvancedSearchFoundLabel = computed(() => {
     if (recipesLoading.value) return 'Ищем рецепты...'
@@ -567,7 +569,7 @@
   const ingredientCategory = (name: string) => ingredientCategoryByName.value[normalizeTag(name)] || 'другое'
   const categoryTagStyle = (category: string) => {
     const color = kitchenCategoryColor(category)
-    const isLight = effectiveTheme.value === 'light'
+    const isLight = kitchenTheme.value === 'light'
     return {
       borderColor: kitchenColorWithAlpha(color, isLight ? 0.42 : 0.58),
       backgroundColor: kitchenColorWithAlpha(color, isLight ? 0.18 : 0.24),
@@ -625,39 +627,39 @@
     searchUiHydrated.value ? resolvedDisplayExcludedIngredients.value : excludedIngredients.value
   )
   const catalogCardVisualClass = () =>
-    effectiveTheme.value === 'light'
-      ? 'bg-white/80 hover:bg-white border-zinc-300'
-      : 'bg-zinc-900/70 hover:bg-zinc-900 border-zinc-700'
-  const catalogShellClass = computed(() => (effectiveTheme.value === 'light' ? 'bg-zinc-50 p-2' : 'bg-zinc-900 p-2'))
+    kitchenTheme.value === 'light' ?
+      'bg-white/80 hover:bg-white border-zinc-300'
+    : 'bg-zinc-900/70 hover:bg-zinc-900 border-zinc-700'
+  const catalogShellClass = computed(() => (kitchenTheme.value === 'light' ? 'bg-zinc-50 p-2' : 'bg-zinc-900 p-2'))
   const catalogGroupDividerClass = computed(() =>
-    effectiveTheme.value === 'light'
-      ? 'inline-flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.08em] text-zinc-500'
-      : 'inline-flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.08em] text-zinc-500'
+    kitchenTheme.value === 'light' ?
+      'inline-flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.08em] text-zinc-500'
+    : 'inline-flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.08em] text-zinc-500'
   )
   const catalogGroupDividerLineClass = computed(() =>
-    effectiveTheme.value === 'light' ? 'h-px flex-1 rounded-full bg-zinc-300' : 'h-px flex-1 rounded-full bg-zinc-700'
+    kitchenTheme.value === 'light' ? 'h-px flex-1 rounded-full bg-zinc-300' : 'h-px flex-1 rounded-full bg-zinc-700'
   )
   const catalogCardMetaClass = computed(() =>
-    effectiveTheme.value === 'light'
-      ? 'text-[10px] leading-tight text-zinc-600'
-      : 'text-[10px] leading-tight text-zinc-500'
+    kitchenTheme.value === 'light' ?
+      'text-[10px] leading-tight text-zinc-600'
+    : 'text-[10px] leading-tight text-zinc-500'
   )
   const catalogFavoriteButtonClass = (active: boolean) =>
-    active
-      ? effectiveTheme.value === 'light'
-        ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-500/70 bg-amber-100 text-amber-700 opacity-100 pointer-events-auto transition-colors duration-150'
-        : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/80 bg-amber-400/20 text-amber-300 opacity-100 pointer-events-auto transition-colors duration-150'
-      : effectiveTheme.value === 'light'
-        ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-700 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
-        : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950/85 text-zinc-300 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-amber-400/70 hover:bg-amber-400/10 hover:text-amber-300 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
+    active ?
+      kitchenTheme.value === 'light' ?
+        'inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-500/70 bg-amber-100 text-amber-700 opacity-100 pointer-events-auto transition-colors duration-150'
+      : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-300/80 bg-amber-400/20 text-amber-300 opacity-100 pointer-events-auto transition-colors duration-150'
+    : kitchenTheme.value === 'light' ?
+      'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-700 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
+    : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950/85 text-zinc-300 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-amber-400/70 hover:bg-amber-400/10 hover:text-amber-300 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
   const catalogExcludeButtonClass = (active: boolean) =>
-    active
-      ? effectiveTheme.value === 'light'
-        ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-500/70 bg-rose-100 text-rose-700 opacity-100 pointer-events-auto transition-colors duration-150'
-        : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/80 bg-rose-400/20 text-rose-200 opacity-100 pointer-events-auto transition-colors duration-150'
-      : effectiveTheme.value === 'light'
-        ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-700 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
-        : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950/85 text-zinc-300 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-rose-400/70 hover:bg-rose-400/10 hover:text-rose-200 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
+    active ?
+      kitchenTheme.value === 'light' ?
+        'inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-500/70 bg-rose-100 text-rose-700 opacity-100 pointer-events-auto transition-colors duration-150'
+      : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/80 bg-rose-400/20 text-rose-200 opacity-100 pointer-events-auto transition-colors duration-150'
+    : kitchenTheme.value === 'light' ?
+      'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-700 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
+    : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950/85 text-zinc-300 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-rose-400/70 hover:bg-rose-400/10 hover:text-rose-200 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
   const recipeDifficultyScaleOptions = computed(() =>
     difficultyOptions.value.map(item => ({
       value: item.code,
@@ -768,30 +770,6 @@
     resultMode.value = 'latest'
   }
   const latestRecipesInitialized = ref(false)
-  const { data: initialLatestRecipesData, error: initialLatestRecipesError } = await useAsyncData(
-    'kitchen-latest-recipes-initial',
-    async () => {
-      const res = await getKitchenLatestRecipes(24)
-      return {
-        items: res?.data?.items || [],
-        total_public: Number(res?.data?.total_public ?? 0)
-      }
-    },
-    {
-      default: () => ({ items: [], total_public: 0 })
-    }
-  )
-  if (initialLatestRecipesError.value) {
-    const initialLatestError = initialLatestRecipesError.value as any
-    recipesError.value =
-      initialLatestError?.data?.message || initialLatestError?.message || 'Не удалось загрузить последние рецепты.'
-    recipes.value = []
-    publicRecipesTotal.value = null
-    resultMode.value = 'latest'
-  } else {
-    applyLatestRecipesSnapshot(initialLatestRecipesData.value)
-    latestRecipesInitialized.value = true
-  }
   const loadLatestRecipes = async () => {
     recipesLoading.value = true
     recipesError.value = null
@@ -808,6 +786,12 @@
     } finally {
       recipesLoading.value = false
     }
+  }
+  const startInitialKitchenDataLoad = () => {
+    if (import.meta.server) return
+    void ensureKitchenCatalogLoaded()
+    if (latestRecipesInitialized.value || recipesLoading.value) return
+    void loadLatestRecipes()
   }
   const runRecipeSearch = async () => {
     recipeServingsRangeError.value = ''
@@ -1080,9 +1064,8 @@
         category: customIngredientForm.category.trim() || 'другое'
       })
       customIngredientForm.name = ''
-      customIngredientForm.category = catalogStore.categoryLabels.includes('другое')
-        ? 'другое'
-        : catalogStore.categoryLabels[0] || 'другое'
+      customIngredientForm.category =
+        catalogStore.categoryLabels.includes('другое') ? 'другое' : catalogStore.categoryLabels[0] || 'другое'
       await loadKitchenAccountIngredients()
     } catch (err: any) {
       accountIngredientsError.value = err?.data?.message || err?.message || 'Не удалось сохранить ингредиент.'
@@ -1119,14 +1102,14 @@
     accountIngredientsError.value = null
     try {
       const exists =
-        listType === 'exclude'
-          ? isExcludeFavoriteIngredient(item.ingredient_id)
-          : isFavoriteIngredient(item.ingredient_id)
+        listType === 'exclude' ?
+          isExcludeFavoriteIngredient(item.ingredient_id)
+        : isFavoriteIngredient(item.ingredient_id)
       const oppositeListType: 'include' | 'exclude' = listType === 'exclude' ? 'include' : 'exclude'
       const existsInOppositeList =
-        oppositeListType === 'exclude'
-          ? isExcludeFavoriteIngredient(item.ingredient_id)
-          : isFavoriteIngredient(item.ingredient_id)
+        oppositeListType === 'exclude' ?
+          isExcludeFavoriteIngredient(item.ingredient_id)
+        : isFavoriteIngredient(item.ingredient_id)
       if (exists) {
         await unfavoriteKitchenIngredient(item.ingredient_id, listType)
         removeFavoriteIngredientById(item.ingredient_id, listType)
@@ -1160,6 +1143,7 @@
   }
   onMounted(async () => {
     searchUiHydrated.value = true
+    startInitialKitchenDataLoad()
     await ensureLoaded()
     const startupTasks: Promise<unknown>[] = [loadKitchenAccountIngredients()]
     if (showMyRecipesList.value && isAuthenticated.value) {
@@ -1280,9 +1264,9 @@
                       <LabBaseButton
                         :button-class="catalogFavoriteButtonClass(isFavoriteIngredient(item.ingredient_id))"
                         :aria-label="
-                          isFavoriteIngredient(item.ingredient_id)
-                            ? `Убрать ${item.name} из любимых`
-                            : `Добавить ${item.name} в любимые`
+                          isFavoriteIngredient(item.ingredient_id) ?
+                            `Убрать ${item.name} из любимых`
+                          : `Добавить ${item.name} в любимые`
                         "
                         :icon="isFavoriteIngredient(item.ingredient_id) ? 'ic:round-star' : 'ic:round-star-border'"
                         :icon-class="isFavoriteIngredient(item.ingredient_id) ? 'text-amber-300' : ''"
@@ -1292,14 +1276,14 @@
                       <LabBaseButton
                         :button-class="catalogExcludeButtonClass(isExcludeFavoriteIngredient(item.ingredient_id))"
                         :aria-label="
-                          isExcludeFavoriteIngredient(item.ingredient_id)
-                            ? `Убрать ${item.name} из исключаемых`
-                            : `Добавить ${item.name} в исключаемые`
+                          isExcludeFavoriteIngredient(item.ingredient_id) ?
+                            `Убрать ${item.name} из исключаемых`
+                          : `Добавить ${item.name} в исключаемые`
                         "
                         :icon="
-                          isExcludeFavoriteIngredient(item.ingredient_id)
-                            ? 'ic:round-block'
-                            : 'ic:round-do-not-disturb-on'
+                          isExcludeFavoriteIngredient(item.ingredient_id) ? 'ic:round-block' : (
+                            'ic:round-do-not-disturb-on'
+                          )
                         "
                         icon-only
                         size="xs"
@@ -1331,7 +1315,7 @@
           </div>
         </div>
       </div>
-      <p v-if="!authLoaded" class="text-xs text-zinc-500">Проверяем сессию...</p>
+      <p v-if="!authUiReady" class="text-xs text-zinc-500">Проверяем сессию...</p>
       <div v-else-if="isAuthenticated" class="space-y-3 bg-zinc-900 p-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -1420,20 +1404,18 @@
             <LabBaseButton
               :button-class="[
                 'inline-flex h-11 w-11 items-center justify-center border transition',
-                showFavoriteRecipesOnly
-                  ? 'border-rose-400/90 bg-rose-600 text-white hover:bg-rose-500'
-                  : 'border-zinc-700 bg-zinc-900 text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
+                showFavoriteRecipesOnly ?
+                  'border-rose-400/90 bg-rose-600 text-white hover:bg-rose-500'
+                : 'border-zinc-700 bg-zinc-900 text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
               ]"
               :title="showFavoriteRecipesOnly ? 'Показать все рецепты' : 'Показать только избранные рецепты'"
               :aria-label="showFavoriteRecipesOnly ? 'Показать все рецепты' : 'Показать только избранные рецепты'"
               :aria-pressed="showFavoriteRecipesOnly ? 'true' : 'false'"
               :disabled="recipeToolbarActionLoading === 'favorite'"
               :icon="
-                recipeToolbarActionLoading === 'favorite'
-                  ? ''
-                  : showFavoriteRecipesOnly
-                    ? 'ic:round-favorite'
-                    : 'ic:round-favorite-border'
+                recipeToolbarActionLoading === 'favorite' ? ''
+                : showFavoriteRecipesOnly ? 'ic:round-favorite'
+                : 'ic:round-favorite-border'
               "
               icon-class="h-5 w-5 text-xl"
               icon-only
@@ -1446,9 +1428,9 @@
             <LabBaseButton
               :button-class="[
                 'inline-flex h-11 w-11 items-center justify-center border transition disabled:cursor-not-allowed disabled:opacity-60',
-                recipesLoading
-                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
-                  : 'border-zinc-700 bg-zinc-900 text-emerald-300 hover:border-emerald-400/70 hover:bg-emerald-500/10'
+                recipesLoading ?
+                  'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
+                : 'border-zinc-700 bg-zinc-900 text-emerald-300 hover:border-emerald-400/70 hover:bg-emerald-500/10'
               ]"
               title="Найти рецепты"
               aria-label="Найти рецепты"
@@ -1467,9 +1449,9 @@
             <LabBaseButton
               :button-class="[
                 'inline-flex h-11 w-11 items-center justify-center border transition disabled:cursor-not-allowed disabled:opacity-60',
-                recipesLoading
-                  ? 'border-zinc-600 bg-zinc-900 text-zinc-400'
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800'
+                recipesLoading ?
+                  'border-zinc-600 bg-zinc-900 text-zinc-400'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800'
               ]"
               title="Сбросить фильтры"
               aria-label="Сбросить фильтры"
@@ -1488,9 +1470,9 @@
             <LabBaseButton
               :button-class="[
                 'inline-flex h-11 w-11 items-center justify-center border transition',
-                recipeAdvancedSearchOpen
-                  ? 'border-cyan-400/80 bg-cyan-500/20 text-cyan-100 hover:bg-cyan-500/30'
-                  : 'border-zinc-700 bg-zinc-900 text-cyan-300 hover:border-cyan-400/70 hover:bg-cyan-500/10'
+                recipeAdvancedSearchOpen ?
+                  'border-cyan-400/80 bg-cyan-500/20 text-cyan-100 hover:bg-cyan-500/30'
+                : 'border-zinc-700 bg-zinc-900 text-cyan-300 hover:border-cyan-400/70 hover:bg-cyan-500/10'
               ]"
               :title="recipeAdvancedSearchOpen ? 'Скрыть расширенный поиск' : 'Показать расширенный поиск'"
               :aria-label="recipeAdvancedSearchOpen ? 'Скрыть расширенный поиск' : 'Показать расширенный поиск'"
@@ -1727,11 +1709,10 @@
                   toggle-tone="cyan"
                   :toggle-visual-state="includeFavoriteToggleVisualState"
                   :list-container-class="
-                    displaySelectedIngredients.length
-                      ? requireAllIngredients
-                        ? 'rounded-[13px] border border-zinc-700 bg-zinc-800/50 p-2'
-                        : 'rounded-[13px] border border-transparent bg-transparent p-2'
-                      : ''
+                    displaySelectedIngredients.length ?
+                      requireAllIngredients ? 'rounded-[13px] border border-zinc-700 bg-zinc-800/50 p-2'
+                      : 'rounded-[13px] border border-transparent bg-transparent p-2'
+                    : ''
                   "
                   :item-style="item => selectedTagStyle(item.label)"
                   :item-title="item => `Нажмите, чтобы убрать «${item.label}» из фильтра`"
@@ -1810,7 +1791,7 @@
     <section v-show="showRecipeManageSection" class="bg-zinc-900 p-3 space-y-4 sm:p-5">
       <div class="flex flex-wrap items-center gap-2">
         <LabBaseButton
-          v-if="showMyRecipesList && isAuthenticated"
+          v-if="showMyRecipesList && authUiReady && isAuthenticated"
           variant="primary"
           size="md"
           button-class="self-start"
@@ -1818,7 +1799,7 @@
           Новый рецепт
         </LabBaseButton>
       </div>
-      <div v-if="!authLoaded" class="rounded-lg border border-zinc-700 bg-zinc-900 p-4 text-sm text-zinc-400">
+      <div v-if="!authUiReady" class="rounded-lg border border-zinc-700 bg-zinc-900 p-4 text-sm text-zinc-400">
         Проверяем сессию...
       </div>
       <AuthFeatureGateNotice

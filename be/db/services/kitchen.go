@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"sinde.ru/db"
 	"sinde.ru/internal/models"
-	"strings"
 )
 
 var ErrKitchenRecipeNotFound = errors.New("kitchen recipe not found")
@@ -278,10 +279,65 @@ func hydrateKitchenRecipe(ctx context.Context, recipe *models.KitchenRecipe) err
 	return nil
 }
 func hydrateKitchenRecipes(ctx context.Context, recipes []*models.KitchenRecipe) error {
+	if len(recipes) == 0 {
+		return nil
+	}
+	recipeIDs := make([]uuid.UUID, 0, len(recipes))
+	recipeEntityIDs := make([]string, 0, len(recipes))
 	for _, recipe := range recipes {
-		if err := hydrateKitchenRecipe(ctx, recipe); err != nil {
-			return err
+		if recipe == nil {
+			continue
 		}
+		recipeIDs = append(recipeIDs, recipe.ID)
+		recipeEntityIDs = append(recipeEntityIDs, recipe.ID.String())
+	}
+	recipeUsagesByEntity, err := PdbListStorageObjectUsagesByEntities(ctx, "kitchen_recipe", recipeEntityIDs)
+	if err != nil {
+		return err
+	}
+	stepRecordsByRecipe, err := PdbListKitchenRecipeStepsByRecipeIDs(ctx, recipeIDs)
+	if err != nil {
+		return err
+	}
+	stepEntityIDs := make([]string, 0)
+	for _, stepRecords := range stepRecordsByRecipe {
+		for _, step := range stepRecords {
+			if step == nil {
+				continue
+			}
+			stepEntityIDs = append(stepEntityIDs, step.StepID.String())
+		}
+	}
+	stepUsagesByEntity, err := PdbListStorageObjectUsagesByEntities(ctx, "kitchen_recipe_step", stepEntityIDs)
+	if err != nil {
+		return err
+	}
+	for _, recipe := range recipes {
+		if recipe == nil {
+			continue
+		}
+		recipe.CoverImageKey = firstStorageKeyForUsage(recipeUsagesByEntity[recipe.ID.String()], "image", "cover")
+		stepRecords := stepRecordsByRecipe[recipe.ID]
+		if len(stepRecords) == 0 {
+			recipe.Steps = []models.KitchenStep{}
+			continue
+		}
+		steps := make([]models.KitchenStep, 0, len(stepRecords))
+		for _, step := range stepRecords {
+			if step == nil {
+				continue
+			}
+			text := strings.TrimSpace(step.Description)
+			if text == "" {
+				text = strings.TrimSpace(step.Title)
+			}
+			steps = append(steps, models.KitchenStep{
+				Order:    step.StepOrder,
+				Text:     text,
+				ImageKey: firstStorageKeyForUsage(stepUsagesByEntity[step.StepID.String()], "image", "content"),
+			})
+		}
+		recipe.Steps = steps
 	}
 	return nil
 }

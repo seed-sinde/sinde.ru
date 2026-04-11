@@ -14,6 +14,6 @@
         { label: 'Химия', to: '/edu/chemistry' },
         { label: title, current: true }
       ]" />
-    <section></section>
+    <section>{{ title }}</section>
   </div>
 </template>

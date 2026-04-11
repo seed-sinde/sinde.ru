@@ -1,33 +1,45 @@
 <template>
   <div class="lab-tabs-root" :class="containerClass">
-    <div role="tablist" :class="resolvedListClass">
-      <component
-        v-for="(item, index) in items"
-        :key="String(item.value)"
-        :is="tabComponent(item)"
-        :ref="(el: Element | { $el?: Element } | null) => setTabRef(index, el)"
-        v-bind="tabComponentProps(item)"
-        role="tab"
-        :aria-selected="isActive(item.value) ? 'true' : 'false'"
-        :tabindex="isActive(item.value) ? 0 : -1"
-        :aria-disabled="item.disabled ? 'true' : undefined"
-        :class="[
-          resolvedButtonClass,
-          noSelect ? 'select-none' : '',
-          isActive(item.value) ? activeClass : inactiveClass
-        ]"
-        @click="onTabClick($event, item)"
-        @keydown="onTabKeydown($event, index)">
-        <slot name="tab" :item="item" :active="isActive(item.value)">
-          <span>{{ item.label }}</span>
-          <span
-            v-if="item.badge !== undefined && item.badge !== null"
-            class="text-(--lab-text-soft) ml-1.5 text-xs"
-            :class="isActive(item.value) ? 'text-(--lab-accent)' : ''">
-            {{ item.badge }}
-          </span>
-        </slot>
-      </component>
+    <div class="relative min-w-0">
+      <div ref="tabsScrollerRef" class="lab-scroll-hidden min-w-0 overflow-x-auto overflow-y-hidden">
+        <div role="tablist" :class="resolvedListClass">
+          <component
+            v-for="(item, index) in items"
+            :key="String(item.value)"
+            :is="tabComponent(item)"
+            :ref="(el: Element | { $el?: Element } | null) => setTabRef(index, el)"
+            v-bind="tabComponentProps(item)"
+            role="tab"
+            :aria-selected="isActive(item.value) ? 'true' : 'false'"
+            :tabindex="isActive(item.value) ? 0 : -1"
+            :aria-disabled="item.disabled ? 'true' : undefined"
+            :class="[
+              resolvedButtonClass,
+              noSelect ? 'select-none' : '',
+              isActive(item.value) ? activeClass : inactiveClass
+            ]"
+            @click="onTabClick($event, item)"
+            @keydown="onTabKeydown($event, index)">
+            <slot name="tab" :item="item" :active="isActive(item.value)">
+              <span>{{ item.label }}</span>
+              <span
+                v-if="item.badge !== undefined && item.badge !== null"
+                class="text-(--lab-text-soft) ml-1.5 text-xs"
+                :class="isActive(item.value) ? 'text-(--lab-accent)' : ''">
+                {{ item.badge }}
+              </span>
+            </slot>
+          </component>
+        </div>
+      </div>
+      <div
+        class="lab-scroll-fade lab-scroll-fade-x-left"
+        :class="{ 'lab-scroll-fade-visible': tabsScrollEdges.left }"
+        aria-hidden="true"></div>
+      <div
+        class="lab-scroll-fade lab-scroll-fade-x-right"
+        :class="{ 'lab-scroll-fade-visible': tabsScrollEdges.right }"
+        aria-hidden="true"></div>
     </div>
     <div v-if="renderPanels" :class="panelClass">
       <div v-for="item in items" :key="`panel:${String(item.value)}`" v-show="isActive(item.value)">
@@ -60,7 +72,7 @@
     {
       containerClass:
         'space-y-3 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:mt-2 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:border-t max-sm:[&_.lab-tabs-root_.lab-tabs-root]:pt-2',
-      listClass: 'scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--lab-border-strong)',
+      listClass: '',
       buttonClass: '',
       activeClass:
         'border-b-(--lab-accent) bg-[color-mix(in_srgb,var(--lab-accent)_14%,transparent)] text-(--lab-accent)',
@@ -83,9 +95,11 @@
   const router = useRouter()
   const LabBaseButton = resolveComponent('LabBaseButton')
   const NuxtLink = resolveComponent('NuxtLink')
+  const tabsScrollerRef = ref<HTMLElement | null>(null)
+  const { edges: tabsScrollEdges, sync: syncTabsScrollEdges } = useScrollableEdges(tabsScrollerRef, { axis: 'x' })
   const resolvedListClass = computed(() =>
     twMerge(
-      'flex min-w-0 items-end gap-0 overflow-x-auto border-b [border-color:color-mix(in_srgb,var(--lab-border)_62%,transparent)]',
+      'flex min-w-max items-end gap-0 border-b [border-color:color-mix(in_srgb,var(--lab-border)_62%,transparent)]',
       props.listClass
     )
   )
@@ -119,16 +133,42 @@
     return Boolean(value && typeof value === 'object' && '$el' in value && value.$el)
   }
   const setTabRef = (index: number, el: Element | { $el?: Element } | null) => {
-    const node = el instanceof HTMLElement ? el : hasElementRef(el) && el.$el instanceof HTMLElement ? el.$el : null
+    const node =
+      el instanceof HTMLElement ? el
+      : hasElementRef(el) && el.$el instanceof HTMLElement ? el.$el
+      : null
     tabRefs.value[index] = node
   }
   const isActive = (value: LabTabValue) => value === activeValue.value
+  const scrollActiveTabIntoView = async () => {
+    await nextTick()
+    const activeIndex = props.items.findIndex(item => item.value === activeValue.value)
+    if (activeIndex < 0) {
+      requestAnimationFrame(syncTabsScrollEdges)
+      return
+    }
+    const activeTab = tabRefs.value[activeIndex]
+    if (activeTab) {
+      activeTab.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest'
+      })
+    }
+    requestAnimationFrame(syncTabsScrollEdges)
+  }
   watch(
     routedValue,
     next => {
       if (next === null) return
       if (props.modelValue === next) return
       emit('update:modelValue', next)
+    },
+    { immediate: true }
+  )
+  watch(
+    () => [activeValue.value, props.items.length],
+    () => {
+      void scrollActiveTabIntoView()
     },
     { immediate: true }
   )
@@ -148,10 +188,7 @@
       if (props.routeToMap) {
         routeOptions.targetMap = props.routeToMap
       }
-      out.set(
-        item.value,
-        buildTabRouteLocation(route, item.value, routeOptions)
-      )
+      out.set(item.value, buildTabRouteLocation(route, item.value, routeOptions))
     }
     return out
   })
@@ -211,7 +248,13 @@
       next = (next + step + props.items.length) % props.items.length
       const item = props.items[next]
       if (!item?.disabled) {
-        tabRefs.value[next]?.focus()
+        const tab = tabRefs.value[next]
+        tab?.focus()
+        tab?.scrollIntoView({
+          block: 'nearest',
+          inline: 'nearest'
+        })
+        requestAnimationFrame(syncTabsScrollEdges)
         return
       }
     }

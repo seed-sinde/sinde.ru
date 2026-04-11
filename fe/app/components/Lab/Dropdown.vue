@@ -10,6 +10,7 @@
       closeOnSelect?: boolean
       disabled?: boolean
       offset?: number
+      crossAxisOffset?: number
       viewportPadding?: number
       matchTriggerWidth?: boolean
     }>(),
@@ -21,6 +22,7 @@
       closeOnSelect: true,
       disabled: false,
       offset: 8,
+      crossAxisOffset: 10,
       viewportPadding: 12,
       matchTriggerWidth: false
     }
@@ -40,6 +42,7 @@
       side: computed(() => props.side),
       align: computed(() => props.align),
       offset: computed(() => props.offset),
+      crossAxisOffset: computed(() => props.crossAxisOffset),
       viewportPadding: computed(() => props.viewportPadding),
       matchTriggerWidth: computed(() => props.matchTriggerWidth)
     })
@@ -115,7 +118,7 @@
     }
   })
   watch(
-    () => [props.align, props.side, props.offset, props.viewportPadding, props.matchTriggerWidth],
+    () => [props.align, props.side, props.offset, props.crossAxisOffset, props.viewportPadding, props.matchTriggerWidth],
     () => {
       if (!isOpen.value) return
       schedulePositionUpdate()

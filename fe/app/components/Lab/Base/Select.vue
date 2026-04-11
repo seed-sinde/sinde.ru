@@ -89,6 +89,7 @@
       emptyText?: string
       matchTriggerWidth?: boolean
       offset?: number
+      crossAxisOffset?: number
     }>(),
     {
       modelValue: '',
@@ -102,7 +103,8 @@
       placeholder: 'Выберите значение',
       emptyText: 'Нет доступных вариантов',
       matchTriggerWidth: true,
-      offset: 6
+      offset: 6,
+      crossAxisOffset: 10
     }
   )
   const emit = defineEmits<{
@@ -124,6 +126,7 @@
     side: 'bottom',
     align: 'left',
     offset: computed(() => props.offset),
+    crossAxisOffset: computed(() => props.crossAxisOffset),
     viewportPadding: 12,
     matchTriggerWidth: computed(() => props.matchTriggerWidth)
   })

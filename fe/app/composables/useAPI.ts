@@ -7,6 +7,7 @@ type ApiJsonOptions = NonNullable<Parameters<typeof $fetch>[1]> & {
     allowAutoRefresh?: boolean
   }
 }
+type BasicFetch = <Response>(request: string, options?: NonNullable<Parameters<typeof $fetch>[1]>) => Promise<Response>
 const shouldNotifyAuthStateStale = (path: string, method: string) => {
   const normalizedPath = String(path || '').trim()
   const normalizedMethod = String(method || 'GET').toUpperCase()
@@ -140,6 +141,7 @@ const notifyAuthStateStale = () => {
  * Provides shared API helpers for JSON and NDJSON requests.
  */
 export const useAPI = () => {
+  const basicFetch = $fetch as BasicFetch
   /**
    * Executes a proxied JSON request with auth-aware retry logic.
    */
@@ -194,7 +196,7 @@ export const useAPI = () => {
     let retriedAfterRefresh = false
     while (true) {
       try {
-        const response = await $fetch(`/api/proxy${p}`, requestConfig)
+        const response = await basicFetch<T>(`/api/proxy${p}`, requestConfig)
         return response as T
       } catch (err: any) {
         const status = getStatusCodeFromError(err)
@@ -219,11 +221,11 @@ export const useAPI = () => {
         }
         retriedAfterRefresh = true
         try {
-          const refreshRes = (await $fetch('/api/proxy/auth/refresh', {
+          const refreshRes = await basicFetch<ApiResponseWithData<{ user?: AuthUser }>>('/api/proxy/auth/refresh', {
             method: 'POST',
             credentials: 'include',
             headers
-          })) as ApiResponseWithData<{ user?: AuthUser }>
+          })
           const refreshedUser = refreshRes?.data?.user || null
           if (import.meta.client) {
             syncAuthSessionHint(Boolean(refreshedUser))

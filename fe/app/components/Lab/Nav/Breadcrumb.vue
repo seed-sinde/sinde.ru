@@ -1,45 +1,10 @@
-<template>
-  <nav ref="containerRef" :aria-label="ariaLabel" :class="resolvedContainerClass">
-    <ol :class="listClass">
-      <li
-        v-for="(item, index) in normalizedItems"
-        :key="`${item.label}:${index}`"
-        class="inline-flex min-w-0 items-center gap-2">
-        <template v-if="index === 0">
-          <NuxtLink
-            v-if="leadingSectionIcon && canLinkToSection"
-            :to="leadingSectionTo"
-            class="inline-flex shrink-0 items-center"
-            :aria-label="t('nav.open_section', { label: matchedSidebarItem?.label || item.label })">
-            <Icon :name="leadingSectionIcon" :class="leadingSectionIconClass" aria-hidden="true" />
-          </NuxtLink>
-          <Icon
-            v-else-if="leadingSectionIcon"
-            :name="leadingSectionIcon"
-            :class="leadingSectionIconClass"
-            aria-hidden="true" />
-        </template>
-        <template v-else>
-          <Icon :name="separatorIcon" :class="separatorClass" aria-hidden="true" />
-        </template>
-        <NuxtLink v-if="item.to && !item.current" :to="item.to" :class="itemClasses(false)">
-          <span class="inline-flex min-w-0 items-center gap-2">
-            <span v-if="item.label">{{ item.label }}</span>
-            <LabBaseBadge v-if="item.badge" variant="info" size="xs">{{ item.badge }}</LabBaseBadge>
-          </span>
-        </NuxtLink>
-        <span v-else :class="itemClasses(true)" :aria-current="item.current ? 'page' : undefined">
-          <span class="inline-flex min-w-0 items-center gap-2">
-            <span v-if="item.label">{{ item.label }}</span>
-            <LabBaseBadge v-if="item.badge" variant="info" size="xs">{{ item.badge }}</LabBaseBadge>
-          </span>
-        </span>
-      </li>
-    </ol>
-  </nav>
-</template>
 <script setup lang="ts">
+  defineOptions({
+    inheritAttrs: false
+  })
+
   const route = useRoute()
+  const attrs = useAttrs()
   const { t } = useInterfacePreferences()
   const translatedSidebarItems = useSidebarItems()
   const props = withDefaults(
@@ -69,10 +34,14 @@
     }
   )
   const containerRef = ref<HTMLElement | null>(null)
+  const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(containerRef, { axis: 'x' })
   const normalizedItems = computed(() => props.items || [])
   const ariaLabel = computed(() => props.ariaLabel || t('nav.breadcrumbs'))
+  const rootClass = computed(() => [attrs.class, 'relative min-w-0'].filter(Boolean))
   const resolvedContainerClass = computed(() =>
-    [props.containerClass, 'min-w-0 overflow-x-auto overscroll-x-contain'].filter(Boolean)
+    [props.containerClass, 'lab-scroll-hidden min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain'].filter(
+      Boolean
+    )
   )
   const normalizeToPath = (to: unknown) => {
     if (!to) return ''
@@ -117,7 +86,7 @@
   })
   const itemClasses = (isCurrent: boolean) => {
     return [
-      'inline-flex min-w-0 items-center wrap-break-word',
+      'inline-flex shrink-0 items-center whitespace-nowrap',
       isCurrent ? 'text-(--lab-text-primary)' : 'text-(--lab-text-muted) hover:text-(--lab-text-primary)'
     ]
   }
@@ -131,12 +100,14 @@
         block: 'nearest',
         inline: 'end'
       })
+      requestAnimationFrame(syncScrollEdges)
       return
     }
     container.scrollTo({
       left: container.scrollWidth,
       top: 0
     })
+    requestAnimationFrame(syncScrollEdges)
   }
   watch(
     () => [route.fullPath, normalizedItems.value.length],
@@ -146,3 +117,54 @@
     { immediate: true }
   )
 </script>
+<template>
+  <div :class="rootClass">
+    <nav ref="containerRef" :aria-label="ariaLabel" :class="resolvedContainerClass">
+      <ol :class="listClass">
+        <li
+          v-for="(item, index) in normalizedItems"
+          :key="`${item.label}:${index}`"
+          class="inline-flex shrink-0 items-center gap-2">
+          <template v-if="index === 0">
+            <NuxtLink
+              v-if="leadingSectionIcon && canLinkToSection"
+              :to="leadingSectionTo"
+              class="inline-flex shrink-0 items-center"
+              :aria-label="t('nav.open_section', { label: matchedSidebarItem?.label || item.label })">
+              <Icon :name="leadingSectionIcon" :class="leadingSectionIconClass" aria-hidden="true" />
+            </NuxtLink>
+            <Icon
+              v-else-if="leadingSectionIcon"
+              :name="leadingSectionIcon"
+              :class="leadingSectionIconClass"
+              aria-hidden="true" />
+          </template>
+          <template v-else>
+            <Icon :name="separatorIcon" :class="separatorClass" aria-hidden="true" />
+          </template>
+          <NuxtLink v-if="item.to && !item.current" :to="item.to" :class="itemClasses(false)">
+            <span class="inline-flex shrink-0 items-center gap-2">
+              <span v-if="item.label">{{ item.label }}</span>
+              <LabBaseBadge v-if="item.badge" variant="info" size="xs">{{ item.badge }}</LabBaseBadge>
+            </span>
+          </NuxtLink>
+          <span v-else :class="itemClasses(true)" :aria-current="item.current ? 'page' : undefined">
+            <span class="inline-flex shrink-0 items-center gap-2">
+              <span v-if="item.label">{{ item.label }}</span>
+              <LabBaseBadge v-if="item.badge" variant="info" size="xs">{{ item.badge }}</LabBaseBadge>
+            </span>
+          </span>
+        </li>
+        <slot name="append"></slot>
+      </ol>
+    </nav>
+    <div
+      class="lab-scroll-fade lab-scroll-fade-x-left"
+      :class="{ 'lab-scroll-fade-visible': scrollEdges.left }"
+      aria-hidden="true"></div>
+    <div
+      class="lab-scroll-fade lab-scroll-fade-x-right"
+      :class="{ 'lab-scroll-fade-visible': scrollEdges.right }"
+      aria-hidden="true"></div>
+  </div>
+</template>

@@ -99,12 +99,12 @@
     }
     return items
   })
-  const adminSectionClass = 'space-y-4 border border-white/8 bg-zinc-950/80 p-4 sm:p-5'
-  const adminSubsectionClass = 'space-y-3 border border-white/8 bg-zinc-900/70 p-3 sm:p-4'
-  const adminStatCardClass = 'space-y-1 border border-white/8 bg-zinc-900/70 p-3'
+  const adminSectionClass = 'space-y-4 py-1'
+  const adminSubsectionClass = 'space-y-3 py-1'
+  const adminStatCardClass = 'space-y-1'
   const adminMetaTextClass = 'text-xs text-zinc-500'
-  const adminConfirmButtonClass = 'h-8 min-w-28 rounded'
-  const adminCompactButtonClass = 'rounded'
+  const adminConfirmButtonClass = 'h-8 min-w-28'
+  const adminCompactButtonClass = ''
   const adminInlineHintClass = 'text-xs text-zinc-500'
   const moderationLoading = ref(false)
   const moderationError = ref('')
@@ -166,9 +166,21 @@
     { key: 'orders_pending', label: 'В обработке', value: displayNumber(paymentsSummary.value?.orders_pending) },
     { key: 'orders_failed', label: 'Неуспешных', value: displayNumber(paymentsSummary.value?.orders_failed) },
     { key: 'orders_refunded', label: 'Возвратов', value: displayNumber(paymentsSummary.value?.orders_refunded) },
-    { key: 'paid_users_total', label: 'Платящих пользователей', value: displayNumber(paymentsSummary.value?.paid_users_total) },
-    { key: 'patron_users_total', label: 'Поддержавших проект', value: displayNumber(paymentsSummary.value?.patron_users_total) },
-    { key: 'active_access_users', label: 'Активный доступ', value: displayNumber(paymentsSummary.value?.active_access_users) },
+    {
+      key: 'paid_users_total',
+      label: 'Платящих пользователей',
+      value: displayNumber(paymentsSummary.value?.paid_users_total)
+    },
+    {
+      key: 'patron_users_total',
+      label: 'Поддержавших проект',
+      value: displayNumber(paymentsSummary.value?.patron_users_total)
+    },
+    {
+      key: 'active_access_users',
+      label: 'Активный доступ',
+      value: displayNumber(paymentsSummary.value?.active_access_users)
+    },
     { key: 'gross_revenue', label: 'Оборот', value: displayMoney(paymentsSummary.value?.gross_revenue) },
     { key: 'net_revenue', label: 'Чистая выручка', value: displayMoney(paymentsSummary.value?.net_revenue) },
     { key: 'tip_revenue', label: 'Донаты', value: displayMoney(paymentsSummary.value?.tip_revenue) },
@@ -545,9 +557,8 @@
     }
     try {
       await adminModerateKitchenRecipe(item.id, approve, note)
-      moderationInfo.value = approve
-        ? `Рецепт «${item.title}» одобрен и опубликован.`
-        : `Рецепт «${item.title}» отклонён.`
+      moderationInfo.value =
+        approve ? `Рецепт «${item.title}» одобрен и опубликован.` : `Рецепт «${item.title}» отклонён.`
       await loadModeration()
     } catch (err: any) {
       moderationError.value = err?.data?.message || err?.message || 'Не удалось изменить статус модерации.'
@@ -704,37 +715,14 @@
         </LabBaseBadge>
       </template>
     </LabNavHeader>
-    <section class="border-b border-zinc-800 bg-zinc-950/70 px-3 py-4 sm:px-5">
-      <div class="mx-auto max-w-7xl space-y-4">
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <article :class="adminStatCardClass">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">Пользователи</p>
-            <p class="text-lg font-semibold text-zinc-100">{{ displayNumber(usersTotal) }}</p>
-          </article>
-          <article :class="adminStatCardClass">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">На модерации</p>
-            <p class="text-lg font-semibold text-zinc-100">{{ displayNumber(moderationStatusTotals.pending) }}</p>
-          </article>
-          <article :class="adminStatCardClass">
-            <p class="text-xs uppercase tracking-wide text-zinc-500">Новые события</p>
-            <p class="text-lg font-semibold text-zinc-100">
-              {{
-                Number(summary?.new_users_since_last_login || 0) +
-                Number(summary?.new_pending_recipes_since_last_login || 0)
-              }}
-            </p>
-          </article>
-        </div>
-        <LabNavTabs
-          v-model="adminTab"
-          :items="adminTabItems"
-          :no-select="true"
-          :render-panels="false"
-          route-query-key="tab"
-          route-default-value="users" />
-      </div>
-    </section>
-    <div class="mx-auto mt-4 max-w-7xl space-y-4 px-3 md:px-4">
+    <LabNavTabs
+      v-model="adminTab"
+      :items="adminTabItems"
+      :no-select="true"
+      :render-panels="false"
+      route-query-key="tab"
+      route-default-value="users" />
+    <div class="mt-4 space-y-4 px-3 md:px-4">
       <section v-show="adminTab === 'users'" :class="adminSectionClass">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="space-y-1">
@@ -816,35 +804,37 @@
                 confirm-label="Подтвердить"
                 tooltip="Подтвердить блокировку аккаунта?"
                 :button-class="adminConfirmButtonClass"
-                idle-class="border border-rose-500/40 bg-rose-500/10 text-rose-100 hover:bg-rose-500/20"
-                confirm-class="border border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500"
-                progress-class="bg-rose-300/45"
+                idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
+                confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
+                progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
                 @confirm="blockUser(row)" />
               <LabBaseButton
                 v-else
                 variant="secondary"
                 size="xs"
                 label="Разблок"
-                :button-class="adminCompactButtonClass"
+                :button-class="
+                  `${adminCompactButtonClass} border-[color-mix(in_srgb,var(--lab-info)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-info)_10%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-info)_16%,var(--lab-bg-surface-hover))]`
+                "
                 @click="unblockUser(row)" />
               <LabConfirmActionButton
                 label="Сброс сессий"
                 confirm-label="Подтвердить"
                 tooltip="Подтвердить принудительный сброс всех сессий?"
                 :button-class="adminConfirmButtonClass"
-                idle-class="border border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
-                confirm-class="border border-amber-300/90 bg-amber-600 text-white hover:bg-amber-500"
-                progress-class="bg-amber-300/45"
-                tooltip-class="border-amber-500/50 text-amber-200"
+                idle-class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-primary) hover:bg-(--lab-bg-surface-hover)"
+                confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
+                progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
+                tooltip-class="border-[color-mix(in_srgb,var(--lab-warning)_52%,var(--lab-border))] text-(--lab-text-primary)"
                 @confirm="forceLogoutUser(row)" />
               <LabConfirmActionButton
                 label="Удалить"
                 confirm-label="Подтвердить"
                 tooltip="Подтвердить удаление аккаунта?"
                 :button-class="adminConfirmButtonClass"
-                idle-class="border border-rose-500/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
-                confirm-class="border border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500"
-                progress-class="bg-rose-300/45"
+                idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
+                confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
+                progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
                 @confirm="deleteUser(row)" />
             </div>
           </template>
@@ -1055,10 +1045,9 @@
                   —
                 </LabBaseBadge>
               </div>
-              <pre
-                class="max-w-80 overflow-x-auto border border-zinc-800 bg-zinc-950/60 p-2 text-xs leading-5 text-zinc-400"
-                >{{ keyMetaJson(row.meta) }}</pre
-              >
+              <pre class="max-w-80 overflow-x-auto p-2 text-xs leading-5 text-zinc-400">{{
+                keyMetaJson(row.meta)
+              }}</pre>
             </div>
           </template>
           <template #cell-traits="{ row }">
@@ -1089,11 +1078,11 @@
               @click="markSummaryRead" />
           </div>
           <div class="grid gap-2 sm:grid-cols-2">
-            <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 p-2.5">
+            <div class="space-y-1 p-2.5">
               <p class="text-zinc-500">Новых регистраций</p>
               <p class="text-zinc-100">{{ displayNumber(summary?.new_users_since_last_login) }}</p>
             </div>
-            <div class="rounded-lg border border-zinc-800 bg-zinc-900/70 p-2.5">
+            <div class="space-y-1 p-2.5">
               <p class="text-zinc-500">Новых рецептов на модерации</p>
               <p class="text-zinc-100">{{ displayNumber(summary?.new_pending_recipes_since_last_login) }}</p>
             </div>
@@ -1161,7 +1150,7 @@
             <li
               v-for="item in analysis?.top_keys || []"
               :key="item.key_id"
-              class="flex items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-1.5 text-zinc-300">
+              class="flex items-center justify-between gap-2 px-2 py-1.5 text-zinc-300">
               <span class="truncate">{{ item.syn }} (id {{ item.key_id }})</span>
               <span class="text-zinc-100">{{ item.trait_count }}</span>
             </li>

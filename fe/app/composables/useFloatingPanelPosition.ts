@@ -10,6 +10,7 @@ export const useFloatingPanelPosition = (options: {
   align?: MaybeRefOrGetter<FloatingPanelAlign>
   side?: MaybeRefOrGetter<FloatingPanelSide>
   offset?: MaybeRefOrGetter<number>
+  crossAxisOffset?: MaybeRefOrGetter<number>
   viewportPadding?: MaybeRefOrGetter<number>
   matchTriggerWidth?: MaybeRefOrGetter<boolean>
 }) => {
@@ -44,6 +45,7 @@ export const useFloatingPanelPosition = (options: {
     const side = toValue(options.side) || 'bottom'
     const align = toValue(options.align) || 'left'
     const offset = toValue(options.offset) ?? 8
+    const crossAxisOffset = toValue(options.crossAxisOffset) ?? 10
     const viewportPadding = toValue(options.viewportPadding) ?? 12
     const matchTriggerWidth = Boolean(toValue(options.matchTriggerWidth))
     panelEl.style.visibility = 'hidden'
@@ -76,7 +78,7 @@ export const useFloatingPanelPosition = (options: {
     ) {
       nextAlign = 'right'
     }
-    let left = nextAlign === 'left' ? triggerRect.left : triggerRect.right - panelRect.width
+    let left = nextAlign === 'left' ? triggerRect.left + crossAxisOffset : triggerRect.right - panelRect.width - crossAxisOffset
     let top = nextSide === 'bottom' ? triggerRect.bottom + offset : triggerRect.top - panelRect.height - offset
     left = clamp(left, viewportPadding, Math.max(viewportPadding, viewportWidth - panelRect.width - viewportPadding))
     top = clamp(top, viewportPadding, Math.max(viewportPadding, viewportHeight - panelRect.height - viewportPadding))

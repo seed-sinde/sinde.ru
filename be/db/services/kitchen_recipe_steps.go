@@ -69,6 +69,46 @@ func PdbListKitchenRecipeStepsByRecipeID(ctx context.Context, recipeID uuid.UUID
 	return items, nil
 }
 
+func PdbListKitchenRecipeStepsByRecipeIDs(
+	ctx context.Context,
+	recipeIDs []uuid.UUID,
+) (map[uuid.UUID][]*models.KitchenRecipeStep, error) {
+	if len(recipeIDs) == 0 {
+		return map[uuid.UUID][]*models.KitchenRecipeStep{}, nil
+	}
+	rows, err := db.PDB.Query(ctx, `
+		SELECT
+			step_id,
+			recipe_id,
+			step_order,
+			title,
+			description,
+			metadata,
+			created_at,
+			updated_at
+		FROM kitchen_recipe_steps
+		WHERE recipe_id = ANY($1)
+		ORDER BY recipe_id ASC, step_order ASC, created_at ASC
+	`, recipeIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	grouped := make(map[uuid.UUID][]*models.KitchenRecipeStep, len(recipeIDs))
+	for rows.Next() {
+		item, scanErr := scanKitchenRecipeStep(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		grouped[item.RecipeID] = append(grouped[item.RecipeID], item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return grouped, nil
+}
+
 func PdbCreateKitchenRecipeStep(ctx context.Context, step *models.KitchenRecipeStep) (*models.KitchenRecipeStep, error) {
 	if step == nil {
 		return nil, errors.New("kitchen recipe step is required")

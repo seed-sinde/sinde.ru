@@ -1,14 +1,15 @@
 <script setup lang="ts">
+  const title = 'Химия'
   definePageMeta({
-    title: 'химия',
+    title,
     description: 'Раздел химии с переходом к таблице элементов и каталогу минералов.'
   })
   const dataWikiTools = wikiTools.filter(tool => tool.category === 'chemistry')
 </script>
 <template>
-  <div class="space-y-4">
+  <div>
     <LabNavHeader
-      title="Химия"
+      :title
       :breadcrumb-items="[
         { label: 'Вики', to: '/edu' },
         { label: 'Химия', current: true }

@@ -20,11 +20,10 @@
         @blur="isPrimaryControlHovered = false"
         @click="onPrimaryButtonClick">
         <template v-if="!isCollapsedHoverToggle">
-          <picture v-if="themePreference === 'system'">
-            <source srcset="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
-            <img src="/favicon-light.svg" alt="" class="h-4.5 w-4.5 object-contain" />
+          <picture>
+            <source :srcset="faviconDarkSrc" media="(prefers-color-scheme: dark)" />
+            <img :src="faviconLightSrc" alt="" class="h-4.5 w-4.5 object-contain" />
           </picture>
-          <img v-else :src="faviconSrc" alt="" class="h-4.5 w-4.5 object-contain" />
         </template>
         <span v-else aria-hidden="true" :class="collapseGlyphClass">
           <span class="absolute inset-y-0 left-1 w-px bg-current"></span>
@@ -97,9 +96,9 @@
         <LabAvatar
           :show-label="!collapsed"
           :link-class="
-            collapsed
-              ? 'mx-auto h-8 w-8 justify-center hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
-              : 'min-h-8 px-2 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
+            collapsed ?
+              'mx-auto h-8 w-8 justify-center hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
+            : 'min-h-8 px-2 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
           "
           @request-close="emit('request-close')" />
       </div>
@@ -113,7 +112,7 @@
   }>()
   const router = useRouter()
   const route = useRoute()
-  const { t, faviconSrc, themePreference } = useInterfacePreferences()
+  const { t, faviconLightSrc, faviconDarkSrc } = useInterfacePreferences()
   const props = withDefaults(
     defineProps<{
       items: MenuItem[]
@@ -130,9 +129,7 @@
   const { items, collapsed, showToggle, animate } = toRefs(props)
   const isPrimaryControlHovered = ref(false)
   const isCollapsedHoverToggle = computed(() => showToggle.value && collapsed.value && isPrimaryControlHovered.value)
-  const primaryButtonAriaLabel = computed(() => (
-    isCollapsedHoverToggle.value ? t('nav.expand_menu') : t('nav.home')
-  ))
+  const primaryButtonAriaLabel = computed(() => (isCollapsedHoverToggle.value ? t('nav.expand_menu') : t('nav.home')))
   const collapseGlyphClass = 'relative inline-block h-3.5 w-3.5 border border-current opacity-90'
   const onPrimaryButtonClick = async () => {
     if (isCollapsedHoverToggle.value) {

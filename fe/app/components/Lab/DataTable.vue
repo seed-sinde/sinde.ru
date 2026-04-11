@@ -2,13 +2,13 @@
   <div class="relative overflow-auto" :class="[maxHeightClass, containerClass]">
     <table :class="tableClassList">
       <thead :class="theadClassList">
-        <tr class="border-b border-zinc-800 text-zinc-400">
+        <tr class="border-b">
           <th class="w-7 py-2 pr-2 text-left font-medium">
             <slot name="loading" :loading="loading">
               <div class="flex h-4 items-center">
                 <Icon
                   name="ic:round-autorenew"
-                  class="h-3.5 w-3.5 text-zinc-500 transition-opacity"
+                  class="h-3.5 w-3.5 transition-opacity"
                   :class="loading ? 'animate-spin opacity-100' : 'opacity-0'"
                   aria-hidden="true" />
                 <span class="sr-only">{{ loading ? 'Загрузка' : 'Ожидание' }}</span>
@@ -23,8 +23,8 @@
         </tr>
       </thead>
       <tbody :class="tbodyClass">
-        <tr v-if="normalizedRows.length === 0" class="border-b border-zinc-900">
-          <td :colspan="Math.max(columns.length + 1, 1)" class="py-3 pr-3 text-zinc-500">
+        <tr v-if="normalizedRows.length === 0" class="border-b">
+          <td :colspan="Math.max(columns.length + 1, 1)" class="py-3 pr-3">
             <slot name="empty">{{ emptyText }}</slot>
           </td>
         </tr>
@@ -62,9 +62,9 @@
       emptyText: 'Ничего не найдено.',
       rowKey: 'id',
       tableClass: 'min-w-full text-xs',
-      theadClass: 'sticky top-0 z-10 bg-zinc-950/95',
+      theadClass: 'sticky top-0 z-10',
       tbodyClass: '',
-      rowClass: 'border-b border-zinc-900 align-top',
+      rowClass: 'border-b align-top',
       maxHeightClass: 'max-h-136',
       containerClass: ''
     }
@@ -81,13 +81,13 @@
     return `${index}`
   }
   const headerClass = (column: LabDataTableColumn) => [
-    'py-2 pr-3 text-left font-medium',
+    'py-2 pr-3 text-left font-medium whitespace-nowrap',
     column.nowrap ? 'whitespace-nowrap' : '',
     column.widthClass || '',
     column.headerClass || ''
   ]
   const cellClass = (column: LabDataTableColumn) => [
-    'py-2 pr-3',
+    'py-2 pr-3 whitespace-nowrap',
     column.nowrap ? 'whitespace-nowrap' : '',
     column.widthClass || '',
     column.cellClass || ''

@@ -5,6 +5,7 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
   const loaded = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  let loadPromise: Promise<void> | null = null
   const categoryLabels = computed(() => categories.value.map(item => item.label))
   const ingredientItems = computed(() =>
     ingredients.value.map(item => ({
@@ -49,25 +50,35 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
     return match?.code || raw
   }
   const load = async (force = false) => {
-    if (loading.value) return
     if (loaded.value && !force) return
-    loading.value = true
-    error.value = null
-    try {
-      const res = await getKitchenCatalog()
-      categories.value = res.data.categories || []
-      ingredients.value = res.data.ingredients || []
-      filterOptions.value = res.data.filter_options || []
-      loaded.value = true
-    } catch (err: any) {
-      error.value = err?.data?.message || err?.message || 'Не удалось загрузить каталог кухни.'
-      if (!loaded.value) {
-        categories.value = []
-        ingredients.value = []
-        filterOptions.value = []
+    if (loadPromise) {
+      await loadPromise
+      return
+    }
+    loadPromise = (async () => {
+      loading.value = true
+      error.value = null
+      try {
+        const res = await getKitchenCatalog()
+        categories.value = res.data.categories || []
+        ingredients.value = res.data.ingredients || []
+        filterOptions.value = res.data.filter_options || []
+        loaded.value = true
+      } catch (err: any) {
+        error.value = err?.data?.message || err?.message || 'Не удалось загрузить каталог кухни.'
+        if (!loaded.value) {
+          categories.value = []
+          ingredients.value = []
+          filterOptions.value = []
+        }
+      } finally {
+        loading.value = false
       }
+    })()
+    try {
+      await loadPromise
     } finally {
-      loading.value = false
+      loadPromise = null
     }
   }
   const ensureLoaded = async () => {

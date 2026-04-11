@@ -51,7 +51,7 @@
   })
 </script>
 <template>
-  <div>
+  <div class="sticky top-0 z-30">
     <ClientOnly>
       <Teleport v-if="$slots.actions && isCompactHeader" to="#mobile-header-actions">
         <div class="flex items-center gap-1">
@@ -59,9 +59,7 @@
         </div>
       </Teleport>
     </ClientOnly>
-    <div
-      v-if="showBreadcrumbRow"
-      class="bg-(--lab-bg-overlay) sticky top-0 z-30 hidden border-b px-3 py-2 lg:block lg:px-6">
+    <div v-if="showBreadcrumbRow" class="bg-(--lab-bg-overlay) hidden border-b px-3 py-2 lg:block lg:px-6">
       <div class="flex min-h-9 flex-wrap items-center gap-2">
         <LabNavBreadcrumb
           v-if="resolvedBreadcrumbItems.length"

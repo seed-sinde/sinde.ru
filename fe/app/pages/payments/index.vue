@@ -37,6 +37,7 @@
   const creatingPlan = ref<'' | 'pro' | 'donation'>('')
   const paymentError = ref('')
   const paymentErrorKey = ref(0)
+  const offerAccepted = ref(false)
   const donationInputRef = ref<HTMLElement | null>(null)
   let donationAnimationFrameId: number | null = null
 
@@ -66,7 +67,7 @@
   )
   const showDonationChips = computed(() => donationEnabled.value || donationEditing.value)
   const paymentActionDisabled = computed(
-    () => creatingPlan.value !== '' || (donationEditing.value && !donationHasInput.value)
+    () => creatingPlan.value !== '' || (donationEditing.value && !donationHasInput.value) || !offerAccepted.value
   )
 
   // Анимация Рейдена активируется, если донат >= 1000
@@ -274,6 +275,11 @@
       await router.push('/auth/login')
       return
     }
+    if (!offerAccepted.value) {
+      paymentError.value = t('payments.index.offer_required')
+      paymentErrorKey.value += 1
+      return
+    }
     if (paymentActionDisabled.value) return
     creatingPlan.value = currentPlan.value
     try {
@@ -346,9 +352,7 @@
                 @click="activateDonationEditing">
                 {{ defaultDonationRubles }}
               </span>
-              <span class="relative ml-2 text-xl font-black uppercase text-(--lab-text-muted) sm:text-2xl">
-                ₽/{{ t('payments.index.period_month_short') }}
-              </span>
+              <span class="relative ml-2 text-xl font-black uppercase text-(--lab-text-muted) sm:text-2xl">₽</span>
             </div>
 
             <div v-if="showDonationChips" class="flex flex-wrap items-center justify-center gap-1 animate-fade-in">
@@ -391,6 +395,23 @@
                 </span>
               </label>
             </div>
+
+            <label
+              class="text-(--lab-text-secondary) flex max-w-2xl items-start gap-3 text-left text-sm leading-6"
+              for="payments-offer-accept">
+              <input
+                id="payments-offer-accept"
+                v-model="offerAccepted"
+                type="checkbox"
+                class="border-(--lab-border-strong) focus-visible:ring-(--lab-accent) mt-0.5 h-4 w-4 shrink-0 border bg-transparent ring-0 outline-none focus-visible:ring-2" />
+              <span>
+                {{ t('payments.index.offer_accept_prefix') }}
+                <NuxtLink to="/offer" class="text-(--lab-accent) ring-0 transition-colors hover:underline focus-visible:ring-2">
+                  {{ t('payments.index.offer_accept_link') }}
+                </NuxtLink>
+                {{ t('payments.index.offer_accept_suffix') }}
+              </span>
+            </label>
 
             <LabBaseButton
               variant="primary"

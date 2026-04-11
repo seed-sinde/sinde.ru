@@ -186,12 +186,17 @@
               v-if="mobileBreadcrumbItems.length"
               :items="mobileBreadcrumbItems"
               container-class="min-w-0"
-              list-class="text-(--lab-text-secondary) flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden text-sm"
+              list-class="text-(--lab-text-secondary) flex min-w-max flex-nowrap items-center gap-2 text-sm"
               separator-class="text-(--lab-text-soft) h-4 w-4 shrink-0"
-              class="min-w-0" />
+              class="min-w-0">
+              <template #append>
+                <li class="inline-flex shrink-0 items-center gap-1">
+                  <div id="mobile-header-actions" class="flex shrink-0 items-center gap-1"></div>
+                </li>
+              </template>
+            </LabNavBreadcrumb>
           </ClientOnly>
         </div>
-        <div id="mobile-header-actions" class="flex shrink-0 items-center gap-1"></div>
         <LabAvatar
           :show-label="false"
           link-class="hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover) my-1 mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center bg-transparent p-1 text-(--lab-text-primary) transition-colors" />

@@ -42,11 +42,15 @@
   const AVATAR_IMAGE_MAX_MB = Math.max(1, Math.ceil(avatarImageMaxBytes / (1024 * 1024)))
   const AVATAR_IMAGE_MAX_BYTES = avatarImageMaxBytes
 
-  const accountTabItems: LabTabItem[] = [
+  const accountTabItems = computed<LabTabItem[]>(() => [
     { value: 'profile', label: t('auth.account.tab.profile') },
     { value: 'balance', label: t('auth.account.tab.balance') },
-    { value: 'security', label: t('auth.account.tab.security') }
-  ]
+    { value: 'security', label: t('auth.account.tab.security') },
+    ...(isAdmin.value ? [{ value: 'admin', label: t('auth.account.admin') }] : [])
+  ])
+  const accountTabRouteMap = computed<Record<string, string | undefined>>(() => ({
+    admin: isAdmin.value ? '/auth/admin' : undefined
+  }))
   const activityTabItems: LabTabItem[] = [
     { value: 'sessions', label: t('auth.account.activity.sessions') },
     { value: 'attempts', label: t('auth.account.activity.attempts') },
@@ -57,7 +61,7 @@
     { value: 'backup', label: t('auth.login.mfa_backup') }
   ]
 
-  const accountTab = ref<'profile' | 'balance' | 'security'>('profile')
+  const accountTab = ref<'profile' | 'balance' | 'security' | 'admin'>('profile')
   const activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
   const disableMethodTab = ref<'totp' | 'backup'>('totp')
 
@@ -67,6 +71,7 @@
   const showDisable2faForm = ref(false)
   const avatarUploading = ref(false)
   const refundPendingOrderId = ref('')
+  const displayNameKeyboardSubmitPending = ref(false)
 
   const sessions = ref<AuthSessionView[]>([])
   const loginAttempts = ref<AuthLoginAttemptView[]>([])
@@ -152,10 +157,40 @@
     if (!access.value?.access_until) return ''
     return formatAbsoluteDateTime(access.value.access_until)
   })
-  const paymentLatestOrderStatusLabel = computed(() => paymentStatusLabel(access.value?.latest_order?.status))
-  const paymentLatestOrderAmountText = computed(() => {
-    return formatPaymentAmount(access.value?.latest_order?.amount)
+  const profileSubscriptionTooltipText = computed(() => {
+    if (!access.value?.has_active_access || !paymentAccessUntilText.value) return ''
+    return `Подписка активна до ${paymentAccessUntilText.value}`
   })
+  const balanceSubscriptionStatusLabel = computed(() =>
+    access.value?.has_active_access ? `Подписка активна до ${paymentAccessUntilText.value || '—'}` : 'Подписка не активна'
+  )
+  const paymentHistoryColumns = computed<LabDataTableColumn[]>(() => [
+    { key: 'createdAt', label: 'Дата', nowrap: true },
+    { key: 'plan', label: 'План' },
+    { key: 'amount', label: 'Сумма', nowrap: true },
+    { key: 'status', label: 'Статус', nowrap: true },
+    { key: 'access', label: 'Доступ' },
+    { key: 'refund', label: 'Возврат', nowrap: true }
+  ])
+  const paymentHistoryRows = computed(() =>
+    history.value.map(item => ({
+      id: item.order_id,
+      orderId: item.order_id,
+      createdAt: formatDateTime(item.created_at),
+      plan: paymentPlanLabel(item.plan_code),
+      amount: formatPaymentAmount(item.amount),
+      status: paymentStatusLabel(item.status),
+      access:
+        item.access_until ? `До ${formatDateTime(item.access_until)}`
+        : item.access_from ? `С ${formatDateTime(item.access_from)}`
+        : '—',
+      refund:
+        item.can_refund ? 'Доступен'
+        : item.refunded_at ? 'Выполнен'
+        : 'Недоступен',
+      canRefund: item.can_refund
+    }))
+  )
   const avatarGallery = computed(() => getAuthAvatarGallery(user.value))
   const avatarGalleryItems = computed(() => avatarGallery.value.items)
   const avatarPrimaryItemId = computed(() => avatarGallery.value.primaryId)
@@ -171,9 +206,9 @@
       src: buildMediaFileUrl(item.original_image_key || item.profile_image_key || item.icon_image_key),
       thumbnailSrc: buildMediaFileUrl(item.profile_image_key || item.icon_image_key || item.original_image_key),
       alt:
-        avatarGalleryItems.value.length > 1
-          ? `${t('auth.account.tab.profile')} ${index + 1}`
-          : t('auth.account.tab.profile')
+        avatarGalleryItems.value.length > 1 ?
+          `${t('auth.account.tab.profile')} ${index + 1}`
+        : t('auth.account.tab.profile')
     }))
   )
   const activePreviewAvatarItem = computed(() => avatarGalleryItems.value[avatarPreviewDialog.index] || null)
@@ -268,12 +303,6 @@
   }
   const paymentPlanLabel = (planCode?: string | null) =>
     String(planCode || '').trim() === 'donation' ? t('payments.plan.donation') : t('payments.plan.pro')
-  const paymentTimelineLabel = (order: PaymentOrderView) => {
-    if (order.refunded_at) return `Возврат ${formatDateTime(order.refunded_at)}`
-    if (order.paid_at) return `Оплата ${formatDateTime(order.paid_at)}`
-    if (order.failed_at) return `Завершено ${formatDateTime(order.failed_at)}`
-    return `Создано ${formatDateTime(order.created_at)}`
-  }
   const browserLabelFromUserAgent = (userAgent?: string) => {
     const raw = String(userAgent || '').toLowerCase()
     if (!raw) return 'Браузер'
@@ -344,13 +373,13 @@
       profile: {
         avatar: nextAvatar
       },
-      ...(nextAvatar
-        ? {}
-        : {
-            settings: {
-              avatar: null
-            }
-          })
+      ...(nextAvatar ?
+        {}
+      : {
+          settings: {
+            avatar: null
+          }
+        })
     })
     syncProfileForm()
   }
@@ -386,9 +415,8 @@
   }
   const removeAvatarItem = async (itemId: string) => {
     const nextItems = avatarGalleryItems.value.filter(item => item.id !== itemId)
-    const nextPrimaryId = nextItems.some(item => item.id === avatarPrimaryItemId.value)
-      ? avatarPrimaryItemId.value
-      : nextItems[0]?.id || ''
+    const nextPrimaryId =
+      nextItems.some(item => item.id === avatarPrimaryItemId.value) ? avatarPrimaryItemId.value : nextItems[0]?.id || ''
     await persistAvatarGallery(
       nextItems,
       nextPrimaryId,
@@ -456,6 +484,20 @@
       profileInputError.value = true
       profileError.value = err?.data?.message || err?.message || 'Не удалось обновить профиль.'
     }
+  }
+  const submitDisplayNameFromKeyboard = (event: KeyboardEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    displayNameKeyboardSubmitPending.value = true
+    const target = event.currentTarget as HTMLInputElement | null
+    target?.blur()
+    void nextTick(async () => {
+      try {
+        await saveProfile()
+      } finally {
+        displayNameKeyboardSubmitPending.value = false
+      }
+    })
   }
   const saveInterfacePreferences = async () => {
     if (interfaceAutosavePending.value) return
@@ -566,15 +608,14 @@
       return
     }
     const code =
-      typeof rawCode === 'string'
-        ? rawCode
-        : disableMethodTab.value === 'backup'
-          ? `${disableBackupCode.value.slice(0, 4)}-${disableBackupCode.value.slice(4, 8)}`
-          : disableTotpCode.value
+      typeof rawCode === 'string' ? rawCode
+      : disableMethodTab.value === 'backup' ?
+        `${disableBackupCode.value.slice(0, 4)}-${disableBackupCode.value.slice(4, 8)}`
+      : disableTotpCode.value
     const normalizedCode =
-      disableMethodTab.value === 'backup'
-        ? code.toUpperCase().replace(/[^A-Z0-9-]+/g, '')
-        : code.replace(/\D+/g, '').slice(0, 6)
+      disableMethodTab.value === 'backup' ?
+        code.toUpperCase().replace(/[^A-Z0-9-]+/g, '')
+      : code.replace(/\D+/g, '').slice(0, 6)
     if (disableMethodTab.value === 'backup') {
       const compact = normalizedCode.replace(/-/g, '')
       if (compact.length !== 8) {
@@ -601,9 +642,9 @@
       twofaError.value = getTwoFactorErrorMessage(
         err,
         disableMethodTab.value === 'backup' ? 'backup' : 'totp',
-        disableMethodTab.value === 'backup'
-          ? 'Неверный код сброса. Попробуйте ещё раз.'
-          : 'Неверный код из приложения. Попробуйте ещё раз.'
+        disableMethodTab.value === 'backup' ?
+          'Неверный код сброса. Попробуйте ещё раз.'
+        : 'Неверный код из приложения. Попробуйте ещё раз.'
       )
       if (disableMethodTab.value === 'backup') {
         disableBackupCode.value = ''
@@ -634,8 +675,10 @@
       })
     }
   }
-  const goToAdmin = async () => {
-    await router.push('/auth/admin')
+  const leave = async (all: boolean) => {
+    showLogoutActions.value = false
+    all ? await logoutAll() : await logout()
+    await router.push('/auth/login')
   }
   const loadPaymentHistoryState = async (force = false) => {
     paymentHistoryError.value = ''
@@ -659,11 +702,6 @@
     } finally {
       refundPendingOrderId.value = ''
     }
-  }
-  const leave = async (all: boolean) => {
-    showLogoutActions.value = false
-    all ? await logoutAll() : await logout()
-    await router.push('/auth/login')
   }
   const revokeSessionGroup = async (group: AuthSessionGroupView) => {
     if (!group.revokableSessionIds.length) return
@@ -763,6 +801,7 @@
   }
   const onProfileEditorFocusout = (event: FocusEvent) => {
     if (!editingDisplayName.value) return
+    if (displayNameKeyboardSubmitPending.value) return
     const nextTarget = event.relatedTarget as Node | null
     if (nextTarget && profileNameEditorRef.value?.contains(nextTarget)) return
     if (!import.meta.client) return
@@ -928,14 +967,11 @@
 </script>
 <template>
   <div>
-    <LabNavHeader :title class="min-w-0 flex-1" />
-    <section v-if="initialLoading" class="p-4">
-      <LabLoader variant="inline" label="Загрузка аккаунта…" />
-    </section>
-    <section v-else-if="!user" class="p-4">
-      <AuthFeatureGateNotice
-        message="Войдите в аккаунт, чтобы управлять профилем, сессиями и параметрами безопасности." />
-    </section>
+    <LabNavHeader :title />
+    <LabLoader v-if="initialLoading" variant="inline" label="Загрузка аккаунта…" />
+    <AuthFeatureGateNotice
+      v-else-if="!user"
+      message="Войдите в аккаунт, чтобы управлять профилем, сессиями и параметрами безопасности." />
     <template v-else>
       <LabNavTabs
         v-model="accountTab"
@@ -943,7 +979,9 @@
         :no-select="true"
         route-query-key="account"
         route-default-value="profile"
-        panel-class="space-y-4 p-4">
+        route-path="/auth/account"
+        :route-to-map="accountTabRouteMap"
+        panel-class="p-4">
         <template #panel-profile>
           <section class="text-(--lab-text-primary) space-y-4">
             <section class="flex flex-wrap items-start gap-4">
@@ -1016,32 +1054,50 @@
                     <div ref="profileNameEditorRef" class="min-w-fit flex flex-col gap-2">
                       <div
                         v-if="!editingDisplayName"
-                        class="inline-grid grid-cols-[max-content_2rem] items-start gap-1.5">
+                        class="inline-grid grid-cols-[max-content_max-content] items-start gap-1.5">
                         <button
                           type="button"
                           class="text-(--lab-text-primary) border-b border-transparent focus-visible:ring-(--lab-accent) inline-flex items-center bg-transparent py-0 text-left text-xl font-semibold outline-none transition-colors ring-0"
                           @click="editingDisplayName = true">
                           <span>{{ displayNameText }}</span>
                         </button>
-                        <span class="h-8 w-8" aria-hidden="true"></span>
+                        <LabBaseTooltip
+                          v-if="profileSubscriptionTooltipText"
+                          :text="profileSubscriptionTooltipText"
+                          side="top"
+                          align="left">
+                          <template #trigger>
+                            <LabBaseButton
+                              icon="ic:round-auto-awesome"
+                              icon-only
+                              variant="ghost"
+                              size="sm"
+                              button-class="h-8 w-8 border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) hover:border-transparent focus:bg-(--lab-bg-surface-hover) focus:border-transparent focus-visible:bg-(--lab-bg-surface-hover) focus-visible:border-transparent focus-visible:ring-0"
+                              aria-label="Статус подписки"
+                              title="Статус подписки" />
+                          </template>
+                        </LabBaseTooltip>
                       </div>
                       <div v-else class="min-w-fit" @focusout="onProfileEditorFocusout">
                         <div class="inline-grid grid-cols-[max-content_2rem] items-start gap-1.5">
                           <input
                             ref="displayNameInputRef"
-                            id="account-display-name"
+                            id="account-profile-name"
                             v-model="profileForm.display_name"
-                            name="display_name"
+                            name="profile_name"
                             type="text"
-                            autocomplete="new-password"
+                            autocomplete="off"
                             autocapitalize="words"
+                            autocorrect="off"
                             spellcheck="false"
                             data-form-type="other"
+                            data-lpignore="true"
+                            data-1p-ignore="true"
                             :size="Math.max((profileForm.display_name || displayNameText).length, 1)"
                             class="text-(--lab-text-primary) border-b focus-visible:ring-(--lab-accent) appearance-none w-auto bg-transparent p-0 text-xl font-semibold outline-none ring-0"
                             :class="profileInputError ? 'text-(--lab-danger)' : ''"
                             placeholder="Имя профиля"
-                            @keydown.enter.prevent="saveProfile"
+                            @keydown.enter="submitDisplayNameFromKeyboard"
                             @keydown.esc.prevent="cancelProfileEdit" />
                           <LabBaseButton
                             icon="ic:round-check"
@@ -1060,13 +1116,6 @@
                         :temporary="profileError ? false : profileNoticeTemporary"
                         size="xs" />
                     </div>
-                    <LabBaseButton
-                      v-if="isAdmin"
-                      :label="t('auth.account.admin')"
-                      variant="info"
-                      size="lg"
-                      button-class="text-xs"
-                      @click="goToAdmin" />
                   </div>
                   <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span class="lab-text-muted shrink-0 text-xs uppercase tracking-wide">
@@ -1114,101 +1163,27 @@
               </div>
             </section>
           </section>
-          <section class="space-y-4 border bg-(--lab-bg-elevated) p-5">
-            <div class="space-y-1">
-              <h2 class="text-base font-medium text-(--lab-text-primary)">Оплата и доступ</h2>
-              <p class="text-sm text-(--lab-text-muted)">Состояние платного доступа и последний заказ.</p>
-            </div>
-
-            <div v-if="accessLoading" class="rounded-2xl border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
-              Загрузка сведений о доступе…
-            </div>
-
-            <template v-else>
-              <div
-                v-if="access?.has_active_access"
-                class="rounded-2xl border border-(--lab-success)/30 bg-(--lab-success)/8 p-4">
-                <div class="text-sm font-medium text-(--lab-text-primary)">Доступ активен</div>
-                <p class="mt-1 text-sm text-(--lab-text-muted)">До {{ paymentAccessUntilText || '—' }}.</p>
-              </div>
-
-              <div v-else class="rounded-2xl border bg-(--lab-bg-soft) p-4">
-                <div class="text-sm font-medium text-(--lab-text-primary)">Активного доступа нет</div>
-                <p class="mt-1 text-sm text-(--lab-text-muted)">
-                  Можно перейти к странице оплаты и открыть доступ на месяц.
-                </p>
-              </div>
-
-              <dl v-if="access?.latest_order" class="grid gap-3 sm:grid-cols-2">
-                <div class="space-y-1">
-                  <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Последний статус</dt>
-                  <dd class="text-sm text-(--lab-text-primary)">
-                    {{ paymentLatestOrderStatusLabel }}
-                  </dd>
-                </div>
-
-                <div class="space-y-1">
-                  <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Последняя сумма</dt>
-                  <dd class="text-sm text-(--lab-text-primary)">
-                    {{ paymentLatestOrderAmountText }}
-                  </dd>
-                </div>
-              </dl>
-
-              <div class="pt-1">
-                <NuxtLink
-                  to="/payments"
-                  class="inline-flex min-h-11 items-center justify-center rounded-2xl border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)">
-                  Перейти к оплате
-                </NuxtLink>
-              </div>
-            </template>
-          </section>
         </template>
         <template #panel-balance>
-          <section class="space-y-4 text-(--lab-text-primary)">
-            <section class="space-y-4 border bg-(--lab-bg-elevated) p-5">
-              <div class="space-y-1">
-                <h2 class="text-base font-medium text-(--lab-text-primary)">Баланс и оплаты</h2>
-                <p class="text-sm text-(--lab-text-muted)">
-                  История ваших платежей и доступных возвратов по уже подтверждённым операциям.
-                </p>
-              </div>
-
-              <div v-if="accessLoading" class="border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
-                Загрузка сведений о доступе…
-              </div>
-
-              <template v-else>
-                <div
-                  v-if="access?.has_active_access"
-                  class="space-y-1 border border-(--lab-success)/30 bg-(--lab-success)/8 p-4">
-                  <div class="text-sm font-medium text-(--lab-text-primary)">Доступ активен</div>
-                  <p class="text-sm text-(--lab-text-muted)">До {{ paymentAccessUntilText || '—' }}.</p>
-                </div>
-
-                <div v-else class="space-y-1 border bg-(--lab-bg-soft) p-4">
-                  <div class="text-sm font-medium text-(--lab-text-primary)">Активного доступа нет</div>
-                  <p class="text-sm text-(--lab-text-muted)">Можно перейти к странице оплаты и открыть доступ на месяц.</p>
-                </div>
-              </template>
-
-              <div class="pt-1">
-                <NuxtLink
-                  to="/payments"
-                  class="inline-flex min-h-11 items-center justify-center border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)">
-                  Перейти к оплате
-                </NuxtLink>
-              </div>
-            </section>
-
-            <section class="space-y-4 border bg-(--lab-bg-elevated) p-5">
+          <section class="space-y-3 text-(--lab-text-primary)">
+            <div class="space-y-1">
+              <h2 class="text-base font-medium text-(--lab-text-primary)">Статус подписки</h2>
+              <p class="text-sm text-(--lab-text-muted)">
+                {{ accessLoading ? 'Загрузка сведений о доступе…' : balanceSubscriptionStatusLabel }}
+              </p>
+            </div>
+            <div>
+              <NuxtLink
+                to="/payments"
+                class="inline-flex min-h-11 items-center justify-center border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)">
+                Пополнить баланс
+              </NuxtLink>
+            </div>
+            <section class="space-y-4 pt-3">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="space-y-1">
-                  <h2 class="text-base font-medium text-(--lab-text-primary)">История операций</h2>
-                  <p class="text-sm text-(--lab-text-muted)">
-                    Здесь видны ваши заказы, статусы оплаты и полный возврат для подтверждённых платежей.
-                  </p>
+                  <h2 class="text-base font-medium text-(--lab-text-primary)">История транзакций</h2>
+                  <p class="text-sm text-(--lab-text-muted)">Все транзакции аккаунта в одном списке.</p>
                 </div>
                 <LabBaseButton
                   variant="secondary"
@@ -1222,76 +1197,24 @@
               <LabNotify :text="paymentHistoryError" tone="error" size="xs" />
               <LabNotify :text="paymentHistoryInfo" tone="success" size="xs" />
 
-              <div v-if="historyLoading" class="border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
-                Загрузка истории оплат…
-              </div>
-
-              <div v-else-if="!history.length" class="border bg-(--lab-bg-soft) p-4 text-sm text-(--lab-text-muted)">
-                У вас пока нет завершённых или созданных платёжных операций.
-              </div>
-
-              <div v-else class="space-y-3">
-                <article
-                  v-for="item in history"
-                  :key="item.order_id"
-                  class="space-y-3 border bg-(--lab-bg-soft) p-4">
-                  <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div class="space-y-1">
-                      <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                        <span class="font-medium text-(--lab-text-primary)">
-                          {{ formatPaymentAmount(item.amount) }}
-                        </span>
-                        <span class="text-(--lab-text-muted)">
-                          {{ paymentPlanLabel(item.plan_code) }}
-                        </span>
-                      </div>
-                      <p class="text-xs uppercase tracking-wide text-(--lab-text-muted)">
-                        {{ paymentTimelineLabel(item) }}
-                      </p>
-                    </div>
-                    <div class="text-right">
-                      <div class="text-sm font-medium text-(--lab-text-primary)">
-                        {{ paymentStatusLabel(item.status) }}
-                      </div>
-                      <p class="text-xs text-(--lab-text-muted)">
-                        {{ item.order_id }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <dl class="grid gap-3 text-sm sm:grid-cols-2">
-                    <div class="space-y-1">
-                      <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Создан</dt>
-                      <dd class="text-(--lab-text-primary)">{{ formatDateTime(item.created_at) }}</dd>
-                    </div>
-                    <div class="space-y-1">
-                      <dt class="text-xs uppercase tracking-wide text-(--lab-text-muted)">Провайдер</dt>
-                      <dd class="text-(--lab-text-primary)">{{ item.provider_status || '—' }}</dd>
-                    </div>
-                  </dl>
-
-                  <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-sm text-(--lab-text-muted)">
-                      {{
-                        item.can_refund
-                          ? 'Доступен полный возврат этой оплаты.'
-                          : item.refunded_at
-                            ? 'Возврат уже выполнен.'
-                            : 'Возврат недоступен для текущего статуса.'
-                      }}
-                    </p>
-                    <LabConfirmActionButton
-                      v-if="item.can_refund"
-                      icon="ic:round-undo"
-                      confirm-icon="ic:round-check"
-                      label="Оформить возврат"
-                      confirm-label="Подтвердить"
-                      tooltip="Вернуть этот платёж?"
-                      :disabled="refundPendingOrderId !== ''"
-                      @confirm="submitRefund(item.order_id)" />
-                  </div>
-                </article>
-              </div>
+              <LabDataTable
+                :columns="paymentHistoryColumns"
+                :rows="paymentHistoryRows"
+                :loading="historyLoading"
+                empty-text="У вас пока нет завершённых или созданных платёжных операций.">
+                <template #cell-refund="{ row }">
+                  <LabConfirmActionButton
+                    v-if="row.canRefund"
+                    icon="ic:round-undo"
+                    confirm-icon="ic:round-check"
+                    label="Оформить возврат"
+                    confirm-label="Подтвердить"
+                    tooltip="Вернуть этот платёж?"
+                    :disabled="refundPendingOrderId !== ''"
+                    @confirm="submitRefund(row.orderId)" />
+                  <span v-else>{{ row.refund }}</span>
+                </template>
+              </LabDataTable>
             </section>
           </section>
         </template>
@@ -1393,11 +1316,10 @@
                   button-class="text-xs"
                   @click="user.is_two_factor_enabled ? toggleDisable2faForm() : begin2faSetup()">
                   {{
-                    user.is_two_factor_enabled
-                      ? showDisable2faForm
-                        ? t('auth.account.twofa.hide_form')
-                        : t('auth.account.twofa.disable')
-                      : t('auth.account.twofa.get_secret')
+                    user.is_two_factor_enabled ?
+                      showDisable2faForm ? t('auth.account.twofa.hide_form')
+                      : t('auth.account.twofa.disable')
+                    : t('auth.account.twofa.get_secret')
                   }}
                 </LabBaseButton>
               </div>
@@ -1556,11 +1478,9 @@
                   <span>{{ item.label }}</span>
                   <span class="ml-1 opacity-80">
                     {{
-                      item.value === 'sessions'
-                        ? groupedSessions.length
-                        : item.value === 'attempts'
-                          ? loginAttempts.length
-                          : securityEvents.length
+                      item.value === 'sessions' ? groupedSessions.length
+                      : item.value === 'attempts' ? loginAttempts.length
+                      : securityEvents.length
                     }}
                   </span>
                 </template>
@@ -1575,9 +1495,9 @@
                         <p class="text-(--lab-text-muted) text-xs">
                           {{ item.ip }} ·
                           {{
-                            item.mfaVerified
-                              ? t('auth.account.activity.mfa_verified')
-                              : t('auth.account.activity.mfa_unverified')
+                            item.mfaVerified ?
+                              t('auth.account.activity.mfa_verified')
+                            : t('auth.account.activity.mfa_unverified')
                           }}
                         </p>
                         <p class="text-(--lab-text-muted) text-xs">
@@ -1593,11 +1513,9 @@
                         :disabled="item.revokableSessionIds.length === 0"
                         @click="revokeSessionGroup(item)">
                         {{
-                          item.revokableSessionIds.length === 0
-                            ? t('auth.account.activity.current')
-                            : item.hasCurrent
-                              ? t('auth.account.activity.revoke_and_logout')
-                              : t('auth.account.activity.revoke')
+                          item.revokableSessionIds.length === 0 ? t('auth.account.activity.current')
+                          : item.hasCurrent ? t('auth.account.activity.revoke_and_logout')
+                          : t('auth.account.activity.revoke')
                         }}
                       </LabBaseButton>
                     </article>

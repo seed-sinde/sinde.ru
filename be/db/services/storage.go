@@ -315,6 +315,67 @@ func PdbListStorageObjectUsagesByEntity(ctx context.Context, entityType, entityI
 	`, strings.TrimSpace(entityType), strings.TrimSpace(entityID))
 }
 
+func PdbListStorageObjectUsagesByEntities(
+	ctx context.Context,
+	entityType string,
+	entityIDs []string,
+) (map[string][]*models.StorageObjectUsage, error) {
+	trimmedEntityType := strings.TrimSpace(entityType)
+	if trimmedEntityType == "" || len(entityIDs) == 0 {
+		return map[string][]*models.StorageObjectUsage{}, nil
+	}
+	normalizedEntityIDs := make([]string, 0, len(entityIDs))
+	for _, entityID := range entityIDs {
+		trimmedEntityID := strings.TrimSpace(entityID)
+		if trimmedEntityID == "" {
+			continue
+		}
+		normalizedEntityIDs = append(normalizedEntityIDs, trimmedEntityID)
+	}
+	if len(normalizedEntityIDs) == 0 {
+		return map[string][]*models.StorageObjectUsage{}, nil
+	}
+	items, err := listStorageObjectUsages(ctx, `
+		SELECT
+			u.usage_id,
+			u.object_id,
+			u.entity_type,
+			u.entity_id,
+			u.usage_type,
+			u.field_name,
+			u.sort_order,
+			u.is_primary,
+			u.metadata,
+			u.created_at,
+			o.object_id,
+			o.storage_key,
+			o.bucket_name,
+			o.media_family,
+			o.content_type,
+			o.byte_size,
+			o.file_hash,
+			o.source_kind,
+			o.metadata,
+			o.created_at,
+			o.updated_at
+		FROM storage_object_usages u
+		JOIN storage_objects o ON o.object_id = u.object_id
+		WHERE u.entity_type = $1 AND u.entity_id = ANY($2::text[])
+		ORDER BY u.entity_id ASC, u.is_primary DESC, u.sort_order ASC, u.created_at ASC
+	`, trimmedEntityType, normalizedEntityIDs)
+	if err != nil {
+		return nil, err
+	}
+	grouped := make(map[string][]*models.StorageObjectUsage, len(normalizedEntityIDs))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		grouped[item.EntityID] = append(grouped[item.EntityID], item)
+	}
+	return grouped, nil
+}
+
 func PdbListStorageObjectUsagesByObjectID(ctx context.Context, objectID uuid.UUID) ([]*models.StorageObjectUsage, error) {
 	return listStorageObjectUsages(ctx, `
 		SELECT

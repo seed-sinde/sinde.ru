@@ -13,7 +13,7 @@
   const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
   }>()
-  const { t, faviconSrc, themePreference } = useInterfacePreferences()
+  const { t, faviconLightSrc, faviconDarkSrc } = useInterfacePreferences()
   const isOpen = computed(() => props.modelValue)
   const close = () => {
     emit('update:modelValue', false)
@@ -48,11 +48,10 @@
                 class="hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover) text-(--lab-text-primary) inline-flex h-9 w-9 items-center justify-center transition-colors"
                 :aria-label="t('nav.home')"
                 @click="close">
-                <picture v-if="themePreference === 'system'">
-                  <source srcset="/favicon-dark.svg" media="(prefers-color-scheme: dark)" />
-                  <img src="/favicon-light.svg" alt="" class="h-4.5 w-4.5 object-contain" />
+                <picture>
+                  <source :srcset="faviconDarkSrc" media="(prefers-color-scheme: dark)" />
+                  <img :src="faviconLightSrc" alt="" class="h-4.5 w-4.5 object-contain" />
                 </picture>
-                <img v-else :src="faviconSrc" alt="" class="h-4.5 w-4.5 object-contain" />
               </NuxtLink>
               <LabBaseButton
                 icon="ic:round-close"
