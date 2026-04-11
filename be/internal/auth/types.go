@@ -285,12 +285,26 @@ type AdminUserView struct {
 	BlockedReason      string     `json:"blocked_reason,omitempty"`
 	BlockedAt          *time.Time `json:"blocked_at,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
+	Profile            interface{} `json:"profile"`
+	Settings           interface{} `json:"settings"`
 }
 type AdminUserListResult struct {
 	Items  []AdminUserView `json:"items"`
 	Total  int             `json:"total"`
 	Limit  int             `json:"limit"`
 	Offset int             `json:"offset"`
+}
+type PublicUserProfileView struct {
+	UserID           uuid.UUID   `json:"user_id"`
+	DisplayName      string      `json:"display_name"`
+	PrimaryTraitUUID *uuid.UUID  `json:"primary_trait_uuid,omitempty"`
+	Profile          interface{} `json:"profile"`
+}
+type AdminUserDetailResult struct {
+	User           AuthUser            `json:"user"`
+	Sessions       []SessionView       `json:"sessions"`
+	LoginAttempts  []LoginAttemptView  `json:"login_attempts"`
+	SecurityEvents []SecurityEventView `json:"security_events"`
 }
 type UserSummaryResult struct {
 	NewApprovedRecipesSinceLastLogin int                   `json:"new_approved_recipes_since_last_login"`

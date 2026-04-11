@@ -1,6 +1,6 @@
 type ChemistryElementsResponse = ApiResponseWithData<ChemistryElementApi[]>
-
-const { json: useApiJson } = useAPI()
+const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>['json']>[1]>) =>
+  useAPI().json<T>(path, options)
 
 export const getChemistryElements = async () => {
   return await useApiJson<ChemistryElementsResponse>('/chemistry/elements', {

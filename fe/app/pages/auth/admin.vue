@@ -110,13 +110,6 @@
   const moderationError = ref('')
   const moderationInfo = ref('')
   const moderationStatus = ref<AdminModerationStatus | 'all'>('pending')
-  const moderationStatusOptions: SelectOptionInput[] = [
-    { value: 'all', label: 'Все' },
-    { value: 'pending', label: 'На модерации' },
-    { value: 'approved', label: 'Одобренные' },
-    { value: 'rejected', label: 'Отклонённые' },
-    { value: 'draft', label: 'Черновики' }
-  ]
   const moderationItems = ref<KitchenRecipe[]>([])
   const moderationTotal = ref(0)
   const moderationLimit = ref(30)
@@ -189,6 +182,7 @@
     { key: 'patron_share', label: 'Доля поддержавших', value: formatPercent(paymentsSummary.value?.patron_share) }
   ])
   const currentRole = (item: AdminUserView): 'admin' | 'user' => (item.roles.includes('admin') ? 'admin' : 'user')
+  const isAdminAccount = (item: AdminUserView) => currentRole(item) === 'admin'
   const userStatusLabel = (value?: string) => {
     const key = String(value || '').trim()
     if (key === 'active') return 'Активен'
@@ -201,12 +195,29 @@
       roleDrafts[item.user_id] = currentRole(item)
     }
   }
+  const adminListUserToAuthUser = (item: AdminUserView): AuthUser => ({
+    user_id: item.user_id,
+    email: item.email,
+    status: item.status,
+    display_name: item.display_name,
+    locale: item.locale,
+    timezone: item.timezone,
+    roles: item.roles,
+    is_two_factor_enabled: item.is_two_factor_enabled,
+    last_login_at: item.last_login_at || null,
+    blocked_reason: item.blocked_reason || '',
+    blocked_at: item.blocked_at || null,
+    created_at: item.created_at,
+    profile: item.profile || {},
+    settings: item.settings || {}
+  })
   const usersTableColumns: LabDataTableColumn[] = [
+    { key: 'avatar', label: '', nowrap: true, widthClass: 'w-12 min-w-12' },
     { key: 'user', label: 'Пользователь' },
     { key: 'status', label: 'Статус' },
     { key: 'role', label: 'Роль' },
     { key: 'login', label: 'Вход', nowrap: true },
-    { key: 'actions', label: 'Действия' }
+    { key: 'actions', label: 'Действия', nowrap: true, widthClass: 'min-w-44' }
   ]
   const keysTableColumns: LabDataTableColumn[] = [
     { key: 'id', label: 'ID', nowrap: true },
@@ -270,6 +281,10 @@
     }
   }
   const blockUser = async (item: AdminUserView) => {
+    if (isAdminAccount(item)) {
+      usersError.value = 'Нельзя блокировать пользователя с ролью admin.'
+      return
+    }
     usersError.value = ''
     usersInfo.value = ''
     try {
@@ -292,6 +307,10 @@
     }
   }
   const forceLogoutUser = async (item: AdminUserView) => {
+    if (isAdminAccount(item)) {
+      usersError.value = 'Нельзя сбрасывать сессии пользователя с ролью admin.'
+      return
+    }
     usersError.value = ''
     usersInfo.value = ''
     try {
@@ -302,6 +321,10 @@
     }
   }
   const deleteUser = async (item: AdminUserView) => {
+    if (isAdminAccount(item)) {
+      usersError.value = 'Нельзя удалять пользователя с ролью admin.'
+      return
+    }
     usersError.value = ''
     usersInfo.value = ''
     try {
@@ -729,7 +752,6 @@
             <h2 class="text-base font-semibold text-zinc-100">Пользователи и роли</h2>
             <p :class="adminMetaTextClass">Поиск, блокировки, смена роли и принудительный выход из сессий.</p>
           </div>
-          <LabBaseBadge variant="muted" size="xs" :rounded="false">Найдено {{ usersTotal }}</LabBaseBadge>
         </div>
         <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
           <LabField label="Поиск" for-id="admin_user_search">
@@ -762,13 +784,17 @@
           :rows="users"
           :loading="usersLoading"
           empty-text="Пользователи не найдены."
-          :row-key="(row: AdminUserView) => row.user_id"
-          table-class="min-w-full text-xs"
-          thead-class="sticky top-0 z-10 bg-zinc-950"
-          row-class="border-b border-zinc-900/80 align-top">
+          :row-key="(row: AdminUserView) => row.user_id">
+          <template #cell-avatar="{ row }">
+            <NuxtLink :to="`/users/${row.user_id}`" class="inline-flex">
+              <LabAvatar version="preview" :user="adminListUserToAuthUser(row)" :show-label="false" />
+            </NuxtLink>
+          </template>
           <template #cell-user="{ row }">
             <div class="space-y-1">
-              <p class="text-zinc-200">{{ row.email }}</p>
+              <NuxtLink :to="`/users/${row.user_id}`" class="text-(--lab-text-primary) hover:text-(--lab-accent)">
+                {{ row.email }}
+              </NuxtLink>
               <p class="text-zinc-500">{{ row.display_name || '—' }}</p>
             </div>
           </template>
@@ -797,45 +823,106 @@
             <LabRelativeTime :datetime="row.last_login_at" compact />
           </template>
           <template #cell-actions="{ row }">
-            <div class="flex flex-wrap items-center gap-1">
-              <LabConfirmActionButton
-                v-if="row.status !== 'blocked'"
-                label="Блок"
-                confirm-label="Подтвердить"
-                tooltip="Подтвердить блокировку аккаунта?"
-                :button-class="adminConfirmButtonClass"
-                idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
-                confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
-                progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
-                @confirm="blockUser(row)" />
+            <div class="flex min-w-max items-center gap-1 whitespace-nowrap">
+              <span v-if="row.status !== 'blocked' && !isAdminAccount(row)" class="max-sm:hidden">
+                <LabConfirmActionButton
+                  label="Блок"
+                  confirm-label="Подтвердить"
+                  tooltip="Подтвердить блокировку аккаунта?"
+                  icon="ic:round-block"
+                  :button-class="adminConfirmButtonClass"
+                  idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
+                  confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
+                  progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
+                  @confirm="blockUser(row)" />
+              </span>
+              <span v-if="row.status !== 'blocked' && !isAdminAccount(row)" class="sm:hidden">
+                <LabConfirmActionButton
+                  icon-only
+                  icon="ic:round-block"
+                  aria-label="Заблокировать"
+                  confirm-aria-label="Подтвердить блокировку"
+                  confirm-label="Ок"
+                  tooltip="Подтвердить блокировку аккаунта?"
+                  :button-class="adminConfirmButtonClass"
+                  idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
+                  confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
+                  progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
+                  @confirm="blockUser(row)" />
+              </span>
               <LabBaseButton
-                v-else
+                v-if="row.status === 'blocked'"
+                class="max-sm:hidden"
                 variant="secondary"
                 size="xs"
+                icon="ic:round-lock-open"
                 label="Разблок"
-                :button-class="
-                  `${adminCompactButtonClass} border-[color-mix(in_srgb,var(--lab-info)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-info)_10%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-info)_16%,var(--lab-bg-surface-hover))]`
-                "
+                :button-class="`${adminCompactButtonClass} border-[color-mix(in_srgb,var(--lab-info)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-info)_10%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-info)_16%,var(--lab-bg-surface-hover))]`"
                 @click="unblockUser(row)" />
-              <LabConfirmActionButton
-                label="Сброс сессий"
-                confirm-label="Подтвердить"
-                tooltip="Подтвердить принудительный сброс всех сессий?"
-                :button-class="adminConfirmButtonClass"
-                idle-class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-primary) hover:bg-(--lab-bg-surface-hover)"
-                confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
-                progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
-                tooltip-class="border-[color-mix(in_srgb,var(--lab-warning)_52%,var(--lab-border))] text-(--lab-text-primary)"
-                @confirm="forceLogoutUser(row)" />
-              <LabConfirmActionButton
-                label="Удалить"
-                confirm-label="Подтвердить"
-                tooltip="Подтвердить удаление аккаунта?"
-                :button-class="adminConfirmButtonClass"
-                idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
-                confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
-                progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
-                @confirm="deleteUser(row)" />
+              <LabBaseButton
+                v-if="row.status === 'blocked'"
+                class="sm:hidden"
+                variant="secondary"
+                size="xs"
+                icon="ic:round-lock-open"
+                icon-only
+                aria-label="Разблокировать"
+                :button-class="`${adminCompactButtonClass} border-[color-mix(in_srgb,var(--lab-info)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-info)_10%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-info)_16%,var(--lab-bg-surface-hover))]`"
+                @click="unblockUser(row)" />
+              <span v-if="!isAdminAccount(row)" class="max-sm:hidden">
+                <LabConfirmActionButton
+                  label="Сброс сессий"
+                  confirm-label="Подтвердить"
+                  tooltip="Подтвердить принудительный сброс всех сессий?"
+                  icon="ic:round-logout"
+                  :button-class="adminConfirmButtonClass"
+                  idle-class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-primary) hover:bg-(--lab-bg-surface-hover)"
+                  confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
+                  progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
+                  tooltip-class="border-[color-mix(in_srgb,var(--lab-warning)_52%,var(--lab-border))] text-(--lab-text-primary)"
+                  @confirm="forceLogoutUser(row)" />
+              </span>
+              <span v-if="!isAdminAccount(row)" class="sm:hidden">
+                <LabConfirmActionButton
+                  icon-only
+                  icon="ic:round-logout"
+                  aria-label="Сбросить сессии"
+                  confirm-aria-label="Подтвердить сброс сессий"
+                  confirm-label="Ок"
+                  tooltip="Подтвердить принудительный сброс всех сессий?"
+                  :button-class="adminConfirmButtonClass"
+                  idle-class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-primary) hover:bg-(--lab-bg-surface-hover)"
+                  confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
+                  progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
+                  tooltip-class="border-[color-mix(in_srgb,var(--lab-warning)_52%,var(--lab-border))] text-(--lab-text-primary)"
+                  @confirm="forceLogoutUser(row)" />
+              </span>
+              <span v-if="!isAdminAccount(row)" class="max-sm:hidden">
+                <LabConfirmActionButton
+                  label="Удалить"
+                  confirm-label="Подтвердить"
+                  tooltip="Подтвердить удаление аккаунта?"
+                  icon="ic:round-delete"
+                  :button-class="adminConfirmButtonClass"
+                  idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
+                  confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
+                  progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
+                  @confirm="deleteUser(row)" />
+              </span>
+              <span v-if="!isAdminAccount(row)" class="sm:hidden">
+                <LabConfirmActionButton
+                  icon-only
+                  icon="ic:round-delete"
+                  aria-label="Удалить аккаунт"
+                  confirm-aria-label="Подтвердить удаление аккаунта"
+                  confirm-label="Ок"
+                  tooltip="Подтвердить удаление аккаунта?"
+                  :button-class="adminConfirmButtonClass"
+                  idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
+                  confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
+                  progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
+                  @confirm="deleteUser(row)" />
+              </span>
             </div>
           </template>
         </LabDataTable>
@@ -855,29 +942,21 @@
         </div>
       </section>
       <section v-show="adminTab === 'moderation'" :class="adminSectionClass">
-        <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="space-y-1">
           <div class="space-y-1">
             <h2 class="text-base font-semibold text-zinc-100">Модерация рецептов</h2>
             <p :class="adminMetaTextClass">Фильтрация по статусу, смена владельца и решение по публикации.</p>
           </div>
-          <LabBaseBadge variant="muted" size="xs" :rounded="false">Найдено {{ moderationTotal }}</LabBaseBadge>
         </div>
-        <LabField label="Статус" for-id="admin_moderation_status" class="max-w-52">
-          <LabBaseSelect
-            id="admin_moderation_status"
-            v-model="moderationStatus"
-            name="admin_moderation_status"
-            :options="moderationStatusOptions" />
-        </LabField>
         <div class="flex flex-wrap gap-2">
-          <LabBaseBadge
+          <LabBaseButton
             v-for="item in moderationStatusStatItems"
             :key="`moderation-stat:${item.key}`"
-            :variant="moderationStatus === item.key ? 'warning' : 'muted'"
+            :variant="moderationStatus === item.key ? 'primary' : 'secondary'"
             size="xs"
-            :rounded="false">
-            {{ item.label }}: {{ displayNumber(moderationStatusTotals[item.key]) }}
-          </LabBaseBadge>
+            @click="moderationStatus = item.key">
+            {{ item.label }} {{ displayNumber(moderationStatusTotals[item.key]) }}
+          </LabBaseButton>
         </div>
         <LabNotify :text="moderationError" tone="error" size="xs" />
         <LabNotify :text="moderationInfo" tone="success" size="xs" />

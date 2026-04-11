@@ -1,45 +1,58 @@
 <template>
-  <div class="relative overflow-auto" :class="[maxHeightClass, containerClass]">
-    <table :class="tableClassList">
-      <thead :class="theadClassList">
-        <tr class="border-b">
-          <th class="w-7 py-2 pr-2 text-left font-medium">
-            <slot name="loading" :loading="loading">
-              <div class="flex h-4 items-center">
-                <Icon
-                  name="ic:round-autorenew"
-                  class="h-3.5 w-3.5 transition-opacity"
-                  :class="loading ? 'animate-spin opacity-100' : 'opacity-0'"
-                  aria-hidden="true" />
-                <span class="sr-only">{{ loading ? 'Загрузка' : 'Ожидание' }}</span>
-              </div>
-            </slot>
-          </th>
-          <th v-for="column in columns" :key="column.key" :class="headerClass(column)">
-            <slot :name="`header-${column.key}`" :column="column">
-              {{ column.label }}
-            </slot>
-          </th>
-        </tr>
-      </thead>
-      <tbody :class="tbodyClass">
-        <tr v-if="normalizedRows.length === 0" class="border-b">
-          <td :colspan="Math.max(columns.length + 1, 1)" class="py-3 pr-3">
-            <slot name="empty">{{ emptyText }}</slot>
-          </td>
-        </tr>
-        <tr v-for="(row, index) in normalizedRows" :key="resolveRowKey(row, index)" :class="rowClass">
-          <td class="w-7 py-2 pr-2"></td>
-          <td v-for="column in columns" :key="`${String(resolveRowKey(row, index))}:${column.key}`" :class="cellClass(column)">
-            <slot :name="`cell-${column.key}`" :row="row" :column="column" :value="row?.[column.key]" :index="index">
-              <slot name="cell" :row="row" :column="column" :value="row?.[column.key]" :index="index">
-                {{ formatCellValue(row?.[column.key]) }}
+  <div class="relative min-w-0">
+    <div ref="scrollerRef" class="lab-scroll-hidden overflow-auto" :class="[maxHeightClass, containerClass]">
+      <table :class="tableClassList">
+        <thead :class="theadClassList">
+          <tr class="border-b bg-(--lab-bg-canvas)">
+            <th class="w-7 py-2 pr-2 text-left font-medium">
+              <slot name="loading" :loading="loading">
+                <div class="flex h-4 items-center">
+                  <Icon
+                    name="ic:round-autorenew"
+                    class="h-3.5 w-3.5 transition-opacity"
+                    :class="loading ? 'animate-spin opacity-100' : 'opacity-0'"
+                    aria-hidden="true" />
+                  <span class="sr-only">{{ loading ? 'Загрузка' : 'Ожидание' }}</span>
+                </div>
               </slot>
-            </slot>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            </th>
+            <th v-for="column in columns" :key="column.key" :class="headerClass(column)">
+              <slot :name="`header-${column.key}`" :column="column">
+                {{ column.label }}
+              </slot>
+            </th>
+          </tr>
+        </thead>
+        <tbody :class="tbodyClass">
+          <tr v-if="normalizedRows.length === 0" class="border-b">
+            <td :colspan="Math.max(columns.length + 1, 1)" class="py-3 pr-3">
+              <slot name="empty">{{ emptyText }}</slot>
+            </td>
+          </tr>
+          <tr v-for="(row, index) in normalizedRows" :key="resolveRowKey(row, index)" :class="rowClass">
+            <td class="w-7 py-2 pr-2"></td>
+            <td
+              v-for="column in columns"
+              :key="`${String(resolveRowKey(row, index))}:${column.key}`"
+              :class="cellClass(column)">
+              <slot :name="`cell-${column.key}`" :row="row" :column="column" :value="row?.[column.key]" :index="index">
+                <slot name="cell" :row="row" :column="column" :value="row?.[column.key]" :index="index">
+                  {{ formatCellValue(row?.[column.key]) }}
+                </slot>
+              </slot>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div
+      class="lab-scroll-fade lab-scroll-fade-x-left"
+      :class="{ 'lab-scroll-fade-visible': scrollEdges.left }"
+      aria-hidden="true"></div>
+    <div
+      class="lab-scroll-fade lab-scroll-fade-x-right"
+      :class="{ 'lab-scroll-fade-visible': scrollEdges.right }"
+      aria-hidden="true"></div>
   </div>
 </template>
 <script setup lang="ts">
@@ -69,6 +82,8 @@
       containerClass: ''
     }
   )
+  const scrollerRef = ref<HTMLElement | null>(null)
+  const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(scrollerRef, { axis: 'x' })
   const normalizedRows = computed(() => (Array.isArray(props.rows) ? props.rows : []))
   const tableClassList = computed(() => [props.tableClass])
   const theadClassList = computed(() => [props.theadClass])
@@ -97,4 +112,11 @@
     if (typeof value === 'string') return value || '—'
     return String(value)
   }
+  watch(
+    () => [normalizedRows.value.length, props.columns.length, props.loading] as const,
+    () => {
+      nextTick(syncScrollEdges)
+    },
+    { immediate: true }
+  )
 </script>

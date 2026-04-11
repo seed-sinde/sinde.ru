@@ -1,7 +1,7 @@
 <template>
   <component
+    v-if="resolvedText"
     :is="as"
-    v-show="resolvedText"
     :class="resolvedClassWithVisibility"
     :aria-live="props.tone === 'error' ? 'assertive' : 'polite'">
     {{ resolvedText }}

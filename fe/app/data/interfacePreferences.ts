@@ -138,8 +138,7 @@ export const INTERFACE_MESSAGES = {
     'auth.account.tab.balance': 'Баланс',
     'auth.account.tab.security': 'Безопасность',
     'auth.account.email.title': 'Email',
-    'auth.account.email.description':
-      'Текущий адрес: {email}. Новый email вступит в силу после подтверждения по ссылке из письма.',
+    'auth.account.email.description': 'Текущий адрес: {email}.',
     'auth.account.email.new_label': 'Новый email',
     'auth.account.email.new_placeholder': 'Новый email',
     'auth.account.email.submit': 'Изменить email',
@@ -373,8 +372,7 @@ export const INTERFACE_MESSAGES = {
     'auth.account.tab.balance': 'Balance',
     'auth.account.tab.security': 'Security',
     'auth.account.email.title': 'Email',
-    'auth.account.email.description':
-      'Current address: {email}. The new email will apply after you confirm it from the link in the message.',
+    'auth.account.email.description': 'Current address: {email}.',
     'auth.account.email.new_label': 'New email',
     'auth.account.email.new_placeholder': 'New email',
     'auth.account.email.submit': 'Change email',

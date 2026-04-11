@@ -10,7 +10,8 @@ type MineralsListParams = {
   chemistryAny?: string[]
   chemistryNone?: string[]
 }
-const { json: useApiJson } = useAPI()
+const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>['json']>[1]>) =>
+  useAPI().json<T>(path, options)
 const appendMineralsArrayParam = (query: URLSearchParams, key: string, values?: string[]) => {
   const normalized = (values || []).map(value => String(value || '').trim()).filter(Boolean)
   if (!normalized.length) return

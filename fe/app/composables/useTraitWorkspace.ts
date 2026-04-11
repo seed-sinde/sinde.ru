@@ -3,7 +3,13 @@ import type { Ref } from 'vue'
 import type { Trait, TraitInput, KeyMeta, TraitKey, TraitResolveLockOwner, TraitResolveLockState } from '../../shared/types/traits'
 const SKIP_FETCH_UUID_STATE_KEY = 'skip-fetch-uuid'
 const TRAIT_RESOLVE_LOCK_STATE_KEY = 'traits-resolve-lock'
-const { json: useApiJson, stream: useApiStream } = useAPI()
+const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>['json']>[1]>) =>
+  useAPI().json<T>(path, options)
+const useApiStream = (
+  path: string,
+  onLine: Parameters<ReturnType<typeof useAPI>['stream']>[1],
+  options?: Parameters<ReturnType<typeof useAPI>['stream']>[2]
+) => useAPI().stream(path, onLine, options)
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 /**
  * Returns the uuid route param only for set pages inside the traits workspace.

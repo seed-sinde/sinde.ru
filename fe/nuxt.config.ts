@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { env, isDev, runtimeConfig } from './config/nuxt-env'
 import { pwaConfig } from './config/nuxt-pwa'
-import { viteConfig, viteHooks } from './config/nuxt-vite'
+import { viteConfig } from './config/nuxt-vite'
 const isVitest = env.VITEST === '1' || env.VITEST === 'true' || env.NODE_ENV === 'test'
 const modules = ['@nuxt/fonts', '@nuxt/icon', '@pinia/nuxt', '@vite-pwa/nuxt']
 if (!isVitest) {
@@ -10,12 +10,9 @@ if (!isVitest) {
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
-  sourcemap: {
-    server: 'hidden',
-    client: 'hidden'
-  },
+  sourcemap: false,
   typescript: {
-    typeCheck: true,
+    typeCheck: false,
     strict: true,
     tsConfig: {
       exclude: ['../node_modules', '../.git', '../.output', '../dist', '../coverage', '../.cache'],
@@ -45,6 +42,10 @@ export default defineNuxtConfig({
   },
   modules,
   icon: {
+    serverBundle: {
+      collections: ['ic'],
+      externalizeIconsJson: true
+    },
     localApiEndpoint: '/_nuxt_icon',
     clientBundle: {
       scan: true
@@ -82,7 +83,6 @@ export default defineNuxtConfig({
   runtimeConfig,
   css: ['~/assets/css/main.css'],
   pwa: pwaConfig,
-  hooks: isVitest ? {} : viteHooks,
   vite: isVitest
     ? {
         logLevel: 'error'

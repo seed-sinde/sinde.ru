@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  const { localeCode } = useInterfacePreferences()
   const formatShortUuid = shortUuid
   const props = withDefaults(
     defineProps<{
@@ -27,11 +28,14 @@
     (e: 'click'): void
   }>()
   const { copyFrom } = useClipboard()
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   const isCopy = computed(() => props.action === 'copy')
   const resolvedDisabled = computed(() => props.disabled || (isCopy.value && !props.uuid))
   const iconName = computed(() => (isCopy.value ? 'ic:round-content-copy' : 'ic:round-content-paste'))
-  const actionLabel = computed(() => props.title || props.label || (isCopy.value ? 'Копировать UUID' : 'Вставить UUID'))
-  const copyIdleLabel = computed(() => props.label || formatShortUuid(props.uuid, 5) || '—')
+  const actionLabel = computed(() =>
+    props.title || props.label || (isCopy.value ? copy.value.uuidButton.copyUuid : copy.value.uuidButton.pasteUuid)
+  )
+  const copyIdleLabel = computed(() => props.label || formatShortUuid(props.uuid, 5) || copy.value.uuidButton.emptyUuid)
   const sharedButtonClass = computed(() =>
     ['text-zinc-200 hover:text-amber-300', isCopy.value ? 'truncate' : '', props.buttonClass].filter(Boolean).join(' ')
   )
@@ -49,8 +53,8 @@
   <LabCopyHover
     v-if="isCopy"
     :idle="copyIdleLabel"
-    hover="Копировать"
-    done="Скопировано!"
+    :hover="copy.uuidButton.copyHover"
+    :done="copy.uuidButton.copied"
     :has-icon="true"
     @click="onCopyClick">
     <template #default="{ display, labelStyle }">

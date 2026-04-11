@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  const { ensureMarkdownCodec } = useMarkdownCodecLoader()
   const props = withDefaults(
     defineProps<{
       modelValue: string
@@ -48,7 +49,8 @@
   const emojiLoadError = ref<string | null>(null)
   const previewMode = ref<PreviewMode>('preview')
   const min_image_width_px = MIN_IMAGE_WIDTH_PX
-  const emoji_data_uri = (name: string) => getEmojiDataUri(name)
+  const emojiDataUriResolver = ref<(name: string) => string>(() => '')
+  const emoji_data_uri = (name: string) => emojiDataUriResolver.value(name)
   const EMOJI_CACHE_KEY = 'lab-emojione-face-names-v2'
   const EMOJI_BATCH_STEP = 180
   const MENU_HIDE_DELAY_MS = 120
@@ -227,8 +229,10 @@
   }
   const ensureEmojiCollectionForModel = async (source: string) => {
     if (!EMOJI_TOKEN_RE.test(String(source || ''))) return
-    await ensureEmojiCollectionLoaded()
-    syncPreviewFromModel(true)
+    const markdownCodec = await ensureMarkdownCodec()
+    emojiDataUriResolver.value = markdownCodec.getEmojiDataUri
+    await markdownCodec.ensureEmojiCollectionLoaded()
+    await syncPreviewFromModel(true)
   }
   const writeEmojiNamesCache = (names: string[]) => {
     if (!import.meta.client || names.length === 0) return
@@ -257,7 +261,9 @@
     emojiLoading.value = true
     emojiLoadError.value = null
     try {
-      await ensureEmojiCollectionLoaded()
+      const markdownCodec = await ensureMarkdownCodec()
+      emojiDataUriResolver.value = markdownCodec.getEmojiDataUri
+      await markdownCodec.ensureEmojiCollectionLoaded()
       const names = await loadEmojiPickerNames()
       emojiNames.value = names.length > 0 ? names.sort() : EMOJI_FALLBACK
       writeEmojiNamesCache(emojiNames.value)
@@ -278,14 +284,14 @@
           skipNextPreviewModelSync.value = false
           return
         }
-        syncPreviewFromModel(false)
+        void syncPreviewFromModel(false)
       })
     }
   )
   watch(previewMode, nextMode => {
     if (nextMode !== 'preview') return
     nextTick(() => {
-      syncPreviewFromModel(true)
+      void syncPreviewFromModel(true)
     })
   })
   const clearHideMenuTimer = () => {
@@ -418,22 +424,26 @@
     placePreviewCaretAtEnd()
     return true
   }
-  const syncPreviewFromModel = (force = false) => {
+  const syncPreviewFromModel = async (force = false) => {
     if (!import.meta.client) return
     const editor = previewEditorRef.value
     if (!editor) return
     if (isPreviewSelectionInsideEditor()) return
     if (!force && document.activeElement === editor) return
-    const nextHtml = renderMarkdownToHtml(props.modelValue)
+    const markdownCodec = await ensureMarkdownCodec()
+    emojiDataUriResolver.value = markdownCodec.getEmojiDataUri
+    const nextHtml = markdownCodec.renderMarkdownToHtml(props.modelValue)
     if (editor.innerHTML !== nextHtml) {
       editor.innerHTML = nextHtml
     }
   }
-  const syncModelFromPreview = () => {
+  const syncModelFromPreview = async () => {
     if (!import.meta.client || !isPreviewEditing()) return
     const editor = previewEditorRef.value
     if (!editor) return
-    const nextMarkdown = renderEditableHtmlToMarkdown(editor.innerHTML)
+    const markdownCodec = await ensureMarkdownCodec()
+    emojiDataUriResolver.value = markdownCodec.getEmojiDataUri
+    const nextMarkdown = markdownCodec.renderEditableHtmlToMarkdown(editor.innerHTML)
     if (nextMarkdown !== props.modelValue) {
       if (isPreviewSelectionInsideEditor()) {
         skipNextPreviewModelSync.value = true
@@ -443,7 +453,7 @@
   }
   const onPreviewInput = () => {
     capturePreviewRange()
-    syncModelFromPreview()
+    void syncModelFromPreview()
   }
   const onPreviewKeydown = (event: KeyboardEvent) => {
     if (!import.meta.client || !isPreviewEditing()) return
@@ -477,7 +487,7 @@
     selection.removeAllRanges()
     selection.addRange(nextRange)
     savedPreviewRange.value = cloneRange(nextRange)
-    syncModelFromPreview()
+    void syncModelFromPreview()
   }
   const onPreviewFocus = () => {
     capturePreviewRange()
@@ -498,7 +508,7 @@
       return false
     }
     capturePreviewRange()
-    syncModelFromPreview()
+    void syncModelFromPreview()
     return true
   }
   const insertPreviewTextFallback = (text: string) => {
@@ -531,7 +541,7 @@
       inserted = insertPreviewTextFallback(text)
     }
     capturePreviewRange()
-    syncModelFromPreview()
+    void syncModelFromPreview()
     return inserted
   }
   const insertPreviewHtmlFallback = (html: string) => {
@@ -579,7 +589,7 @@
       inserted = insertPreviewHtmlFallback(html)
     }
     capturePreviewRange()
-    syncModelFromPreview()
+    void syncModelFromPreview()
     return inserted
   }
   const readSelection = (): SelectionState => {
@@ -906,7 +916,7 @@
       const plain = stripMarkdownFormatting(props.modelValue)
       emit('update:modelValue', plain)
       nextTick(() => {
-        syncPreviewFromModel(true)
+        void syncPreviewFromModel(true)
         placePreviewCaretAtEnd()
       })
       closeMenu()
@@ -1147,7 +1157,7 @@
     setElementAlignMode(startAlign, mode)
     flattenNestedPreviewAlignments()
     capturePreviewRange()
-    syncModelFromPreview()
+    void syncModelFromPreview()
     return true
   }
   const applyPreviewAlignmentToSelection = (mode: 'left' | 'center' | 'right' | 'justify') => {
@@ -1164,7 +1174,7 @@
     }
     flattenNestedPreviewAlignments()
     capturePreviewRange()
-    syncModelFromPreview()
+    void syncModelFromPreview()
     return true
   }
   const unwrapOuterAlignBlock = (raw: string) => {
@@ -1268,7 +1278,7 @@
         currentSpan.style.color = color
         savedPreviewRange.value = cloneRange(selectedRange)
         capturePreviewRange()
-        syncModelFromPreview()
+        void syncModelFromPreview()
         closeMenu()
         return
       }
@@ -1399,7 +1409,7 @@
       if (currentAnchor) {
         currentAnchor.setAttribute('href', url)
         capturePreviewRange()
-        syncModelFromPreview()
+        void syncModelFromPreview()
         closeMenu()
         return
       }
@@ -1439,7 +1449,7 @@
         currentImage.setAttribute('data-display-wrap', wrap ? '1' : '0')
         currentImage.setAttribute('style', buildImageStyleAttr(width, align, wrap))
         capturePreviewRange()
-        syncModelFromPreview()
+        void syncModelFromPreview()
         closeMenu()
         return
       }
@@ -1507,7 +1517,7 @@
   const insertEmoji = (name: string) => {
     const token = `:emojione:${name}:`
     if (isPreviewEditing()) {
-      const src = getEmojiDataUri(name)
+      const src = emojiDataUriResolver.value(name)
       if (src) {
         const html = `<img class="emoji-inline" src="${src}" alt="${escapeAttr(name)}" loading="lazy" decoding="async">`
         insertPreviewHtml(html)
@@ -1546,7 +1556,7 @@
     }
     document.addEventListener('click', onDocumentClick, true)
     nextTick(() => {
-      syncPreviewFromModel(true)
+        void syncPreviewFromModel(true)
     })
   })
   onBeforeUnmount(() => {

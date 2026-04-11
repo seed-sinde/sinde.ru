@@ -1,6 +1,6 @@
 import { nextTick, onBeforeUnmount, ref, toValue, type MaybeRefOrGetter, type Ref } from 'vue'
 export type FloatingPanelAlign = 'left' | 'right'
-export type FloatingPanelSide = 'top' | 'bottom'
+export type FloatingPanelSide = 'top' | 'bottom' | 'left' | 'right'
 /**
  * Positions a teleported floating panel inside the viewport and flips it when space is limited.
  */
@@ -68,18 +68,36 @@ export const useFloatingPanelPosition = (options: {
       nextSide = 'top'
     } else if (nextSide === 'top' && panelRect.height > spaceTop && spaceBottom > spaceTop) {
       nextSide = 'bottom'
+    } else if (nextSide === 'right' && panelRect.width > spaceRight && spaceLeft > spaceRight) {
+      nextSide = 'left'
+    } else if (nextSide === 'left' && panelRect.width > spaceLeft && spaceRight > spaceLeft) {
+      nextSide = 'right'
     }
-    if (nextAlign === 'right' && panelRect.width > triggerRect.right - viewportPadding && spaceRight > spaceLeft) {
+    if (
+      (nextSide === 'top' || nextSide === 'bottom') &&
+      nextAlign === 'right' &&
+      panelRect.width > triggerRect.right - viewportPadding &&
+      spaceRight > spaceLeft
+    ) {
       nextAlign = 'left'
     } else if (
+      (nextSide === 'top' || nextSide === 'bottom') &&
       nextAlign === 'left' &&
       panelRect.width > viewportWidth - triggerRect.left - viewportPadding &&
       spaceLeft > spaceRight
     ) {
       nextAlign = 'right'
     }
-    let left = nextAlign === 'left' ? triggerRect.left + crossAxisOffset : triggerRect.right - panelRect.width - crossAxisOffset
-    let top = nextSide === 'bottom' ? triggerRect.bottom + offset : triggerRect.top - panelRect.height - offset
+    let left = 0
+    let top = 0
+    if (nextSide === 'top' || nextSide === 'bottom') {
+      left =
+        nextAlign === 'left' ? triggerRect.left + crossAxisOffset : triggerRect.right - panelRect.width - crossAxisOffset
+      top = nextSide === 'bottom' ? triggerRect.bottom + offset : triggerRect.top - panelRect.height - offset
+    } else {
+      left = nextSide === 'right' ? triggerRect.right + offset : triggerRect.left - panelRect.width - offset
+      top = triggerRect.top + triggerRect.height / 2 - panelRect.height / 2
+    }
     left = clamp(left, viewportPadding, Math.max(viewportPadding, viewportWidth - panelRect.width - viewportPadding))
     top = clamp(top, viewportPadding, Math.max(viewportPadding, viewportHeight - panelRect.height - viewportPadding))
     resolvedSide.value = nextSide

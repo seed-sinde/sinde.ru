@@ -10,17 +10,15 @@
     if (!next) return '/auth/register'
     return `/auth/register?next=${encodeURIComponent(next)}`
   })
+  const goToLogin = () => navigateTo(loginTo.value)
+  const goToRegister = () => navigateTo(registerTo.value)
 </script>
 <template>
-  <div class="border border-zinc-800/80 bg-zinc-900/55 px-4 py-3 text-sm text-zinc-400">
-    <p>{{ message }}</p>
-    <div class="mt-2 flex flex-wrap items-center gap-3">
-      <NuxtLink :to="loginTo" class="inline-flex text-sm transition">
-        {{ t('auth.login.submit') }}
-      </NuxtLink>
-      <NuxtLink :to="registerTo" class="inline-flex text-sm transition">
-        {{ t('auth.login.register') }}
-      </NuxtLink>
+  <div class="space-y-3 text-sm p-4">
+    <p class="text-(--lab-text-muted)">{{ message }}</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <LabBaseButton :label="t('auth.login.submit')" variant="primary" @click="goToLogin" />
+      <LabBaseButton :label="t('auth.login.register')" variant="secondary" @click="goToRegister" />
     </div>
   </div>
 </template>

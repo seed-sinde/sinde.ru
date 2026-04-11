@@ -363,6 +363,19 @@ func (h *Handler) ListSessions() fiber.Handler {
 		return responses.Success(c, fiber.StatusOK, result)
 	}
 }
+func (h *Handler) PublicUserProfile() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		targetID, err := uuid.Parse(strings.TrimSpace(c.Params("id")))
+		if err != nil {
+			return responses.Error(c, fiber.StatusBadRequest, "ID пользователя должен быть UUID")
+		}
+		result, err := h.service.PublicUserProfile(c.Context(), targetID)
+		if err != nil {
+			return authError(c, err)
+		}
+		return responses.Success(c, fiber.StatusOK, result)
+	}
+}
 func (h *Handler) ListLoginAttempts() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		user := middleware.CurrentUser(c)
@@ -599,6 +612,19 @@ func (h *Handler) AdminListUsers() fiber.Handler {
 			limit,
 			offset,
 		)
+		if err != nil {
+			return authError(c, err)
+		}
+		return responses.Success(c, fiber.StatusOK, result)
+	}
+}
+func (h *Handler) AdminUserDetail() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		targetID, err := uuid.Parse(strings.TrimSpace(c.Params("id")))
+		if err != nil {
+			return responses.Error(c, fiber.StatusBadRequest, "ID пользователя должен быть UUID")
+		}
+		result, err := h.service.AdminUserDetail(c.Context(), targetID)
 		if err != nil {
 			return authError(c, err)
 		}

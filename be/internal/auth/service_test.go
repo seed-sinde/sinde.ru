@@ -25,3 +25,16 @@ func TestBuildDeviceContextFingerprintNormalizesAcceptLanguage(t *testing.T) {
 		t.Fatalf("expected normalized Accept-Language fingerprints to match, got %q and %q", first.FingerprintHash, second.FingerprintHash)
 	}
 }
+func TestBuildDeviceContextDeviceLabelSummarizesUserAgent(t *testing.T) {
+	device := BuildDeviceContext(
+		"203.0.113.10",
+		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+		"ru-RU",
+	)
+	if device.DeviceLabel != "Chrome on Linux" {
+		t.Fatalf("expected summarized device label, got %q", device.DeviceLabel)
+	}
+	if device.UserAgent == device.DeviceLabel {
+		t.Fatalf("expected device label to differ from raw user agent")
+	}
+}

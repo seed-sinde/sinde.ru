@@ -12,26 +12,28 @@
       <section class="space-y-3">
         <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <LabBaseButton
-            :label="isAllSelected ? 'Снять выбор' : 'Выбрать все'"
+            :label="isAllSelected ? copy.manager.clearSelection : copy.manager.selectAll"
             variant="secondary"
             size="sm"
             @click="toggleSelectAll" />
           <LabBaseButton
             v-show="hasSelected || inProcess"
             icon="ic:round-edit"
-            label="Изменить значение"
+            :label="copy.manager.editValue"
             variant="secondary"
             size="sm"
             :disabled="!canEditSelected"
             @click="startEditSelected" />
           <LabBaseButton
             icon="ic:round-delete"
-            label="Удалить выбранное"
+            :label="copy.manager.deleteSelected"
             variant="danger"
             size="sm"
             :disabled="!hasSelected || inProcess"
             @click="removeSelectedTraits(selectedIds)" />
-          <div class="lab-text-muted text-xs sm:ml-auto">Всего: {{ traits.length }}</div>
+          <div class="lab-text-muted text-xs sm:ml-auto">
+            {{ copy.manager.total.replace('{count}', String(traits.length)) }}
+          </div>
         </div>
         <TraitsEditValueForm
           v-if="editingTrait"
@@ -48,16 +50,16 @@
             :selected="Boolean(selectedUuids[trait.t_uuid])"
             @update:selected="selectedUuids[trait.t_uuid] = $event" />
         </div>
-        <div
-          v-if="traits.length === 0"
-          class="border border-dashed border-(--lab-border) px-4 py-4 text-sm italic text-(--lab-text-muted)">
-          Список особенностей пустой.
+        <div v-if="traits.length === 0" class="border border-dashed px-4 py-4 text-sm italic text-(--lab-text-muted)">
+          {{ copy.manager.empty }}
         </div>
       </section>
     </div>
   </section>
 </template>
 <script setup lang="ts">
+  const { localeCode } = useInterfacePreferences()
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   const store = useTraitsStore()
   const route = useRoute()
   const { uuid, skipFetchUuid } = useTraitNavigation()
@@ -198,9 +200,9 @@
     if (!ids.length && !keysWithoutId.length) return []
     try {
       const [bulkRes, keyMetaResults] = await Promise.all([
-        ids.length
-          ? getKeysMetaBulk(ids)
-          : Promise.resolve({ data: { items: [] as TraitKey[] } } as ApiResponseWithData<{ items: TraitKey[] }>),
+        ids.length ?
+          getKeysMetaBulk(ids)
+        : Promise.resolve({ data: { items: [] as TraitKey[] } } as ApiResponseWithData<{ items: TraitKey[] }>),
         Promise.all(
           keysWithoutId.map(async syn => {
             try {

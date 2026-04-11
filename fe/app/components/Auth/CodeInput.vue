@@ -1,6 +1,6 @@
 <template>
-  <div class="space-y-2">
-    <label v-if="label" :for="id" class="text-sm text-zinc-300">{{ label }}</label>
+  <div class="max-w-sm space-y-2">
+    <label v-if="label" :for="id" class="text-(--lab-text-secondary) text-sm">{{ label }}</label>
     <div class="relative" @click="focus">
       <input
         :id="id"
@@ -26,7 +26,7 @@
         </div>
       </div>
     </div>
-    <p v-if="hint" class="text-xs text-zinc-500">{{ hint }}</p>
+    <p v-if="hint" class="text-(--lab-text-muted) text-xs">{{ hint }}</p>
   </div>
 </template>
 <script setup lang="ts">
@@ -77,17 +77,23 @@
     const isSuccess = props.valid && !props.invalid
     const isError = props.invalid
     return [
-      'flex h-11 items-center justify-center border text-center text-xl font-semibold tabular-nums transition sm:h-13 sm:text-2xl',
+      'border-(--lab-border) text-(--lab-text-primary) bg-(--lab-bg-surface) flex h-11 items-center justify-center border text-center text-xl font-semibold tabular-nums transition sm:h-13 sm:text-2xl',
       isFilled
-        ? 'border-emerald-400/70 bg-emerald-500/10 text-zinc-50'
-        : 'border-zinc-700 bg-zinc-950/80 text-zinc-500',
-      isActive && isFocused.value ? 'border-emerald-300 bg-zinc-900' : isActive ? 'border-emerald-400 bg-zinc-900' : '',
+        ? 'text-(--lab-text-primary) bg-[color-mix(in_srgb,var(--lab-info)_12%,var(--lab-bg-surface))]'
+        : 'text-(--lab-text-muted)',
+      isActive && isFocused.value ?
+        'ring-(--lab-accent) ring-2'
+      : isActive ?
+        'ring-(--lab-border) ring-1'
+      : '',
       isActive && isFocused.value
-        ? 'after:block after:h-7 after:w-[2px] after:animate-pulse after:rounded-full after:bg-emerald-300 sm:after:h-8'
+        ? 'after:bg-(--lab-accent) after:block after:h-7 after:w-[2px] after:animate-pulse sm:after:h-8'
         : '',
-      isSuccess ? 'border-emerald-300 bg-emerald-500/12 text-emerald-50 ' : '',
-      isError ? 'border-rose-500/70 bg-rose-500/12 text-rose-50 ' : '',
-      rejectedTarget.value === index ? 'border-rose-400 bg-rose-500/12 text-rose-100 ' : ''
+      isSuccess ? 'ring-(--lab-success) bg-[color-mix(in_srgb,var(--lab-success)_14%,var(--lab-bg-surface))] ring-2' : '',
+      isError ? 'ring-(--lab-danger) bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] ring-2' : '',
+      rejectedTarget.value === index ?
+        'ring-(--lab-danger) bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] ring-2'
+      : ''
     ]
   }
   const onInput = (event: Event) => {

@@ -88,36 +88,38 @@
   })
   const stateBlockClass = computed(() => {
     if (copyState.value === 'success') {
-      return 'border-emerald-400/80 bg-emerald-900/35 text-emerald-100'
+      return 'bg-[color-mix(in_srgb,var(--lab-success)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-(--lab-success) ring-1'
     }
     if (copyState.value === 'error') {
-      return 'border-rose-400/80 bg-rose-900/35 text-rose-100'
+      return 'bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-(--lab-danger) ring-1'
     }
     if (props.variant === 'dark-cyan') {
-      return 'border-cyan-500/60 bg-sky-950/55 text-cyan-100 hover:border-cyan-300/90 hover:bg-sky-950/80'
+      return 'bg-[color-mix(in_srgb,var(--lab-info)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-(--lab-border) hover:ring-(--lab-info) ring-1'
     }
-    return 'border-zinc-700/80 bg-zinc-950 text-zinc-300 hover:border-zinc-400/80 hover:bg-zinc-900/85'
+    return 'bg-(--lab-bg-surface) text-(--lab-text-primary) ring-(--lab-border) hover:ring-(--lab-text-muted) ring-1'
   })
   const stateLabelClass = computed(() => {
-    if (copyState.value === 'success') return 'text-emerald-200/90'
-    if (copyState.value === 'error') return 'text-rose-200/90'
-    if (props.variant === 'dark-cyan') return 'text-cyan-200/85 group-hover:text-cyan-100'
-    return 'text-zinc-500 group-hover:text-zinc-300'
+    if (copyState.value === 'success') return 'text-(--lab-success)'
+    if (copyState.value === 'error') return 'text-(--lab-danger)'
+    if (props.variant === 'dark-cyan') return 'text-(--lab-info) group-hover:text-(--lab-text-primary)'
+    return 'text-(--lab-text-muted) group-hover:text-(--lab-text-primary)'
   })
   const iconClass = computed(() => {
-    if (copyState.value === 'success') return 'animate-pulse text-emerald-200'
-    if (copyState.value === 'error') return 'animate-pulse text-rose-200'
-    if (props.variant === 'dark-cyan') return 'text-cyan-300 group-hover:text-cyan-200'
-    return 'text-zinc-500 group-hover:text-zinc-200'
+    if (copyState.value === 'success') return 'animate-pulse text-(--lab-success)'
+    if (copyState.value === 'error') return 'animate-pulse text-(--lab-danger)'
+    if (props.variant === 'dark-cyan') return 'text-(--lab-info) group-hover:text-(--lab-text-primary)'
+    return 'text-(--lab-text-muted) group-hover:text-(--lab-text-primary)'
   })
   const valueClass = computed(() => {
     if (props.monospace) return 'font-mono'
     return ''
   })
   const stateTooltipClass = computed(() => {
-    if (copyState.value === 'success') return 'border-emerald-400/80 bg-emerald-950 text-emerald-100'
-    if (copyState.value === 'error') return 'border-rose-400/80 bg-rose-950 text-rose-100'
-    return 'border-zinc-700 bg-zinc-900 text-zinc-200'
+    if (copyState.value === 'success')
+      return 'bg-[color-mix(in_srgb,var(--lab-success)_18%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-(--lab-success) ring-1'
+    if (copyState.value === 'error')
+      return 'bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-(--lab-danger) ring-1'
+    return 'bg-(--lab-bg-surface) text-(--lab-text-primary) ring-(--lab-border) ring-1'
   })
   const copyValue = async () => {
     try {

@@ -42,6 +42,7 @@
     if (!hasContent.value) return
     open.value = true
     await updatePosition()
+    schedulePositionUpdate()
   }
   const hide = () => {
     open.value = false

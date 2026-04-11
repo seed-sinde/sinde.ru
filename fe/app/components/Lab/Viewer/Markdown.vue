@@ -3,24 +3,32 @@
     source: string
   }>()
   const EMOJI_TOKEN_RE = /:emojione:[a-z0-9-]+:/i
+  const { ensureMarkdownCodec } = useMarkdownCodecLoader()
   const emojiCollectionReady = ref(false)
+  const blocks = ref<MarkdownViewerBlock[]>([])
+  let renderToken = 0
+  const syncBlocks = async (source: string) => {
+    const token = ++renderToken
+    const markdownCodec = await ensureMarkdownCodec()
+    if (token !== renderToken) return
+    blocks.value = markdownCodec.renderMarkdownToBlocks(source)
+  }
   const ensureEmojiCollectionForSource = async (source: string) => {
     if (emojiCollectionReady.value) return
     if (!EMOJI_TOKEN_RE.test(String(source || ''))) return
-    await ensureEmojiCollectionLoaded()
+    const markdownCodec = await ensureMarkdownCodec()
+    await markdownCodec.ensureEmojiCollectionLoaded()
     emojiCollectionReady.value = true
   }
   await ensureEmojiCollectionForSource(props.source)
+  await syncBlocks(props.source)
   watch(
     () => props.source,
     async next => {
       await ensureEmojiCollectionForSource(next)
+      await syncBlocks(next)
     }
   )
-  const blocks = computed<MarkdownViewerBlock[]>(() => {
-    emojiCollectionReady.value
-    return renderMarkdownToBlocks(props.source)
-  })
 </script>
 <template>
   <article class="md-content">

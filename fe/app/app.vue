@@ -1,5 +1,6 @@
 <script setup lang="ts">
   const themes = ['dark', 'light'] as const
+  const UI_PREFERENCES_STORAGE_KEY = 'ui.preferences.v1'
   const runtimeConfig = useRuntimeConfig()
   const requestUrl = useRequestURL()
   const { localeTag, effectiveTheme, themeColor, faviconSrc, faviconDarkSrc, faviconLightSrc, themePreference } =
@@ -11,6 +12,7 @@
   })
   const defaultOgImage = computed(() => `${siteUrl.value}${faviconDarkSrc.value}`)
   const htmlThemeClass = computed(() => `theme-${effectiveTheme.value}`)
+  const themeBootstrapScript = `(function(){try{var key=${JSON.stringify(UI_PREFERENCES_STORAGE_KEY)};var raw=window.localStorage.getItem(key);var preference='system';if(raw){var parsed=JSON.parse(raw);if(parsed&&typeof parsed.themePreference==='string'){preference=parsed.themePreference}}var root=document.documentElement;root.classList.remove('theme-dark','theme-light');if(preference==='dark'||preference==='light'){root.classList.add('theme-'+preference);return}var systemTheme=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';root.classList.add('theme-'+systemTheme)}catch(_){}})();`
   const faviconLinks = computed(() => [
     ...(themePreference.value === 'system' ? [] : [{ rel: 'icon', href: faviconSrc.value }]),
     ...themes.map(t => ({
@@ -29,6 +31,13 @@
       lang: localeTag,
       class: htmlThemeClass
     },
+    script: [
+      {
+        key: 'theme-bootstrap',
+        innerHTML: themeBootstrapScript,
+        tagPosition: 'head'
+      }
+    ],
     link: faviconLinks,
     meta: [
       { key: 'referrer', name: 'referrer', content: 'strict-origin-when-cross-origin' },

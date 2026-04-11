@@ -1,5 +1,6 @@
 import { joinURL } from 'ufo'
-const { json: useApiJson } = useAPI()
+const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>['json']>[1]>) =>
+  useAPI().json<T>(path, options)
 /**
  * Creates a simple trait payload for set-building requests.
  */

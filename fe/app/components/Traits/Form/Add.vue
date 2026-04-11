@@ -4,20 +4,20 @@
     class="mx-auto flex w-full max-w-2xl flex-col gap-4 border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_86%,transparent)] p-4 sm:p-5"
     @submit.prevent="onSubmit">
     <div class="space-y-3">
-      <LabField label="Имя ключа" for-id="trait-key" class="w-full min-w-0">
+      <LabField :label="copy.addForm.keyName" for-id="trait-key" class="w-full min-w-0">
         <LabBaseInput
           id="trait-key"
           ref="keyInput"
           v-model="key"
           name="TraitKey"
-          placeholder="Ключ"
+          :placeholder="copy.addForm.keyPlaceholder"
           autocomplete="off"
           spellcheck="false"
           inputmode="text"
           class="w-full min-w-0" />
       </LabField>
       <div class="w-full min-w-0">
-        <LabField v-if="showValueLabel" label="Значение" :for-id="valueLabelFor" class="w-full min-w-0">
+        <LabField v-if="showValueLabel" :label="copy.addForm.value" :for-id="valueLabelFor" class="w-full min-w-0">
           <component
             :is="valueComponent"
             :id="valueInputId"
@@ -39,12 +39,17 @@
         <TraitsFormKeyMeta v-model="meta" :syn="key" />
       </div>
       <div class="flex sm:justify-end">
-        <LabBaseButton type="submit" label="Добавить" :disabled="!key || !isValueFilled" class="w-full sm:w-auto" />
+        <LabBaseButton
+          type="submit"
+          :label="copy.addForm.add"
+          :disabled="!key || !isValueFilled"
+          class="w-full sm:w-auto" />
       </div>
     </div>
   </form>
 </template>
 <script setup lang="ts">
+  const { localeCode } = useInterfacePreferences()
   import TraitsInputString from './InputString.vue'
   import TraitsInputNumber from './InputNumber.vue'
   import TraitsInputBoolean from './InputBoolean.vue'
@@ -56,6 +61,7 @@
   import TraitsInputEnum from './InputEnum.vue'
   import TraitsInputValidity from './InputValidity.vue'
   import TraitsInputColor from './InputColor.vue'
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   const emit = defineEmits<{ (e: 'add', trait: TraitInput): void }>()
   const key = ref('')
   const meta = ref<KeyMeta>(defaultKeyMeta('string'))

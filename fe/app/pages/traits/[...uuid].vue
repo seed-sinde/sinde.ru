@@ -1,12 +1,13 @@
 <script setup lang="ts">
-  const title = 'Особенности'
+  const { localeCode } = useInterfacePreferences()
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   definePageMeta({
     robots: 'noindex, nofollow',
     key: route => route.path
   })
   usePageSeo({
-    title,
-    description: 'Раздел для просмотра и управления особенностями.'
+    title: () => copy.value.pageTitle,
+    description: () => copy.value.pageDescriptionUuid
   })
   const route = useRoute()
   const { user } = useAuth()
@@ -24,19 +25,19 @@
   const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
     if (activeWorkspaceTab.value === 'saved') {
       return [
-        { label: title, to: '/traits' },
-        { label: 'Сохранённые наборы', current: true, kind: 'tab' }
+        { label: copy.value.pageTitle, to: '/traits' },
+        { label: copy.value.savedBreadcrumb, current: true, kind: 'tab' }
       ]
     }
     if (isPrimaryTraitOpen.value) {
       return [
-        { label: title, to: '/traits' },
-        { label: '', current: true, kind: 'tab', badge: 'Основной' }
+        { label: copy.value.pageTitle, to: '/traits' },
+        { label: '', current: true, kind: 'tab', badge: copy.value.primaryBadge }
       ]
     }
     return [
       {
-        label: title,
+        label: copy.value.pageTitle,
         ...(uuid.value ? { to: '/traits' } : { current: true })
       }
     ]
@@ -47,7 +48,7 @@
 </script>
 <template>
   <div>
-    <LabNavHeader :title :breadcrumb-items="breadcrumbItems">
+    <LabNavHeader :title="copy.pageTitle" :breadcrumb-items="breadcrumbItems">
       <template #actions="{ compact }">
         <TraitsUuidButton v-if="uuid" action="copy" :uuid="uuid" :compact="compact" />
         <TraitsUuidButton action="paste" :compact="compact" @click="pasteUuid" />

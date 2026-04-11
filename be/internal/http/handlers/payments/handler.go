@@ -157,6 +157,38 @@ func (h *Handler) AdminSummary() fiber.Handler {
 		return responses.Success(c, fiber.StatusOK, result)
 	}
 }
+func (h *Handler) AdminUserAccess() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		targetID, err := uuid.Parse(strings.TrimSpace(c.Params("id")))
+		if err != nil {
+			return responses.Error(c, fiber.StatusBadRequest, "некорректный идентификатор пользователя")
+		}
+		result, err := h.service.GetAccessSummary(c.Context(), targetID)
+		if err != nil {
+			return paymentError(c, err)
+		}
+		return responses.Success(c, fiber.StatusOK, result)
+	}
+}
+func (h *Handler) AdminUserOrders() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		targetID, err := uuid.Parse(strings.TrimSpace(c.Params("id")))
+		if err != nil {
+			return responses.Error(c, fiber.StatusBadRequest, "некорректный идентификатор пользователя")
+		}
+		limit := 100
+		if raw := strings.TrimSpace(c.Query("limit")); raw != "" {
+			if value, err := strconv.Atoi(raw); err == nil {
+				limit = value
+			}
+		}
+		result, err := h.service.ListUserOrders(c.Context(), targetID, limit)
+		if err != nil {
+			return paymentError(c, err)
+		}
+		return responses.Success(c, fiber.StatusOK, result)
+	}
+}
 
 func resolveRequestBaseURL(c fiber.Ctx) string {
 	if origin := strings.TrimSpace(c.Get("Origin")); origin != "" {

@@ -1,3 +1,5 @@
+import type { AuthLoginAttemptView, AuthSecurityEventView, AuthSessionView, AuthUser } from './auth'
+
 export type AdminTab = 'users' | 'moderation' | 'keys' | 'analysis'
 export type AdminModerationStatus = 'draft' | 'pending' | 'approved' | 'rejected'
 export type AdminUserView = {
@@ -13,6 +15,20 @@ export type AdminUserView = {
   blocked_reason?: string
   blocked_at?: string | null
   created_at: string
+  profile: Record<string, unknown>
+  settings: Record<string, unknown>
+}
+export type PublicUserProfileView = {
+  user_id: string
+  display_name: string
+  primary_trait_uuid?: string | null
+  profile: Record<string, unknown>
+}
+export type AdminUserDetailView = {
+  user: AuthUser
+  sessions: AuthSessionView[]
+  login_attempts: AuthLoginAttemptView[]
+  security_events: AuthSecurityEventView[]
 }
 export type AdminTraitKeySearchItem = {
   key_id: number

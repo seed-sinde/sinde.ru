@@ -303,7 +303,7 @@ func (s *Service) Login(ctx context.Context, input LoginInput, device DeviceCont
 			MFAMethods:   []string{"totp", "backup_code"},
 		}, nil, nil
 	}
-	result, bundle, err := s.createSession(ctx, user, device, true)
+	result, bundle, err := s.createSession(ctx, user, device, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1270,6 +1270,8 @@ func (s *Service) AdminListUsers(ctx context.Context, search string, status stri
 			BlockedReason:      item.BlockedReason,
 			BlockedAt:          item.BlockedAt,
 			CreatedAt:          item.CreatedAt,
+			Profile:            jsonMap(item.Profile),
+			Settings:           jsonMap(item.Settings),
 		})
 	}
 	return &AdminUserListResult{
@@ -1277,6 +1279,42 @@ func (s *Service) AdminListUsers(ctx context.Context, search string, status stri
 		Total:  total,
 		Limit:  limit,
 		Offset: offset,
+	}, nil
+}
+func (s *Service) PublicUserProfile(ctx context.Context, userID uuid.UUID) (*PublicUserProfileView, error) {
+	target, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &PublicUserProfileView{
+		UserID:           target.UserID,
+		DisplayName:      target.DisplayName,
+		PrimaryTraitUUID: target.PrimaryTraitUUID,
+		Profile:          jsonMap(target.Profile),
+	}, nil
+}
+func (s *Service) AdminUserDetail(ctx context.Context, userID uuid.UUID) (*AdminUserDetailResult, error) {
+	target, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	sessions, err := s.ListSessions(ctx, target.UserID, "")
+	if err != nil {
+		return nil, err
+	}
+	loginAttempts, err := s.ListLoginAttempts(ctx, target, 50)
+	if err != nil {
+		return nil, err
+	}
+	securityEvents, err := s.ListSecurityEvents(ctx, target.UserID, 50)
+	if err != nil {
+		return nil, err
+	}
+	return &AdminUserDetailResult{
+		User:           ToAuthUser(target),
+		Sessions:       sessions.Items,
+		LoginAttempts:  loginAttempts.Items,
+		SecurityEvents: securityEvents.Items,
 	}, nil
 }
 func (s *Service) AdminSummary(ctx context.Context, adminUserID uuid.UUID, currentSessionID string) (*AdminSummaryResult, error) {
@@ -2056,7 +2094,53 @@ func BuildDeviceContext(ip string, userAgent string, acceptLanguage string) Devi
 		UserAgent:       strings.TrimSpace(userAgent),
 		AcceptLanguage:  strings.TrimSpace(acceptLanguage),
 		FingerprintHash: hashToken(fingerprintSeed),
-		DeviceLabel:     strings.TrimSpace(userAgent),
+		DeviceLabel:     buildDeviceLabelFromUserAgent(userAgent),
+	}
+}
+func buildDeviceLabelFromUserAgent(raw string) string {
+	lower := strings.ToLower(strings.TrimSpace(raw))
+	if lower == "" {
+		return ""
+	}
+	browser := ""
+	switch {
+	case strings.Contains(lower, "yabrowser"):
+		browser = "Yandex Browser"
+	case strings.Contains(lower, "edg/"):
+		browser = "Microsoft Edge"
+	case strings.Contains(lower, "opr/") || strings.Contains(lower, "opera"):
+		browser = "Opera"
+	case strings.Contains(lower, "firefox/"):
+		browser = "Firefox"
+	case strings.Contains(lower, "chrome/") && !strings.Contains(lower, "chromium"):
+		browser = "Chrome"
+	case strings.Contains(lower, "safari/") && !strings.Contains(lower, "chrome/"):
+		browser = "Safari"
+	case strings.Contains(lower, "curl/"):
+		browser = "cURL"
+	}
+	platform := ""
+	switch {
+	case strings.Contains(lower, "iphone") || strings.Contains(lower, "ipad") || strings.Contains(lower, "ios"):
+		platform = "iOS"
+	case strings.Contains(lower, "android"):
+		platform = "Android"
+	case strings.Contains(lower, "windows"):
+		platform = "Windows"
+	case strings.Contains(lower, "mac os x") || strings.Contains(lower, "macintosh"):
+		platform = "macOS"
+	case strings.Contains(lower, "linux"):
+		platform = "Linux"
+	}
+	switch {
+	case browser != "" && platform != "":
+		return browser + " on " + platform
+	case browser != "":
+		return browser
+	case platform != "":
+		return platform
+	default:
+		return strings.TrimSpace(raw)
 	}
 }
 func normalizeAcceptLanguage(raw string) string {

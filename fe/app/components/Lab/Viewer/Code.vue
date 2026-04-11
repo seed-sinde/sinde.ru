@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  const { ensureMarkdownCodec } = useMarkdownCodecLoader()
   const CODE_VIEWER_THEME_OPTIONS: Array<{ value: CodeViewerTheme; label: string }> = [
     { value: 'github-dark', label: 'GitHub Dark' },
     { value: 'github-dark-dimmed', label: 'GitHub Dark Dimmed' },
@@ -80,8 +81,12 @@
   const { effectiveTheme } = useInterfacePreferences()
   const uiPreferences = useUiPreferencesStore()
   const activeThemeCss = ref('')
+  const highlightedCode = ref({
+    displayLanguage: 'text',
+    highlightLanguage: 'text',
+    highlightedHtml: '<pre><code class="hljs language-text"></code></pre>'
+  })
   let themeLoadToken = 0
-  const highlightedCode = computed(() => highlightCodeSnippet(props.code, props.language))
   const languageLabel = computed(() => highlightedCode.value.displayLanguage)
   const themeOptions = computed<SelectOptionInput[]>(() =>
     CODE_VIEWER_THEME_OPTIONS.map(option => ({
@@ -114,6 +119,14 @@
       const css = await loadThemeCss(value)
       if (token !== themeLoadToken) return
       activeThemeCss.value = scopeHighlightTheme(css, '.code-preview')
+    },
+    { immediate: true }
+  )
+  watch(
+    () => [props.code, props.language] as const,
+    async ([code, language]) => {
+      const markdownCodec = await ensureMarkdownCodec()
+      highlightedCode.value = markdownCodec.highlightCodeSnippet(code, language)
     },
     { immediate: true }
   )

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-  const title = 'Особенности'
+  const { localeCode } = useInterfacePreferences()
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   usePageSeo({
-    title,
-    description: 'Раздел для просмотра и управления особенностями человека.'
+    title: () => copy.value.pageTitle,
+    description: () => copy.value.pageDescriptionRoot
   })
   const route = useRoute()
   const { error: pasteError, pasteUuidAndNavigate } = usePasteUuid()
@@ -12,16 +13,16 @@
   const breadcrumbItems = computed<BreadcrumbItem[]>(() =>
     activeWorkspaceTab.value === 'saved'
       ? [
-          { label: title, to: '/traits' },
-          { label: 'Сохранённые наборы', current: true, kind: 'tab' }
+          { label: copy.value.pageTitle, to: '/traits' },
+          { label: copy.value.savedBreadcrumb, current: true, kind: 'tab' }
         ]
-      : [{ label: title, to: '/traits', current: true }]
+      : [{ label: copy.value.pageTitle, to: '/traits', current: true }]
   )
   const pasteUuid = async () => await pasteUuidAndNavigate(uuid => `/traits/${uuid}`)
 </script>
 <template>
   <div>
-    <LabNavHeader :title :breadcrumb-items="breadcrumbItems">
+    <LabNavHeader :title="copy.pageTitle" :breadcrumb-items="breadcrumbItems">
       <template #actions="{ compact }">
         <TraitsUuidButton action="paste" :compact="compact" @click="pasteUuid" />
       </template>

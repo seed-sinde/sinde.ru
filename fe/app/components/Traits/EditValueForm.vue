@@ -4,14 +4,14 @@
     class="mx-auto w-full max-w-3xl border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_84%,transparent)] p-3 sm:p-4">
     <form @submit.prevent="onSubmit" class="space-y-4">
       <div class="space-y-1">
-        <h4 class="lab-text-primary text-sm font-medium sm:text-base">Редактирование значения</h4>
-        <p class="lab-text-muted text-xs">Ключ остаётся тем же, обновится только значение.</p>
+        <h4 class="text-sm font-medium sm:text-base">{{ copy.editForm.title }}</h4>
+        <p class="lab-text-muted text-xs">{{ copy.editForm.description }}</p>
       </div>
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <LabField label="Имя ключа" for-id="TraitEditKey" class="max-w-full">
+        <LabField :label="copy.editForm.keyName" for-id="TraitEditKey" class="max-w-full">
           <LabBaseInput id="TraitEditKey" :model-value="trait.t_key" readonly disabled />
         </LabField>
-        <LabField v-if="showValueLabel" label="Значение" :for-id="valueLabelFor" class="max-w-full">
+        <LabField v-if="showValueLabel" :label="copy.editForm.value" :for-id="valueLabelFor" class="max-w-full">
           <component
             :is="valueComponent"
             ref="valueRootRef"
@@ -30,13 +30,18 @@
           class="block w-full" />
       </div>
       <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <LabBaseButton variant="ghost" label="Отмена" :disabled="pending" @click="emit('cancel')" />
-        <LabBaseButton variant="primary" type="submit" label="Сохранить" :disabled="pending || !isValueFilled" />
+        <LabBaseButton variant="ghost" :label="copy.editForm.cancel" :disabled="pending" @click="emit('cancel')" />
+        <LabBaseButton
+          variant="primary"
+          type="submit"
+          :label="copy.editForm.save"
+          :disabled="pending || !isValueFilled" />
       </div>
     </form>
   </section>
 </template>
 <script setup lang="ts">
+  const { localeCode } = useInterfacePreferences()
   import type { ComponentPublicInstance } from 'vue'
   import TraitsInputString from './Form/InputString.vue'
   import TraitsInputNumber from './Form/InputNumber.vue'
@@ -51,6 +56,7 @@
   import TraitsInputColor from './Form/InputColor.vue'
   import { defaultKeyMeta, normalizeKeyMeta } from '../../utils/traitMeta'
   import { isTraitFormValueFilled, parseTraitStoredValue, serializeTraitFormValue } from '../../utils/traitValueCodec'
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   const props = withDefaults(
     defineProps<{
       trait: Trait | null

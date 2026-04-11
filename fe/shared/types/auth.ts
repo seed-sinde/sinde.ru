@@ -91,7 +91,6 @@ export type AdminSummary = UserSummaryAdmin & {
 }
 export type AuthSessionGroupView = {
   key: string
-  browser: string
   ip: string
   deviceLabel: string
   count: number

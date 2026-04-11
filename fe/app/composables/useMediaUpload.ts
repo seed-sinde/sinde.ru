@@ -8,7 +8,8 @@ export type MediaUploadTarget =
       collection: 'recipes'
       recipeId?: string
     }
-const { json: useApiJson } = useAPI()
+const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>['json']>[1]>) =>
+  useAPI().json<T>(path, options)
 export const uploadMediaFile = async (file: File, target: MediaUploadTarget) => {
   const formData = new FormData()
   formData.append('file', file)

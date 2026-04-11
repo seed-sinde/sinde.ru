@@ -25,14 +25,14 @@
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <span class="lab-text-primary truncate text-sm font-semibold">
+              <span class="truncate text-sm font-semibold">
                 {{ trait.t_key }}
               </span>
               <span class="lab-text-soft text-xs">—</span>
               <span class="lab-text-secondary inline-flex min-w-0 items-center gap-1.5 text-sm">
                 <span
                   v-if="colorInfo"
-                  class="h-2 w-2 shrink-0 rounded-full border border-(--lab-border)"
+                  class="h-2 w-2 shrink-0 rounded-full border"
                   :style="{ backgroundColor: colorInfo.css }"
                   aria-hidden="true"></span>
                 <span class="min-w-0 wrap-break-word leading-5">
@@ -54,11 +54,11 @@
           <NuxtLink
             :to="detailLinkTo"
             class="shrink-0 text-xs uppercase tracking-[0.14em] text-(--lab-text-muted) transition hover:text-(--lab-accent) focus-visible:outline-none focus-visible:text-(--lab-accent)"
-            :aria-label="`Открыть особенность ${trait.t_key}`"
-            title="Открыть отдельную особенность"
+            :aria-label="copy.card.openAria.replace('{key}', trait.t_key)"
+            :title="copy.card.openTitle"
             @click.stop
             @keydown.stop>
-            Открыть
+            {{ copy.card.openLabel }}
           </NuxtLink>
         </div>
       </div>
@@ -66,11 +66,13 @@
   </div>
 </template>
 <script setup lang="ts">
+  const { localeCode } = useInterfacePreferences()
   const { trait, selected } = defineProps<{
     trait: Trait | null
     selected?: boolean
   }>()
   const emit = defineEmits<{ (e: 'update:selected', value: boolean): void }>()
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   const toggleSelection = () => emit('update:selected', !selected)
   const store = useTraitsStore()
   const route = useRoute()
@@ -90,7 +92,7 @@
     return raw && typeof raw === 'object' ? raw : {}
   })
   const metaType = computed(() => String(metaRaw.value.dataType || metaRaw.value.type || '').trim())
-  const dataTypeLabel = computed(() => getDataTypeLabel(metaType.value, 'тип'))
+  const dataTypeLabel = computed(() => getDataTypeLabel(metaType.value, copy.value.detail.metaMissing))
   const dataCategory = computed(() => {
     return getDataCategoryLabel(metaRaw.value)
   })

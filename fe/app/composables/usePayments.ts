@@ -156,6 +156,19 @@ export const usePayments = () => {
       method: 'GET'
     })
   }
+  const adminUserAccess = async (userId: string) => {
+    return await useApiJson<PaymentsApiResult<PaymentAccessSummary>>(`/auth/admin/users/${userId}/access`, {
+      method: 'GET'
+    })
+  }
+  const adminUserOrders = async (userId: string, limit = 100) => {
+    return await useApiJson<PaymentsApiResult<PaymentUserOrdersListResult>>(
+      `/auth/admin/users/${userId}/orders?limit=${encodeURIComponent(String(limit))}`,
+      {
+        method: 'GET'
+      }
+    )
+  }
 
   watch(
     isAuthenticated,
@@ -185,6 +198,8 @@ export const usePayments = () => {
     lookupPublicOrder,
     refundOrder,
     adminListOrders,
-    adminSummary
+    adminSummary,
+    adminUserAccess,
+    adminUserOrders
   }
 }

@@ -162,7 +162,9 @@
     return `Подписка активна до ${paymentAccessUntilText.value}`
   })
   const balanceSubscriptionStatusLabel = computed(() =>
-    access.value?.has_active_access ? `Подписка активна до ${paymentAccessUntilText.value || '—'}` : 'Подписка не активна'
+    access.value?.has_active_access ?
+      `Подписка активна до ${paymentAccessUntilText.value || '—'}`
+    : 'Подписка не активна'
   )
   const paymentHistoryColumns = computed<LabDataTableColumn[]>(() => [
     { key: 'createdAt', label: 'Дата', nowrap: true },
@@ -189,6 +191,63 @@
         : item.refunded_at ? 'Выполнен'
         : 'Недоступен',
       canRefund: item.can_refund
+    }))
+  )
+  const sessionActivityColumns = computed<LabDataTableColumn[]>(() => [
+    { key: 'device', label: 'Устройство', cellClass: 'whitespace-normal wrap-break-word' },
+    { key: 'status', label: '2FA', nowrap: true },
+    { key: 'activity', label: 'Активность', cellClass: 'whitespace-normal wrap-break-word' },
+    { key: 'action', label: 'Действие', nowrap: true }
+  ])
+  const sessionActivityRows = computed(() =>
+    groupedSessions.value.map(item => ({
+      id: item.key,
+      device: item.deviceLabel,
+      ip: item.ip,
+      status: item.mfaVerified ? t('auth.account.activity.mfa_verified') : t('auth.account.activity.mfa_unverified'),
+      count: item.count,
+      lastSeenAt: item.lastSeenAt,
+      revokableSessionIds: item.revokableSessionIds,
+      hasCurrent: item.hasCurrent,
+      action:
+        item.revokableSessionIds.length === 0 ? t('auth.account.activity.current')
+        : item.hasCurrent ? t('auth.account.activity.revoke_and_logout')
+        : t('auth.account.activity.revoke'),
+      source: item
+    }))
+  )
+  const loginAttemptColumns = computed<LabDataTableColumn[]>(() => [
+    { key: 'createdAt', label: 'Дата', nowrap: true },
+    { key: 'outcome', label: 'Результат', nowrap: true },
+    { key: 'ip', label: 'IP', nowrap: true },
+    { key: 'risk', label: 'Риск', nowrap: true },
+    { key: 'details', label: 'Детали', cellClass: 'whitespace-normal wrap-break-word' }
+  ])
+  const loginAttemptRows = computed(() =>
+    loginAttempts.value.map(item => ({
+      id: item.attempt_id,
+      createdAt: formatDateTime(item.created_at),
+      outcome: item.outcome || '—',
+      ip: item.ip || '—',
+      risk: String(item.risk_score ?? '—'),
+      details: item.failure_reason || item.suspicious_reason || item.user_agent || '—',
+      source: item
+    }))
+  )
+  const securityEventColumns = computed<LabDataTableColumn[]>(() => [
+    { key: 'createdAt', label: 'Дата', nowrap: true },
+    { key: 'event', label: 'Событие', cellClass: 'whitespace-normal wrap-break-word' },
+    { key: 'ip', label: 'IP', nowrap: true },
+    { key: 'payload', label: 'Payload', cellClass: 'whitespace-normal wrap-break-word' }
+  ])
+  const securityEventRows = computed(() =>
+    securityEvents.value.map(item => ({
+      id: item.event_id,
+      createdAt: formatDateTime(item.created_at),
+      event: `${item.event_type} · ${item.severity}`,
+      ip: item.ip || '—',
+      payload: JSON.stringify(item.payload || {}),
+      source: item
     }))
   )
   const avatarGallery = computed(() => getAuthAvatarGallery(user.value))
@@ -221,7 +280,7 @@
     const groups = new Map<
       string,
       {
-        browser: string
+        deviceLabel: string
         ip: string
         latestSession: AuthSessionView
         mfaVerified: boolean
@@ -233,13 +292,14 @@
     >()
     for (const item of sessions.value) {
       if (item.revoked_at) continue
-      const browser = browserLabelFromUserAgent(item.user_agent)
+      const deviceLabel =
+        String(item.device_label || '').trim() || String(item.user_agent || '').trim() || 'Неизвестное устройство'
       const ip = String(item.ip || '').trim() || '—'
-      const key = `${browser}::${ip}`
+      const key = `${deviceLabel}::${ip}`
       const current = groups.get(key)
       if (!current) {
         groups.set(key, {
-          browser,
+          deviceLabel,
           ip,
           latestSession: item,
           mfaVerified: Boolean(item.mfa_verified),
@@ -251,7 +311,6 @@
         continue
       }
       current.count += 1
-      current.mfaVerified = current.mfaVerified || Boolean(item.mfa_verified)
       current.revokableSessionIds.push(item.session_id)
       if (item.is_current) {
         current.currentSessionIds.push(item.session_id)
@@ -261,14 +320,14 @@
       const nextTs = new Date(item.last_seen_at).getTime() || 0
       if (nextTs > currentTs) {
         current.latestSession = item
+        current.mfaVerified = Boolean(item.mfa_verified)
       }
     }
     return Array.from(groups.entries())
       .map(([key, group]) => ({
         key,
-        browser: group.browser,
         ip: group.ip,
-        deviceLabel: group.browser || group.latestSession.device_label || 'Неизвестное устройство',
+        deviceLabel: group.deviceLabel,
         count: group.count,
         mfaVerified: group.mfaVerified,
         lastSeenAt: group.latestSession.last_seen_at,
@@ -281,6 +340,13 @@
 
   const formatDateTime = (value?: string | null) =>
     formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
+  const scheduleClientFrame = (cb: () => void) => {
+    if (import.meta.client) {
+      requestAnimationFrame(cb)
+      return
+    }
+    cb()
+  }
   const formatPaymentAmount = (value?: number | null) => {
     const amount = Number(value || 0)
     return new Intl.NumberFormat('ru-RU').format(Math.floor(amount / 100)) + ' ₽'
@@ -303,18 +369,6 @@
   }
   const paymentPlanLabel = (planCode?: string | null) =>
     String(planCode || '').trim() === 'donation' ? t('payments.plan.donation') : t('payments.plan.pro')
-  const browserLabelFromUserAgent = (userAgent?: string) => {
-    const raw = String(userAgent || '').toLowerCase()
-    if (!raw) return 'Браузер'
-    if (raw.includes('yabrowser')) return 'Yandex Browser'
-    if (raw.includes('edg/')) return 'Microsoft Edge'
-    if (raw.includes('opr/') || raw.includes('opera')) return 'Opera'
-    if (raw.includes('firefox/')) return 'Firefox'
-    if (raw.includes('chrome/') && !raw.includes('chromium')) return 'Chrome'
-    if (raw.includes('safari/') && !raw.includes('chrome/')) return 'Safari'
-    if (raw.includes('curl/')) return 'cURL'
-    return 'Браузер'
-  }
   const resolveUploadedImageKey = (res: any) => String(res?.data?.image_key || res?.image_key || '').trim()
   const findAvatarGalleryIndexById = (itemId?: string | null) => {
     const normalizedId = String(itemId || '').trim()
@@ -537,7 +591,7 @@
   }
   const submitEmailChange = async () => {
     emailChangeError.value = ''
-    clearSuccessNotice('email-change', emailChangeInfo)
+    emailChangeInfo.value = ''
     const nextEmail = emailChangeForm.email.trim()
     if (!nextEmail) {
       emailChangeError.value = 'Введите новый email.'
@@ -546,7 +600,7 @@
     emailChangePending.value = true
     try {
       await requestEmailChange(nextEmail)
-      showSuccessNotice('email-change', emailChangeInfo, t('auth.account.email.request_sent', { email: nextEmail }))
+      emailChangeInfo.value = t('auth.account.email.request_sent', { email: nextEmail })
     } catch (err: any) {
       emailChangeError.value =
         err?.data?.message || err?.message || 'Не удалось отправить письмо для подтверждения email.'
@@ -665,13 +719,9 @@
       disableTotpCode.value = ''
       disableBackupCode.value = ''
       nextTick().then(() => {
-        if (import.meta.client) {
-          requestAnimationFrame(() => {
-            focusDisableCodeInput()
-          })
-          return
-        }
-        focusDisableCodeInput()
+        scheduleClientFrame(() => {
+          focusDisableCodeInput()
+        })
       })
     }
   }
@@ -890,13 +940,9 @@
     if (!showDisable2faForm.value) return
     twofaError.value = ''
     await nextTick()
-    if (import.meta.client) {
-      requestAnimationFrame(() => {
-        focusDisableCodeInput()
-      })
-      return
-    }
-    focusDisableCodeInput()
+    scheduleClientFrame(() => {
+      focusDisableCodeInput()
+    })
   })
   watch(
     () => profileForm.display_name,
@@ -1064,17 +1110,18 @@
                         <LabBaseTooltip
                           v-if="profileSubscriptionTooltipText"
                           :text="profileSubscriptionTooltipText"
-                          side="top"
-                          align="left">
+                          side="right"
+                          align="left"
+                          :offset="10"
+                          :cross-axis-offset="0">
                           <template #trigger>
                             <LabBaseButton
                               icon="ic:round-auto-awesome"
                               icon-only
                               variant="ghost"
                               size="sm"
-                              button-class="h-8 w-8 border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) hover:border-transparent focus:bg-(--lab-bg-surface-hover) focus:border-transparent focus-visible:bg-(--lab-bg-surface-hover) focus-visible:border-transparent focus-visible:ring-0"
-                              aria-label="Статус подписки"
-                              title="Статус подписки" />
+                              button-class="h-8 w-8 border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover) ring-0 focus:ring-0 focus-visible:ring-0"
+                              aria-label="Статус подписки" />
                           </template>
                         </LabBaseTooltip>
                       </div>
@@ -1165,405 +1212,13 @@
           </section>
         </template>
         <template #panel-balance>
-          <section class="space-y-3 text-(--lab-text-primary)">
-            <div class="space-y-1">
-              <h2 class="text-base font-medium text-(--lab-text-primary)">Статус подписки</h2>
-              <p class="text-sm text-(--lab-text-muted)">
-                {{ accessLoading ? 'Загрузка сведений о доступе…' : balanceSubscriptionStatusLabel }}
-              </p>
-            </div>
-            <div>
-              <NuxtLink
-                to="/payments"
-                class="inline-flex min-h-11 items-center justify-center border border-(--lab-border-strong) px-4 text-sm font-medium text-(--lab-text-primary)">
-                Пополнить баланс
-              </NuxtLink>
-            </div>
-            <section class="space-y-4 pt-3">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="space-y-1">
-                  <h2 class="text-base font-medium text-(--lab-text-primary)">История транзакций</h2>
-                  <p class="text-sm text-(--lab-text-muted)">Все транзакции аккаунта в одном списке.</p>
-                </div>
-                <LabBaseButton
-                  variant="secondary"
-                  size="sm"
-                  icon="ic:round-refresh"
-                  label="Обновить"
-                  :disabled="historyLoading || refundPendingOrderId !== ''"
-                  @click="loadPaymentHistoryState(true)" />
-              </div>
-
-              <LabNotify :text="paymentHistoryError" tone="error" size="xs" />
-              <LabNotify :text="paymentHistoryInfo" tone="success" size="xs" />
-
-              <LabDataTable
-                :columns="paymentHistoryColumns"
-                :rows="paymentHistoryRows"
-                :loading="historyLoading"
-                empty-text="У вас пока нет завершённых или созданных платёжных операций.">
-                <template #cell-refund="{ row }">
-                  <LabConfirmActionButton
-                    v-if="row.canRefund"
-                    icon="ic:round-undo"
-                    confirm-icon="ic:round-check"
-                    label="Оформить возврат"
-                    confirm-label="Подтвердить"
-                    tooltip="Вернуть этот платёж?"
-                    :disabled="refundPendingOrderId !== ''"
-                    @confirm="submitRefund(row.orderId)" />
-                  <span v-else>{{ row.refund }}</span>
-                </template>
-              </LabDataTable>
-            </section>
-          </section>
+          <LazyAuthAccountBalancePanel v-if="accountTab === 'balance'" />
         </template>
         <template #panel-security>
-          <section class="text-(--lab-text-primary) space-y-4">
-            <article class="space-y-3">
-              <div>
-                <h2 class="text-xl sm:text-2xl">{{ t('auth.account.email.title') }}</h2>
-                <p class="text-(--lab-text-muted) text-sm">
-                  {{ t('auth.account.email.description', { email: user.email }) }}
-                </p>
-              </div>
-              <div class="grid gap-3 sm:max-w-fit">
-                <LabField
-                  :label="t('auth.account.email.new_label')"
-                  forId="account-next-email"
-                  label-class="lab-text-muted text-xs normal-case tracking-normal">
-                  <LabBaseInput
-                    id="account-next-email"
-                    v-model="emailChangeForm.email"
-                    name="email"
-                    type="email"
-                    autocomplete="email"
-                    input-class="w-full"
-                    :placeholder="t('auth.account.email.new_placeholder')"
-                    @keydown.enter.prevent="submitEmailChange" />
-                </LabField>
-              </div>
-              <div class="flex flex-wrap items-center">
-                <LabBaseButton
-                  :label="t('auth.account.email.submit')"
-                  variant="primary"
-                  size="lg"
-                  button-class="text-xs"
-                  :disabled="emailChangePending"
-                  @click="submitEmailChange" />
-              </div>
-              <LabNotify :text="emailChangeError" tone="error" size="xs" />
-              <LabNotify :text="emailChangeInfo" tone="success" size="xs" />
-            </article>
-            <article class="space-y-3">
-              <div>
-                <h2 class="text-xl sm:text-2xl flex items-center flex-wrap gap-3">
-                  {{ t('auth.account.password.title') }}
-                  <span class="text-(--lab-text-muted) text-sm">{{ t('auth.account.password.description') }}</span>
-                </h2>
-              </div>
-              <div class="grid gap-3 lg:grid-rows-2 sm:max-w-fit">
-                <LabField
-                  :label="t('auth.account.password.current_label')"
-                  forId="account-current-password"
-                  label-class="lab-text-muted text-xs normal-case tracking-normal">
-                  <LabBaseInput
-                    id="account-current-password"
-                    v-model="passwordForm.current"
-                    name="current_password"
-                    type="password"
-                    autocomplete="current-password"
-                    :input-class="['w-full', passwordCurrentInputError ? 'text-(--lab-danger)' : '']"
-                    :placeholder="t('auth.account.password.current_placeholder')" />
-                </LabField>
-                <LabField
-                  :label="t('auth.account.password.next_label')"
-                  forId="account-next-password"
-                  label-class="lab-text-muted text-xs normal-case tracking-normal">
-                  <LabBaseInput
-                    id="account-next-password"
-                    v-model="passwordForm.next"
-                    name="new_password"
-                    type="password"
-                    autocomplete="new-password"
-                    input-class="w-full"
-                    :placeholder="t('auth.account.password.next_placeholder')" />
-                </LabField>
-              </div>
-              <div class="flex flex-wrap items-center">
-                <LabBaseButton
-                  :label="t('auth.account.password.submit')"
-                  variant="primary"
-                  size="lg"
-                  button-class="text-xs"
-                  @click="submitPasswordChange" />
-              </div>
-              <LabNotify :text="passwordError" tone="error" size="xs" />
-              <LabNotify :text="passwordInfo" tone="success" size="xs" />
-            </article>
-            <article class="space-y-3">
-              <div class="space-y-3">
-                <h2 class="text-xl sm:text-2xl flex items-center flex-wrap gap-3">
-                  2FA
-                  <span class="text-(--lab-text-muted) text-sm">
-                    {{ twofaStatusLabel }}
-                  </span>
-                </h2>
-
-                <LabBaseButton
-                  :variant="user.is_two_factor_enabled ? 'danger' : 'success'"
-                  size="lg"
-                  button-class="text-xs"
-                  @click="user.is_two_factor_enabled ? toggleDisable2faForm() : begin2faSetup()">
-                  {{
-                    user.is_two_factor_enabled ?
-                      showDisable2faForm ? t('auth.account.twofa.hide_form')
-                      : t('auth.account.twofa.disable')
-                    : t('auth.account.twofa.get_secret')
-                  }}
-                </LabBaseButton>
-              </div>
-              <LabNotify :text="twofaError" tone="error" />
-              <LabNotify :text="twofaInfo" tone="success" :temporary="false" />
-              <div
-                v-if="!user.is_two_factor_enabled && setupSecret"
-                class="grid items-start gap-3 xl:grid-cols-[auto_minmax(0,1fr)]">
-                <div v-if="setupQrDataUrl">
-                  <img
-                    :src="setupQrDataUrl"
-                    alt="QR-код для настройки 2FA"
-                    class="h-48 w-48 object-contain"
-                    loading="lazy" />
-                </div>
-                <div class="space-y-3">
-                  <p v-if="setupOtpAuthUrl" class="text-(--lab-text-muted) wrap-break-word text-xs leading-5">
-                    {{ t('auth.account.twofa.qr_fallback').split('{link}')[0] }}
-                    <a
-                      :href="setupOtpAuthUrl"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="text-(--lab-info) ring-1 ring-transparent focus-visible:outline-none focus-visible:ring-2">
-                      {{ t('auth.account.twofa.qr_fallback_link') }}
-                    </a>
-                    {{ t('auth.account.twofa.qr_fallback').split('{link}')[1] }}
-                  </p>
-                  <LabCopyBlock
-                    :label="t('auth.account.twofa.copy_key_label')"
-                    :value="setupSecret"
-                    variant="dark-cyan"
-                    button-class="w-full"
-                    :title-idle="t('auth.account.twofa.copy_key_idle')"
-                    :title-success="t('auth.account.twofa.copy_key_success')"
-                    :title-error="t('auth.account.twofa.copy_key_error')"
-                    :show-state-tooltip="true" />
-                  <AuthCodeInput
-                    id="account-enable-2fa-code"
-                    ref="enableCodeInputRef"
-                    :model-value="enableCode"
-                    name="one_time_code_enable"
-                    :label="t('auth.account.twofa.code_label')"
-                    :hint="t('auth.account.twofa.code_hint')"
-                    :invalid="Boolean(twofaError)"
-                    :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
-                    @update:model-value="onEnableCodeInput"
-                    @complete="activate2fa" />
-                </div>
-              </div>
-              <div v-if="user.is_two_factor_enabled && showDisable2faForm" class="space-y-3">
-                <input
-                  type="text"
-                  name="account_disable_2fa_username"
-                  autocomplete="username"
-                  tabindex="-1"
-                  aria-hidden="true"
-                  class="pointer-events-none absolute -left-96 h-px w-px opacity-0" />
-                <LabField
-                  label="Текущий пароль"
-                  forId="account-disable-2fa-password"
-                  field-class="min-w-0"
-                  label-class="lab-text-muted text-xs normal-case tracking-normal">
-                  <LabBaseInput
-                    id="account-disable-2fa-password"
-                    v-model="disablePassword"
-                    name="disable_2fa_password"
-                    type="password"
-                    autocomplete="current-password"
-                    input-class="w-full"
-                    placeholder="Текущий пароль" />
-                </LabField>
-                <LabNavTabs
-                  v-model="disableMethodTab"
-                  :items="disableCodeTabItems"
-                  route-query-key="disable2fa"
-                  route-default-value="totp"
-                  panel-class="space-y-3">
-                  <template #panel-totp>
-                    <AuthCodeInput
-                      id="account-disable-2fa-totp"
-                      ref="disableTotpInputRef"
-                      :model-value="disableTotpCode"
-                      name="disable_totp_code"
-                      label="Код из приложения"
-                      hint="Отключение начнётся автоматически после ввода 6 цифр."
-                      :invalid="Boolean(twofaError)"
-                      :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
-                      @update:model-value="onDisableTotpCodeInput"
-                      @complete="deactivate2fa" />
-                  </template>
-                  <template #panel-backup>
-                    <AuthRecoveryCodeInput
-                      id="account-disable-2fa-backup"
-                      ref="disableBackupCodeInputRef"
-                      :model-value="disableBackupCode"
-                      name="disable_backup_code"
-                      label="Код сброса"
-                      hint="Отключение начнётся автоматически после ввода 8 символов."
-                      :invalid="Boolean(twofaError)"
-                      :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
-                      @update:model-value="onDisableBackupCodeInput"
-                      @complete="deactivate2fa(`${$event.slice(0, 4)}-${$event.slice(4, 8)}`)" />
-                  </template>
-                </LabNavTabs>
-              </div>
-              <div v-if="backupCodes.length" class="text-(--lab-info) space-y-3">
-                <div>
-                  <p class="text-sm font-medium">Резервные коды</p>
-                  <p class="text-xs leading-5">Сохрани все 10 кодов. Каждый код сработает только один раз.</p>
-                </div>
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <div
-                    v-for="code in backupCodes"
-                    :key="code"
-                    class="inline-flex min-h-11 items-center justify-center text-center font-mono text-sm tracking-widest">
-                    {{ code }}
-                  </div>
-                </div>
-                <p class="text-xs leading-5">Храни их вне браузера и не передавай через мессенджеры.</p>
-              </div>
-            </article>
-            <article class="space-y-3">
-              <div>
-                <h2 class="text-xl sm:text-2xl">{{ t('auth.account.activity.title') }}</h2>
-                <p class="text-(--lab-text-muted) text-sm">{{ t('auth.account.activity.description') }}</p>
-              </div>
-              <div class="space-y-2">
-                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span class="lab-text-muted shrink-0 text-xs uppercase tracking-wide">
-                    {{ t('auth.account.activity.last_login') }}
-                  </span>
-                  <span class="text-(--lab-text-primary) min-w-56 flex-1 basis-56 text-sm">
-                    {{ formatDateTime(user.last_login_at) }}
-                  </span>
-                </div>
-                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span class="lab-text-muted shrink-0 text-xs uppercase tracking-wide">
-                    {{ t('auth.account.activity.created_at') }}
-                  </span>
-                  <span class="text-(--lab-text-primary) min-w-56 flex-1 basis-56 text-sm">
-                    {{ formatDateTime(user.created_at) }}
-                  </span>
-                </div>
-              </div>
-              <LabNotify :text="actionError" tone="error" size="xs" />
-              <LabNotify :text="actionInfo" tone="success" size="xs" />
-              <p v-if="activityLoading" class="text-(--lab-text-muted) text-xs">Загрузка сессий и активности…</p>
-              <LabNotify v-else-if="activityError" :text="activityError" tone="error" size="xs" />
-              <LabNavTabs
-                v-else
-                v-model="activityTab"
-                :items="activityTabItems"
-                route-query-key="activity"
-                route-default-value="sessions">
-                <template #tab="{ item }">
-                  <span>{{ item.label }}</span>
-                  <span class="ml-1 opacity-80">
-                    {{
-                      item.value === 'sessions' ? groupedSessions.length
-                      : item.value === 'attempts' ? loginAttempts.length
-                      : securityEvents.length
-                    }}
-                  </span>
-                </template>
-                <template #panel-sessions>
-                  <div class="max-h-96 overflow-y-auto space-y-3">
-                    <article
-                      v-for="item in groupedSessions"
-                      :key="item.key"
-                      class="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p class="text-(--lab-text-primary) text-sm">{{ item.deviceLabel }}</p>
-                        <p class="text-(--lab-text-muted) text-xs">
-                          {{ item.ip }} ·
-                          {{
-                            item.mfaVerified ?
-                              t('auth.account.activity.mfa_verified')
-                            : t('auth.account.activity.mfa_unverified')
-                          }}
-                        </p>
-                        <p class="text-(--lab-text-muted) text-xs">
-                          {{ t('auth.account.activity.sessions_count', { count: item.count }) }} ·
-                          {{ t('auth.account.activity.last_activity') }}
-                          <LabRelativeTime :datetime="item.lastSeenAt" compact />
-                        </p>
-                      </div>
-                      <LabBaseButton
-                        variant="secondary"
-                        size="lg"
-                        button-class="text-xs"
-                        :disabled="item.revokableSessionIds.length === 0"
-                        @click="revokeSessionGroup(item)">
-                        {{
-                          item.revokableSessionIds.length === 0 ? t('auth.account.activity.current')
-                          : item.hasCurrent ? t('auth.account.activity.revoke_and_logout')
-                          : t('auth.account.activity.revoke')
-                        }}
-                      </LabBaseButton>
-                    </article>
-                  </div>
-                </template>
-                <template #panel-attempts>
-                  <div class="max-h-96 overflow-y-auto space-y-3">
-                    <article v-for="item in loginAttempts" :key="item.attempt_id">
-                      <div class="flex flex-wrap items-start justify-between gap-2">
-                        <p class="text-(--lab-text-primary) text-sm">{{ item.outcome }}</p>
-                        <p class="text-(--lab-text-muted) text-xs">
-                          <LabRelativeTime :datetime="item.created_at" compact />
-                        </p>
-                      </div>
-                      <p class="text-(--lab-text-muted) text-xs">
-                        {{ item.ip || '—' }} · оценка риска {{ item.risk_score }}
-                      </p>
-                      <p class="text-(--lab-text-muted) text-xs">
-                        {{ item.failure_reason || item.suspicious_reason || item.user_agent || '—' }}
-                      </p>
-                    </article>
-                  </div>
-                </template>
-                <template #panel-events>
-                  <div class="max-h-96 overflow-y-auto space-y-3">
-                    <article v-for="item in securityEvents" :key="item.event_id">
-                      <div class="flex flex-wrap items-start justify-between gap-2">
-                        <p class="text-(--lab-text-primary) text-sm">
-                          {{ item.event_type }}
-                          <span class="text-(--lab-text-muted)">· {{ item.severity }}</span>
-                        </p>
-                        <p class="text-(--lab-text-muted) text-xs">
-                          <LabRelativeTime :datetime="item.created_at" compact />
-                        </p>
-                      </div>
-                      <p class="text-(--lab-text-muted) text-xs">{{ item.ip || '—' }}</p>
-                      <p class="text-(--lab-text-muted) text-xs wrap-break-word">
-                        {{ JSON.stringify(item.payload || {}) }}
-                      </p>
-                    </article>
-                  </div>
-                </template>
-              </LabNavTabs>
-            </article>
-          </section>
+          <LazyAuthAccountSecurityPanel v-if="accountTab === 'security'" />
         </template>
       </LabNavTabs>
-      <LabCropperModal
+      <LazyLabCropperModal
         v-if="avatarCropDialog.open && avatarCropDialog.file"
         :file="avatarCropDialog.file"
         title="Кадрирование аватарки"
@@ -1572,7 +1227,7 @@
         :aspect-locked="true"
         @cancel="closeAvatarCropDialog"
         @confirm="onAvatarCropConfirm" />
-      <LabViewerImage
+      <LazyLabViewerImage
         v-model="avatarPreviewDialog.open"
         :items="avatarViewerItems"
         :initial-index="avatarPreviewDialog.index"
@@ -1602,7 +1257,7 @@
               @confirm="removeAvatarItem(activePreviewAvatarItem.id)" />
           </div>
         </template>
-      </LabViewerImage>
+      </LazyLabViewerImage>
     </template>
   </div>
 </template>

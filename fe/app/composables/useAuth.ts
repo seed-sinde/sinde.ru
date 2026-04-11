@@ -2,7 +2,6 @@ import { isMfaTicketExpiredError, MFA_TICKET_EXPIRED_MESSAGE } from '~/utils/aut
 import { hasAuthSessionHint, syncAuthSessionHint } from '~/utils/authSessionHint'
 import { emitAuthSyncEvent, subscribeAuthSyncEvents } from '~/utils/authSyncBus'
 type AuthApiResult<T> = ApiResponseWithData<T>
-const { json: useApiJson } = useAPI()
 let authSummaryRuntimeInitialized = false
 let authSummaryUserStream: EventSource | null = null
 let authSummaryAdminStream: EventSource | null = null
@@ -32,6 +31,7 @@ function toSharedAdminSummary(summary: UserSummary | null, current: AdminSummary
   }
 }
 export const useAuth = () => {
+  const { json: useApiJson } = useAPI()
   const nuxtApp = useNuxtApp()
   const user = useState<AuthUser | null>('auth-user', () => null)
   const loaded = useState<boolean>('auth-loaded', () => false)
@@ -459,6 +459,20 @@ export const useAuth = () => {
       { method: 'GET' }
     )
   }
+  const publicUserProfile = async (userId: string) => {
+    return await useApiJson<AuthApiResult<PublicUserProfileView>>(`/users/${userId}`, {
+      method: 'GET',
+      auth: {
+        allowAutoRefresh: true,
+        requiresSession: false
+      }
+    })
+  }
+  const adminUserDetail = async (userId: string) => {
+    return await useApiJson<AuthApiResult<AdminUserDetailView>>(`/auth/admin/users/${userId}`, {
+      method: 'GET'
+    })
+  }
   const userSummary = async () => {
     return await useApiJson<AuthApiResult<UserSummary>>('/auth/summary', {
       method: 'GET'
@@ -681,6 +695,8 @@ export const useAuth = () => {
     enableTwoFactor,
     disableTwoFactor,
     adminListUsers,
+    publicUserProfile,
+    adminUserDetail,
     userSummary,
     markUserSummaryRead,
     adminSummary,

@@ -90,6 +90,13 @@
       isCurrent ? 'text-(--lab-text-primary)' : 'text-(--lab-text-muted) hover:text-(--lab-text-primary)'
     ]
   }
+  const syncScrollEdgesSoon = () => {
+    if (import.meta.client) {
+      requestAnimationFrame(syncScrollEdges)
+      return
+    }
+    syncScrollEdges()
+  }
   const scrollCurrentItemIntoView = async () => {
     await nextTick()
     const container = containerRef.value
@@ -100,14 +107,14 @@
         block: 'nearest',
         inline: 'end'
       })
-      requestAnimationFrame(syncScrollEdges)
+      syncScrollEdgesSoon()
       return
     }
     container.scrollTo({
       left: container.scrollWidth,
       top: 0
     })
-    requestAnimationFrame(syncScrollEdges)
+    syncScrollEdgesSoon()
   }
   watch(
     () => [route.fullPath, normalizedItems.value.length],

@@ -1,5 +1,6 @@
 const kitchenFavoriteStatusInFlight = new Map<string, Promise<ApiResponseWithData<{ favorited: boolean }>>>()
-const { json: useApiJson } = useAPI()
+const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>['json']>[1]>) =>
+  useAPI().json<T>(path, options)
 export const getKitchenIngredients = async () => {
   return await useApiJson<ApiResponseWithData<{ categories: string[] }>>('/kitchen/ingredients', {
     method: 'GET'

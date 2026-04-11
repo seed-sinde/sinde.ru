@@ -487,6 +487,13 @@
     color: var(--lab-text-primary);
   }
 
+  .lab-button-ghost:focus,
+  .lab-button-ghost:focus-visible {
+    border-color: transparent;
+    background: var(--lab-bg-surface-subtle);
+    color: var(--lab-text-primary);
+  }
+
   .lab-button-plain {
     border-color: transparent;
     color: var(--lab-text-secondary);

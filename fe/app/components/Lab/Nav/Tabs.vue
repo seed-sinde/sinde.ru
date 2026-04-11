@@ -71,7 +71,7 @@
     }>(),
     {
       containerClass:
-        'space-y-3 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:mt-2 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:border-t max-sm:[&_.lab-tabs-root_.lab-tabs-root]:pt-2',
+        'max-sm:[&_.lab-tabs-root_.lab-tabs-root]:mt-2 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:border-t max-sm:[&_.lab-tabs-root_.lab-tabs-root]:pt-2',
       listClass: '',
       buttonClass: '',
       activeClass:
@@ -129,6 +129,13 @@
     return fallbackValue.value
   })
   const tabRefs = ref<Array<HTMLElement | null>>([])
+  const syncTabsScrollEdgesSoon = () => {
+    if (import.meta.client) {
+      requestAnimationFrame(syncTabsScrollEdges)
+      return
+    }
+    syncTabsScrollEdges()
+  }
   const hasElementRef = (value: Element | { $el?: Element } | null): value is { $el: Element } => {
     return Boolean(value && typeof value === 'object' && '$el' in value && value.$el)
   }
@@ -144,7 +151,7 @@
     await nextTick()
     const activeIndex = props.items.findIndex(item => item.value === activeValue.value)
     if (activeIndex < 0) {
-      requestAnimationFrame(syncTabsScrollEdges)
+      syncTabsScrollEdgesSoon()
       return
     }
     const activeTab = tabRefs.value[activeIndex]
@@ -154,7 +161,7 @@
         inline: 'nearest'
       })
     }
-    requestAnimationFrame(syncTabsScrollEdges)
+    syncTabsScrollEdgesSoon()
   }
   watch(
     routedValue,
@@ -254,7 +261,7 @@
           block: 'nearest',
           inline: 'nearest'
         })
-        requestAnimationFrame(syncTabsScrollEdges)
+        syncTabsScrollEdgesSoon()
         return
       }
     }

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+  const { localeCode } = useInterfacePreferences()
   const formatShortUuid = shortUuid
+  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
   const route = useRoute()
   const store = useTraitsStore()
   const { error: pasteError, pasteUuidAndNavigate } = usePasteUuid()
@@ -17,7 +19,7 @@
   if (!UUID_RE.test(traitUuid.value)) {
     throw createError({
       statusCode: 404,
-      message: 'Особенность не найдена'
+      message: copy.value.detail.notFound
     })
   }
   const pasteUuid = async () => await pasteUuidAndNavigate(uuid => `/traits/trait/${uuid}`)
@@ -48,18 +50,18 @@
   if (traitError.value && !traitData.value) {
     throw createError({
       statusCode: 500,
-      message: 'Не удалось загрузить особенность'
+      message: copy.value.detail.loadFailed
     })
   }
   if (!traitData.value) {
     throw createError({
       statusCode: 404,
-      message: 'Особенность не найдена'
+      message: copy.value.detail.notFound
     })
   }
   const trait = computed<Trait | null>(() => traitData.value ?? null)
   const traitKey = computed(() => String(trait.value?.t_key || '').trim())
-  const title = computed(() => `${traitKey.value || 'особенность'} · особенность`)
+  const title = computed(() => `${traitKey.value || copy.value.detail.titleFallback} · ${copy.value.detail.titleFallback}`)
   const { data: metaEntryData } = await useAsyncData<TraitKey | null>(
     () => `trait-meta:${traitUuid.value}:${traitKey.value}`,
     async () => {
@@ -84,7 +86,7 @@
     return raw && typeof raw === 'object' ? raw : {}
   })
   const metaType = computed(() => String(metaRaw.value.dataType || metaRaw.value.type || '').trim())
-  const dataTypeLabel = computed(() => getDataTypeLabel(metaType.value, 'не задан'))
+  const dataTypeLabel = computed(() => getDataTypeLabel(metaType.value, copy.value.detail.metaMissing))
   const metaInfoEntries = computed(() => {
     const raw = metaRaw.value || {}
     const items: Array<{ key: string; label: string; value: string }> = []
@@ -92,7 +94,7 @@
     if (typeof keyId === 'number' && Number.isFinite(keyId)) {
       items.push({
         key: 'keyId',
-        label: 'id ключа',
+        label: copy.value.detail.keyId,
         value: String(keyId)
       })
     }
@@ -122,12 +124,12 @@
   })
   usePageSeo({
     title,
-    description: () => `Полная карточка особенности ${traitKey.value}`
+    description: () => copy.value.detail.seoDescription.replace('{key}', traitKey.value)
   })
 </script>
 <template>
   <div v-if="trait" class="space-y-2">
-    <LabNavHeader :title :breadcrumb-items="[{ label: 'Особенности', to: '/traits' }]">
+    <LabNavHeader :title :breadcrumb-items="[{ label: copy.detail.breadcrumb, to: '/traits' }]">
       <template #actions="{ compact }">
         <Icon
           v-if="setUuid && !compact"
@@ -138,8 +140,8 @@
           v-if="setUuid && !compact"
           :to="`/traits/${setUuid}`"
           class="lab-text-muted min-w-0 truncate font-mono text-sm transition hover:text-(--lab-text-primary)"
-          :title="`Открыть набор ${setUuid}`">
-          {{ formatShortUuid(setUuid, 5) || '—' }}
+          :title="copy.detail.openSetTitle.replace('{uuid}', setUuid)">
+          {{ formatShortUuid(setUuid, 5) || copy.uuidButton.emptyUuid }}
         </NuxtLink>
         <Icon
           v-if="setUuid && !compact"
@@ -153,26 +155,26 @@
     <LabNotify :text="pasteError" tone="error" class-name="px-4" />
     <section class="space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-5">
       <article class="mx-auto max-w-5xl border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_84%,transparent)]">
-        <div class="border-b border-(--lab-border) px-4 py-3 sm:px-5">
+        <div class="border-b px-4 py-3 sm:px-5">
           <LabCopyBlock
             label="UUID"
             :value="trait.t_uuid"
-            title-idle="Скопировать UUID"
-            title-success="UUID скопирован"
-            title-error="Ошибка копирования" />
+            :title-idle="copy.detail.copyUuidIdle"
+            :title-success="copy.detail.copyUuidSuccess"
+            :title-error="copy.detail.copyUuidError" />
         </div>
-        <div class="border-b border-(--lab-border) px-4 py-4 sm:px-5">
+        <div class="border-b px-4 py-4 sm:px-5">
           <div
             class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
-                <h2 class="lab-text-primary text-lg font-semibold tracking-tight sm:text-2xl">{{ trait.t_key }}</h2>
+                <h2 class="text-lg font-semibold tracking-tight sm:text-2xl">{{ trait.t_key }}</h2>
                 <span class="lab-text-soft text-lg sm:text-2xl">:</span>
                 <div class="min-w-0 flex-1">
-                  <div class="lab-text-primary flex items-center gap-2 text-base sm:text-xl">
+                  <div class="flex items-center gap-2 text-base sm:text-xl">
                     <span
                       v-if="colorInfo"
-                      class="inline-block h-2.5 w-2.5 shrink-0 self-center rounded-full border border-(--lab-border)"
+                      class="inline-block h-2.5 w-2.5 shrink-0 self-center rounded-full border"
                       :style="{ backgroundColor: colorInfo.css }"
                       aria-hidden="true" />
                     <span class="min-w-0 whitespace-pre-wrap wrap-break-word leading-relaxed">
@@ -188,7 +190,7 @@
               </p>
             </div>
             <div class="w-full max-w-lg space-y-2 lg:w-80 lg:flex-none">
-              <p class="lab-text-muted text-xs uppercase tracking-wide">Параметры ключа</p>
+              <p class="lab-text-muted text-xs uppercase tracking-wide">{{ copy.detail.keyParams }}</p>
               <div v-if="metaInfoEntries.length" class="flex flex-wrap gap-2 text-xs">
                 <span
                   v-for="entry in metaInfoEntries"
@@ -198,7 +200,7 @@
                   <span class="lab-text-secondary">{{ entry.value }}</span>
                 </span>
               </div>
-              <p v-else class="lab-text-primary text-sm sm:text-base">—</p>
+              <p v-else class="text-sm sm:text-base">—</p>
             </div>
           </div>
         </div>
