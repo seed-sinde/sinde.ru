@@ -115,21 +115,14 @@
   const frameClass = computed(() => [
     'box-border shrink-0 p-(--periodic-highlight-reserve) [--periodic-cell-width:var(--periodic-mobile-cell-width)] [--periodic-cell-height:var(--periodic-mobile-cell-height)] [--periodic-series-gap-height:0rem] [--periodic-row-label-size:0px] [--periodic-column-label-size:0px] w-[calc(var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] h-[calc(var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))]',
     props.compact ?
-      'md:[--periodic-row-label-size:1rem] md:[--periodic-column-label-size:1rem] md:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] md:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.2rem] lg:[--periodic-compact-cell-width:1.65rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.45rem)] xl:[--periodic-gap:0.24rem] xl:[--periodic-compact-cell-width:1.75rem] xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))] 2xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))]'
-    : 'sm:[--periodic-row-label-size:1.5rem] sm:[--periodic-column-label-size:1.5rem] sm:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] sm:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.35rem] lg:[--periodic-compact-cell-width:2.1rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.8rem)] xl:[--periodic-gap:0.4rem] xl:[--periodic-compact-cell-width:2.2rem] 2xl:[--periodic-full-cell-height:4.75rem] 2xl:[--periodic-cell-height:var(--periodic-full-cell-height)]',
+      'lg:[--periodic-row-label-size:1rem] lg:[--periodic-column-label-size:1rem] lg:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] lg:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.2rem] lg:[--periodic-compact-cell-width:1.65rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.45rem)] xl:[--periodic-gap:0.24rem] xl:[--periodic-compact-cell-width:1.75rem] xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))] 2xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))]'
+    : 'lg:[--periodic-row-label-size:1.5rem] lg:[--periodic-column-label-size:1.5rem] lg:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] lg:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.35rem] lg:[--periodic-compact-cell-width:2.1rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.8rem)] xl:[--periodic-gap:0.4rem] xl:[--periodic-compact-cell-width:2.2rem] 2xl:[--periodic-full-cell-height:4.75rem] 2xl:[--periodic-cell-height:var(--periodic-full-cell-height)]',
     props.preserveCompactCellWidth ?
       props.compactScrollBreakpoint === 'md' ?
         'md:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] lg:w-full'
       : 'lg:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))]'
     : 'lg:min-h-0 lg:min-w-0 lg:w-full'
   ])
-  const layoutStyle = computed(() => ({
-    gridTemplateColumns: 'var(--periodic-row-label-size) minmax(0, 1fr)',
-    gridTemplateRows: 'var(--periodic-column-label-size) minmax(0, 1fr)'
-  }))
-  const cornerSpacerClass = computed(() => (props.compact ? 'hidden md:block' : 'hidden sm:block'))
-  const columnHeaderClass = computed(() => (props.compact ? 'hidden md:grid' : 'hidden sm:grid'))
-  const rowHeaderClass = computed(() => (props.compact ? 'hidden md:grid' : 'hidden sm:grid'))
   const tableColumnHeaderStyle = computed(() => ({
     display: 'grid',
     gridTemplateColumns: `repeat(${groupHeaders.value.length}, minmax(0, 1fr))`
@@ -142,7 +135,6 @@
     gridColumn: `${getDisplayColumn(xpos)} / span 1`,
     gridRow: `${getDisplayRow(ypos)} / span 1`
   })
-
   const colorHexToRgba = (hexColor: string, alpha: number) => {
     const normalized = String(hexColor || '').replace('#', '')
     if (!/^[0-9a-f]{6}$/i.test(normalized)) {
@@ -217,9 +209,10 @@
 <template>
   <div class="flex min-h-0 w-full max-w-full items-start justify-start overflow-x-auto overflow-y-hidden">
     <div :class="frameClass" :style="frameStyle">
-      <div class="grid h-full w-full gap-(--periodic-gap)" :style="layoutStyle">
-        <div :class="cornerSpacerClass" aria-hidden="true"></div>
-        <div :class="['gap-(--periodic-gap) text-center', columnHeaderClass]" :style="tableColumnHeaderStyle">
+      <div
+        class="grid h-full w-full grid-cols-1 grid-rows-1 gap-(--periodic-gap) lg:grid-cols-[var(--periodic-row-label-size)_minmax(0,1fr)] lg:grid-rows-[var(--periodic-column-label-size)_minmax(0,1fr)]">
+        <div class="hidden lg:block" aria-hidden="true"></div>
+        <div class="hidden gap-(--periodic-gap) text-center lg:grid" :style="tableColumnHeaderStyle">
           <div
             v-for="group in groupHeaders"
             :key="`group-header:${group}`"
@@ -228,7 +221,7 @@
             {{ group }}
           </div>
         </div>
-        <div :class="['h-full min-h-0 gap-(--periodic-gap) text-right', rowHeaderClass]" :style="tableRowHeaderStyle">
+        <div class="hidden h-full min-h-0 gap-(--periodic-gap) text-right lg:grid" :style="tableRowHeaderStyle">
           <div
             v-for="(period, index) in periodHeaders"
             :key="`period-header:${visiblePeriodRows[index]}`"

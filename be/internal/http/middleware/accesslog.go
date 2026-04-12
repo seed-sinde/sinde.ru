@@ -3,12 +3,13 @@ package middleware
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gofiber/fiber/v3"
 	"log"
 	"os"
-	"sinde.ru/internal/http/responses"
 	"strings"
 	"time"
+
+	"github.com/gofiber/fiber/v3"
+	"sinde.ru/internal/http/responses"
 )
 
 const (
@@ -37,7 +38,7 @@ func AccessLog() fiber.Handler {
 				sizePart = ansiBrightMagenta + sizePart + ansiReset
 			}
 		}
-		line := fmt.Sprintf("%s %s - %s %s", time.Now().Format("02.01 15:04:05"), statusPart, methodPart, pathPart)
+		line := fmt.Sprintf("%s %s %s %s", time.Now().Format("02.01 15:04:05"), statusPart, methodPart, pathPart)
 		if sizePart != "" {
 			line += " " + sizePart
 		}
