@@ -942,12 +942,6 @@
         </div>
       </section>
       <section v-show="adminTab === 'moderation'" :class="adminSectionClass">
-        <div class="space-y-1">
-          <div class="space-y-1">
-            <h2 class="text-base font-semibold text-zinc-100">Модерация рецептов</h2>
-            <p :class="adminMetaTextClass">Фильтрация по статусу, смена владельца и решение по публикации.</p>
-          </div>
-        </div>
         <div class="flex flex-wrap gap-2">
           <LabBaseButton
             v-for="item in moderationStatusStatItems"

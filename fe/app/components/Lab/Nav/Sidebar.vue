@@ -56,8 +56,7 @@
           :class="animate ? 'transition-opacity duration-200' : ''">
           <span class="bg-(--lab-border) h-px flex-1"></span>
           <span
-            class="border-(--lab-bg-canvas) absolute left-1/2 top-1/2 inline-flex h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border"
-            :class="devMarkerClass"></span>
+            class="border-(--lab-bg-canvas) absolute left-1/2 top-1/2 inline-flex h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-(--lab-warning) animate-pulse"></span>
         </div>
         <div v-else-if="collapsed" class="bg-(--lab-border) mx-1 h-px"></div>
         <div
@@ -164,9 +163,7 @@
     if (target === '/') return current === '/'
     return current === target || current.startsWith(`${target}/`)
   }
-  const primaryItems = computed(() => items.value.filter(item => !item.isDev && !item.group))
-  const toolItems = computed(() => items.value.filter(item => !item.isDev && item.group === 'tools'))
-  const knowledgeItems = computed(() => items.value.filter(item => !item.isDev && item.group === 'knowledge'))
+  const primaryItems = computed(() => items.value.filter(item => !item.isDev))
   const devItems = computed(() => items.value.filter(item => item.isDev))
   const sections = computed(() =>
     [
@@ -174,20 +171,6 @@
         key: 'primary',
         label: '',
         items: primaryItems.value,
-        muted: false,
-        marker: false
-      },
-      {
-        key: 'tools',
-        label: t('nav.tools'),
-        items: toolItems.value,
-        muted: false,
-        marker: false
-      },
-      {
-        key: 'knowledge',
-        label: t('nav.knowledge'),
-        items: knowledgeItems.value,
         muted: false,
         marker: false
       },
@@ -200,7 +183,6 @@
       }
     ].filter(section => section.items.length)
   )
-  const devMarkerClass = 'bg-(--lab-warning) animate-pulse'
   const navItemClass = (itemTo: string) => [
     'text-(--lab-text-secondary) hover:bg-(--lab-bg-surface-hover) hover:text-(--lab-text-primary) focus-visible:bg-(--lab-bg-surface-hover) focus-visible:text-(--lab-text-primary) flex h-8 w-full items-center justify-start overflow-hidden px-0 select-none transition-colors',
     isItemActive(itemTo) ? 'bg-[color-mix(in_srgb,var(--lab-accent)_16%,transparent)] text-(--lab-accent)' : ''

@@ -19,7 +19,7 @@
 ```bash
 cd fe
 bun install
-bun run check
+bun run typecheck
 ```
 
 ## Backend

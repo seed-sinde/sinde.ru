@@ -75,7 +75,9 @@ jobs:
 
       - name: Run frontend checks
         working-directory: fe
-        run: bun run check
+        run: |
+          bun run typecheck
+          bun run build
 
   release:
     if: ${{ needs.guard.outputs.enabled == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}

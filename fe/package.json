@@ -4,16 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "nuxt dev",
-    "test": "VITEST=1 NODE_ENV=test vitest",
-    "test:run": "VITEST=1 NODE_ENV=test vitest run",
     "typecheck": "nuxt typecheck",
     "build": "nuxt build",
-    "check": "bun run typecheck && bun run build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "start": "bun run .output/server/index.mjs",
-    "upd": "bunx npm-check-updates"
+    "upd": "bunx npm-check-updates",
+    "test": "VITEST=1 NODE_ENV=test vitest",
+    "test:run": "VITEST=1 NODE_ENV=test vitest run"
   },
   "dependencies": {
     "@nuxt/fonts": "0.14.0",

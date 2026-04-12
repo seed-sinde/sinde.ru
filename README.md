@@ -74,7 +74,6 @@ Frontend:
 - `cd fe && bun run dev` — локальный запуск frontend;
 - `cd fe && bun run typecheck` — проверка типов;
 - `cd fe && bun run build` — production build;
-- `cd fe && bun run check` — полный frontend-check.
 
 ## Структура
 

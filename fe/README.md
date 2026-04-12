@@ -33,8 +33,7 @@ bun install
 - `bun run preview` — локальный просмотр production build;
 - `bun run start` — запуск `.output/server/index.mjs` через Bun;
 - `bun run generate` — генерация статического вывода;
-- `bun run check` — полный frontend-check: `typecheck` + `build`;
-- `bun run package-upd` — обновление зависимостей через `npm-check-updates`.
+- `bun run upd` — показать список обновлений зависимостей через `npm-check-updates`.
 
 ## Переменные окружения
 

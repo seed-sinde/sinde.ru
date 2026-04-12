@@ -42,9 +42,6 @@ export const normalizeThemePreference = (raw: unknown): ThemePreference => {
 }
 export const INTERFACE_MESSAGES = {
   ru: {
-    'nav.tools': 'Инструменты',
-    'nav.knowledge': 'Знания',
-    'nav.not_ready': 'Не готово',
     'nav.home': 'На главную',
     'nav.expand_menu': 'Раскрыть меню',
     'nav.collapse_menu': 'Свернуть меню',
@@ -60,7 +57,6 @@ export const INTERFACE_MESSAGES = {
     'sidebar.traits': 'Особенности',
     'sidebar.kitchen': 'Кухня',
     'sidebar.wiki': 'Вики',
-    'sidebar.impact': 'Влияние',
     'sidebar.perception': 'Восприятие',
     'sidebar.experience': 'Опыт',
     'sidebar.careers': 'Карьера',
@@ -275,9 +271,6 @@ export const INTERFACE_MESSAGES = {
     'viewer.scale': 'масштаб:'
   },
   en: {
-    'nav.tools': 'Tools',
-    'nav.knowledge': 'Knowledge',
-    'nav.not_ready': 'Not ready',
     'nav.home': 'Home',
     'nav.expand_menu': 'Expand menu',
     'nav.collapse_menu': 'Collapse menu',
@@ -293,7 +286,6 @@ export const INTERFACE_MESSAGES = {
     'sidebar.traits': 'Traits',
     'sidebar.kitchen': 'Kitchen',
     'sidebar.wiki': 'Wiki',
-    'sidebar.impact': 'Impact',
     'sidebar.perception': 'Perception',
     'sidebar.experience': 'Experience',
     'sidebar.careers': 'Careers',
@@ -508,9 +500,6 @@ export const INTERFACE_MESSAGES = {
     'viewer.scale': 'scale:'
   },
   ch: {
-    'nav.tools': '工具',
-    'nav.knowledge': '知识',
-    'nav.not_ready': '尚未完成',
     'nav.home': '首页',
     'nav.expand_menu': '展开菜单',
     'nav.collapse_menu': '收起菜单',
@@ -526,7 +515,6 @@ export const INTERFACE_MESSAGES = {
     'sidebar.traits': '特征',
     'sidebar.kitchen': '厨房',
     'sidebar.wiki': '百科',
-    'sidebar.impact': '影响',
     'sidebar.perception': '感知',
     'sidebar.experience': '经验',
     'sidebar.careers': '职业',
@@ -736,9 +724,6 @@ export const INTERFACE_MESSAGES = {
     'viewer.scale': '缩放：'
   },
   jp: {
-    'nav.tools': 'ツール',
-    'nav.knowledge': '知識',
-    'nav.not_ready': '未完成',
     'nav.home': 'ホーム',
     'nav.expand_menu': 'メニューを開く',
     'nav.collapse_menu': 'メニューを閉じる',
@@ -754,7 +739,6 @@ export const INTERFACE_MESSAGES = {
     'sidebar.traits': '特性',
     'sidebar.kitchen': 'キッチン',
     'sidebar.wiki': 'Wiki',
-    'sidebar.impact': 'インパクト',
     'sidebar.perception': '知覚',
     'sidebar.experience': '経験',
     'sidebar.careers': 'キャリア',
