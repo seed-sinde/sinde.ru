@@ -139,7 +139,7 @@
         <div class="grid gap-4 xl:grid-cols-5">
           <div class="space-y-4 xl:col-span-3">
             <div
-              class="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-[11px] font-medium tracking-wide text-zinc-300">
+              class="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-xs font-medium tracking-wide text-zinc-300">
               sinde • мастерская процессов и изделий
             </div>
             <div class="space-y-3">
@@ -156,7 +156,7 @@
                 v-for="item in coreSignals"
                 :key="item.label"
                 class="rounded-2xl border border-zinc-800 bg-zinc-900/65 px-4 py-4">
-                <div class="text-[11px] uppercase tracking-[0.08em] text-zinc-500">{{ item.label }}</div>
+                <div class="text-xs uppercase tracking-[0.08em] text-zinc-500">{{ item.label }}</div>
                 <p class="mt-2 text-sm leading-6 text-zinc-200">{{ item.value }}</p>
               </article>
             </div>
@@ -164,7 +164,7 @@
           <div class="space-y-3 xl:col-span-2">
             <article class="rounded-2xl border border-zinc-800 bg-zinc-900/65 p-4">
               <div
-                class="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-200">
+                class="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200">
                 Что даёт раздел
               </div>
               <p class="mt-3 text-sm leading-6 text-zinc-300">
@@ -174,7 +174,7 @@
             </article>
             <article class="rounded-2xl border border-zinc-800 bg-zinc-900/65 p-4">
               <div
-                class="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] font-medium text-sky-200">
+                class="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-200">
                 Как использовать
               </div>
               <p class="mt-3 text-sm leading-6 text-zinc-400">

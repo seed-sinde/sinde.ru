@@ -4,7 +4,7 @@
     role="checkbox"
     :aria-checked="selected ? 'true' : 'false'"
     tabindex="0"
-    class="group cursor-pointer select-none border p-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--lab-focus-ring)"
+    class="lab-focus group cursor-pointer select-none border p-3 transition"
     :class="
       selected
         ? 'border-[color-mix(in_srgb,var(--lab-accent)_52%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))]'
@@ -53,7 +53,7 @@
           </div>
           <NuxtLink
             :to="detailLinkTo"
-            class="shrink-0 text-xs uppercase tracking-[0.14em] text-(--lab-text-muted) transition hover:text-(--lab-accent) focus-visible:outline-none focus-visible:text-(--lab-accent)"
+            class="lab-focus shrink-0 text-xs uppercase tracking-[0.14em] text-(--lab-text-muted) transition hover:text-(--lab-accent) focus-visible:text-(--lab-accent)"
             :aria-label="copy.card.openAria.replace('{key}', trait.t_key)"
             :title="copy.card.openTitle"
             @click.stop

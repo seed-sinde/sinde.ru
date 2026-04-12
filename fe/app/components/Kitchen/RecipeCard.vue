@@ -67,9 +67,9 @@
         v-if="showFavorite && !coverSrc"
         :button-class="[
           'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
-          favorite
-            ? 'border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500'
-            : 'border-zinc-700 bg-zinc-900 text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
+          favorite ?
+            'border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500'
+          : 'border-zinc-700 bg-zinc-900 text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
         ]"
         :aria-label="
           favorite ? `Убрать рецепт ${recipe.title} из избранного` : `Добавить рецепт ${recipe.title} в избранное`
@@ -83,8 +83,8 @@
         <NuxtLink :to="to" class="block min-w-0 text-base font-semibold text-zinc-100 hover:text-zinc-50">
           <span class="block min-w-0 truncate">{{ recipe.title }}</span>
         </NuxtLink>
-        <p v-if="showModeration && moderationText" class="text-[11px] text-zinc-500">{{ moderationText }}</p>
-        <p v-if="showModeration && moderationNote" class="text-[11px] text-amber-300/90">
+        <p v-if="showModeration && moderationText" class="text-xs text-zinc-500">{{ moderationText }}</p>
+        <p v-if="showModeration && moderationNote" class="text-xs text-amber-300/90">
           Причина отклонения: {{ moderationNote }}
         </p>
         <div v-if="canManage" class="flex flex-wrap gap-2">
@@ -114,7 +114,7 @@
       <span
         v-for="ing in recipe.ingredients.slice(0, 8)"
         :key="`${recipe.id}:${ing.name}`"
-        class="border border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-200">
+        class="border border-zinc-700 px-2 py-0.5 text-xs text-zinc-200">
         {{ ing.name }}
       </span>
     </div>

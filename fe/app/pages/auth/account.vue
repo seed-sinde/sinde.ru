@@ -1103,7 +1103,7 @@
                         class="inline-grid grid-cols-[max-content_max-content] items-start gap-1.5">
                         <button
                           type="button"
-                          class="text-(--lab-text-primary) border-b border-transparent focus-visible:ring-(--lab-accent) inline-flex items-center bg-transparent py-0 text-left text-xl font-semibold outline-none transition-colors ring-0"
+                          class="lab-focus text-(--lab-text-primary) inline-flex items-center border-b border-transparent bg-transparent py-0 text-left text-xl font-semibold transition-colors"
                           @click="editingDisplayName = true">
                           <span>{{ displayNameText }}</span>
                         </button>
@@ -1120,7 +1120,7 @@
                               icon-only
                               variant="ghost"
                               size="sm"
-                              button-class="h-8 w-8 border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover) ring-0 focus:ring-0 focus-visible:ring-0"
+                              button-class="h-8 w-8 border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)"
                               aria-label="Статус подписки" />
                           </template>
                         </LabBaseTooltip>
@@ -1141,7 +1141,7 @@
                             data-lpignore="true"
                             data-1p-ignore="true"
                             :size="Math.max((profileForm.display_name || displayNameText).length, 1)"
-                            class="text-(--lab-text-primary) border-b focus-visible:ring-(--lab-accent) appearance-none w-auto bg-transparent p-0 text-xl font-semibold outline-none ring-0"
+                            class="lab-focus text-(--lab-text-primary) w-auto appearance-none border-b bg-transparent p-0 text-xl font-semibold"
                             :class="profileInputError ? 'text-(--lab-danger)' : ''"
                             placeholder="Имя профиля"
                             @keydown.enter="submitDisplayNameFromKeyboard"

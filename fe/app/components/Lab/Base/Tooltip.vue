@@ -4,18 +4,24 @@
   const props = withDefaults(
     defineProps<{
       text?: string
+      triggerText?: string
       align?: FloatingPanelAlign
       side?: FloatingPanelSide
       panelClass?: string
+      triggerClass?: string
+      underlineTrigger?: boolean
       offset?: number
       crossAxisOffset?: number
       viewportPadding?: number
     }>(),
     {
       text: '',
+      triggerText: '',
       align: 'left',
       side: 'top',
       panelClass: '',
+      triggerClass: '',
+      underlineTrigger: false,
       offset: 8,
       crossAxisOffset: 10,
       viewportPadding: 12
@@ -38,6 +44,12 @@
     })
 
   const hasContent = computed(() => Boolean(String(props.text || '').trim()))
+  const hasTriggerText = computed(() => Boolean(String(props.triggerText || '').trim()))
+  const resolvedTriggerClass = computed(() => [
+    'inline-flex items-center',
+    props.underlineTrigger && 'border-b border-dotted',
+    props.triggerClass
+  ])
   const show = async () => {
     if (!hasContent.value) return
     open.value = true
@@ -87,7 +99,13 @@
     @mouseleave="hide"
     @focusin="show"
     @focusout="hide">
-    <slot name="trigger" :open="open" :show="show" :hide="hide" :side="resolvedSide" :align="resolvedAlign" />
+    <span
+      v-if="$slots.trigger || hasTriggerText"
+      :class="resolvedTriggerClass">
+      <slot name="trigger" :open="open" :show="show" :hide="hide" :side="resolvedSide" :align="resolvedAlign">
+        {{ triggerText }}
+      </slot>
+    </span>
   </span>
   <Teleport to="body">
     <transition
@@ -102,7 +120,7 @@
         ref="panelRef"
         :style="panelStyle"
         :class="[
-          'lab-dropdown-panel pointer-events-none z-60 max-w-64 rounded-2xl px-2.5 py-1.5 text-xs leading-5',
+          'lab-dropdown-panel pointer-events-none z-60 max-w-64 px-2.5 py-1.5 text-xs leading-5',
           panelClass
         ]">
         <slot>

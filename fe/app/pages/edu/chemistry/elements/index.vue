@@ -117,11 +117,6 @@
     if (selectedCategory.value) return category === selectedCategory.value
     return Boolean(normalizedSearchQuery.value)
   }
-  const dimmedElementNumbers = computed(() =>
-    periodicTableElements.value
-      .filter(element => isElementDimmed(element.number, element.category))
-      .map(element => element.number)
-  )
   const highlightedElementNumbers = computed(() =>
     periodicTableElements.value
       .filter(element => isElementHighlighted(element.number, element.category))
@@ -136,7 +131,7 @@
   })
 </script>
 <template>
-  <div class="space-y-3">
+  <div>
     <div ref="pageHeaderRef">
       <LabNavHeader
         :title
@@ -147,10 +142,9 @@
         ]" />
     </div>
     <section
-      class="min-h-0 h-auto overflow-auto max-h-[calc(100dvh-var(--periodic-header-height,72px)-1rem)] sm:mx-6 sm:border sm:bg-(--lab-bg-surface-muted) sm:max-h-[calc(100dvh-var(--periodic-header-height,0px)-1.5rem)]"
-      :class="isMobileViewport ? 'mx-0 border-0 bg-transparent' : 'mx-3'"
+      class="min-h-0 h-auto overflow-auto max-h-[calc(100dvh-var(--periodic-header-height,72px)-1rem)] sm:bg-(--lab-bg-surface-muted) sm:max-h-[calc(100dvh-var(--periodic-header-height,0px)-1.5rem)]"
       :style="tableShellStyle">
-      <div :class="isMobileViewport ? 'px-1 py-1' : 'px-2 py-2 sm:px-3 sm:py-3'">
+      <div :class="isMobileViewport ? 'p-1' : 'p-2'">
         <div
           class="bg-(--lab-bg-overlay) sticky top-0 z-20 border-b px-2 py-2 lg:hidden"
           :class="isMobileViewport ? '-mx-1 px-1.5' : '-mx-2'">
@@ -175,16 +169,13 @@
         </div>
         <ChemistryPeriodicTableGrid
           :elements="periodicTableElements"
-          :dimmed-element-numbers="dimmedElementNumbers"
           :highlighted-element-numbers="highlightedElementNumbers"
-          :show-group-headers="!isMobileViewport"
-          :show-period-headers="!isMobileViewport"
           use-theme-card-colors
           interactive
           @element-click="onElementClick">
           <template #grid-overlay>
             <div
-              class="relative z-10 hidden border px-2 py-2 lg:block col-[3/span_10] row-[1/span_3]"
+              class="relative z-10 hidden border p-2 lg:block col-[3/span_10] row-[1/span_3]"
               :class="categoryPanelToneClass">
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-44 shrink-0">

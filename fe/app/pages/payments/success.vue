@@ -150,14 +150,14 @@
           size="lg"
           :label="t('payments.lookup.retry')"
           :button-style="{ borderWidth: '0px' }"
-          button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+          button-class=""
           @click="loadOrder(true)" />
         <LabBaseButton
           variant="plain"
           size="lg"
           :label="t('payments.lookup.back')"
           :button-style="{ borderWidth: '0px' }"
-          button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+          button-class=""
           @click="navigateTo('/payments')" />
       </div>
     </LabBaseSection>
@@ -183,7 +183,7 @@
               size="lg"
               :label="t('payments.lookup.continue')"
               :button-style="{ borderWidth: '0px' }"
-              button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+              button-class=""
               @click="navigateTo(nextPath)" />
 
             <LabBaseButton
@@ -192,7 +192,7 @@
               size="lg"
               :label="t('payments.lookup.account')"
               :button-style="{ borderWidth: '0px' }"
-              button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+              button-class=""
               @click="navigateTo('/account')" />
 
             <LabBaseButton
@@ -203,7 +203,7 @@
               :loading-label="t('payments.lookup.retrying')"
               :label="t('payments.lookup.retry_short')"
               :button-style="{ borderWidth: '0px' }"
-              button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+              button-class=""
               @click="loadOrder(true)" />
 
             <LabBaseButton
@@ -211,7 +211,7 @@
               size="lg"
               :label="t('payments.lookup.back')"
               :button-style="{ borderWidth: '0px' }"
-              button-class="focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+              button-class=""
               @click="navigateTo('/payments')" />
           </div>
         </div>

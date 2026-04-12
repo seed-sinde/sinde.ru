@@ -4,7 +4,6 @@ const SIDEBAR_TRANSLATION_KEYS = {
   '/traits': 'sidebar.traits',
   '/kitchen': 'sidebar.kitchen',
   '/edu': 'sidebar.wiki',
-  '/dev': 'sidebar.dev',
   '/impact': 'sidebar.impact',
   '/perception': 'sidebar.perception',
   '/experience': 'sidebar.experience',

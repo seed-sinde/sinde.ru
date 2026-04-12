@@ -12,7 +12,10 @@
         size="sm"
         icon-only
         variant="ghost"
-        :button-class="['text-(--lab-text-primary)', isCollapsedHoverToggle ? 'cursor-ew-resize' : 'cursor-pointer']"
+        :button-class="[
+          'text-(--lab-text-primary) rounded-full',
+          isCollapsedHoverToggle ? 'cursor-ew-resize' : 'cursor-pointer'
+        ]"
         :aria-label="primaryButtonAriaLabel"
         @mouseenter="isPrimaryControlHovered = true"
         @mouseleave="isPrimaryControlHovered = false"
@@ -34,7 +37,7 @@
         icon-only
         variant="ghost"
         :button-class="[
-          'text-(--lab-text-primary) absolute right-1 cursor-ew-resize',
+          'text-(--lab-text-primary) rounded-full absolute right-1 cursor-ew-resize',
           animate ? 'transition-[opacity,background-color] duration-200' : '',
           collapsed ? 'pointer-events-none opacity-0' : 'opacity-100'
         ]"

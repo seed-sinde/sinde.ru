@@ -17,6 +17,7 @@ func TestNormalizeStorageKey(t *testing.T) {
 		{raw: " users/avatars/test.webp ", want: "users/avatars/test.webp"},
 		{raw: `users\avatars\test.webp`, want: "users/avatars/test.webp"},
 		{raw: "/users/avatars/test.webp", want: "users/avatars/test.webp"},
+		{raw: "chemistry/minerals/preview/Agardite-(Y)_R070649_18f95da7dff2a83596777bf1b52b.webp", want: "chemistry/minerals/preview/Agardite-(Y)_R070649_18f95da7dff2a83596777bf1b52b.webp"},
 		{raw: "../secret", want: ""},
 		{raw: "users/../../secret", want: ""},
 		{raw: "users/<bad>.webp", want: ""},

@@ -84,7 +84,7 @@
   const inputClassList = computed(() => {
     const stateClass = resolvedInvalid.value ? 'lab-control-invalid' : ''
     const overrideClass = normalizeClassValue(props.inputClass)
-    return twMerge('lab-control', stateClass, externalClass.value, overrideClass)
+    return twMerge('lab-control lab-focus', stateClass, externalClass.value, overrideClass)
   })
   const resolvedValue = computed(() => {
     if (props.modelValue === null || props.modelValue === undefined) return ''

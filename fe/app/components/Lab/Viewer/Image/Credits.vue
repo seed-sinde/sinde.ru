@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasContent" class="mt-2 space-y-0.5 text-[11px] leading-4 text-(--lab-text-muted)">
+  <div v-if="hasContent" class="mt-2 space-y-0.5 text-xs leading-4 text-(--lab-text-muted)">
     <p class="line-clamp-2 space-x-2">
       <span v-if="title" class="text-sm font-semibold text-(--lab-text-primary) sm:text-base">
         {{ title }}

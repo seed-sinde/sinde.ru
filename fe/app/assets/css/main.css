@@ -133,6 +133,41 @@
 }
 
 @layer components {
+  .lab-focus {
+    @apply outline-none transition-[box-shadow,border-color] duration-150;
+  }
+
+  .lab-focus:focus,
+  .lab-focus:focus-visible {
+    border-color: var(--lab-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--lab-accent) 28%, transparent),
+      0 0 0 4px var(--lab-focus-ring);
+  }
+
+  .lab-focus:disabled,
+  .lab-focus[aria-disabled='true'] {
+    box-shadow: none;
+  }
+
+  .lab-focus-peer {
+    @apply transition-[box-shadow,border-color] duration-150;
+  }
+
+  .peer:focus + .lab-focus-peer,
+  .peer:focus-visible + .lab-focus-peer,
+  .peer:focus ~ .lab-focus-peer,
+  .peer:focus-visible ~ .lab-focus-peer {
+    border-color: var(--lab-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--lab-accent) 28%, transparent),
+      0 0 0 4px var(--lab-focus-ring);
+  }
+
+  .peer:disabled + .lab-focus-peer,
+  .peer[aria-disabled='true'] + .lab-focus-peer,
+  .peer:disabled ~ .lab-focus-peer,
+  .peer[aria-disabled='true'] ~ .lab-focus-peer {
+    box-shadow: none;
+  }
   .lab-text-primary {
     color: var(--lab-text-primary);
   }
@@ -189,11 +224,6 @@
   .lab-control:hover:enabled {
     border-color: var(--lab-border-strong);
     background: var(--lab-bg-control-hover);
-  }
-
-  .lab-control:focus,
-  .lab-control:focus-visible {
-    border-color: var(--lab-accent);
   }
 
   .lab-control:disabled {
@@ -342,18 +372,10 @@
   }
 
   .lab-button {
-    @apply inline-flex shrink-0 items-center justify-center gap-2 border outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    @apply text-nowrap inline-flex shrink-0 items-center justify-center gap-2 border outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-60;
     border-color: transparent;
     background: transparent;
     color: var(--lab-text-primary);
-  }
-
-  .lab-button:focus,
-  .lab-button:focus-visible {
-    border-color: var(--lab-text-primary);
-    background: var(--lab-bg-surface-hover);
-    color: var(--lab-text-primary);
-    outline: none;
   }
 
   .lab-button:disabled {
@@ -374,13 +396,6 @@
     background: var(--lab-accent-hover);
   }
 
-  .lab-button-primary:focus,
-  .lab-button-primary:focus-visible {
-    border-color: rgb(125 211 252);
-    background: rgb(8 145 178);
-    color: rgb(8 8 10);
-  }
-
   html.theme-light .lab-button-primary {
     border-color: rgb(37 99 235);
     background: rgb(37 99 235);
@@ -390,13 +405,6 @@
   html.theme-light .lab-button-primary:hover:enabled {
     border-color: rgb(29 78 216);
     background: rgb(29 78 216);
-  }
-
-  html.theme-light .lab-button-primary:focus,
-  html.theme-light .lab-button-primary:focus-visible {
-    border-color: rgb(14 116 144);
-    background: rgb(34 211 238);
-    color: rgb(8 47 73);
   }
 
   .lab-button-secondary {
@@ -422,13 +430,6 @@
     background: var(--lab-danger-hover);
   }
 
-  .lab-button-danger:focus,
-  .lab-button-danger:focus-visible {
-    border-color: rgb(253 224 71);
-    background: rgb(250 204 21);
-    color: rgb(67 20 7);
-  }
-
   html.theme-light .lab-button-danger {
     border-color: color-mix(in srgb, var(--lab-danger) 38%, transparent);
     background: color-mix(in srgb, var(--lab-danger) 14%, white);
@@ -452,13 +453,6 @@
     background: var(--lab-success-hover);
   }
 
-  .lab-button-success:focus,
-  .lab-button-success:focus-visible {
-    border-color: rgb(253 224 71);
-    background: rgb(250 204 21);
-    color: rgb(20 83 45);
-  }
-
   .lab-button-info {
     border-color: var(--lab-info);
     background: var(--lab-info);
@@ -470,26 +464,12 @@
     background: var(--lab-info-hover);
   }
 
-  .lab-button-info:focus,
-  .lab-button-info:focus-visible {
-    border-color: rgb(253 224 71);
-    background: rgb(250 204 21);
-    color: rgb(22 78 99);
-  }
-
   .lab-button-ghost {
     border-color: transparent;
     color: var(--lab-text-secondary);
   }
 
   .lab-button-ghost:hover:enabled {
-    background: var(--lab-bg-surface-subtle);
-    color: var(--lab-text-primary);
-  }
-
-  .lab-button-ghost:focus,
-  .lab-button-ghost:focus-visible {
-    border-color: transparent;
     background: var(--lab-bg-surface-subtle);
     color: var(--lab-text-primary);
   }

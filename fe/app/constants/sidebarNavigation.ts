@@ -3,7 +3,6 @@ export const SIDEBAR_ITEMS = [
   ['Особенности', 'ic:twotone-psychology-alt', '/traits', 'text-emerald-400', false, 'tools'],
   ['Кухня', 'ic:twotone-soup-kitchen', '/kitchen', 'text-yellow-300', false, 'tools'],
   ['Вики', 'ic:twotone-school', '/edu', 'text-violet-400', false, 'knowledge'],
-  ['Разработка', 'ic:twotone-auto-graph', '/dev', 'text-cyan-400', false, 'knowledge'],
   ['Влияние', 'ic:twotone-eco', '/impact', 'text-lime-400', false, 'knowledge'],
   ['Восприятие', 'ic:twotone-self-improvement', '/perception', 'text-fuchsia-400', true, undefined],
   ['Опыт', 'ic:twotone-work-history', '/experience', 'text-sky-400', true, undefined],

@@ -6,7 +6,7 @@
       <section v-for="group in groupedItems" :key="`group:${group.category}`" class="min-w-0">
         <div class="mb-2 flex items-center gap-2">
           <span class="h-px flex-1 bg-zinc-700/80"></span>
-          <span class="whitespace-nowrap text-[11px] uppercase tracking-[0.07em] text-zinc-400">
+          <span class="whitespace-nowrap text-xs uppercase tracking-[0.07em] text-zinc-400">
             {{ group.category }}
           </span>
           <span class="h-px flex-1 bg-zinc-700/80"></span>
@@ -17,9 +17,9 @@
             :key="`ing:${entry.index}:${entry.item.name}`"
             class="grid w-full min-w-0 items-center gap-x-2 whitespace-nowrap text-sm leading-tight"
             :class="
-              showActions
-                ? 'grid-cols-[max-content_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
-                : 'grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
+              showActions ?
+                'grid-cols-[max-content_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
+              : 'grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
             ">
             <div v-if="showActions" class="flex items-center gap-1">
               <LabBaseButton
@@ -48,9 +48,9 @@
         :key="`ing:flat:${entry.index}:${entry.item.name}`"
         class="grid w-full min-w-0 items-center gap-x-2 whitespace-nowrap text-sm leading-tight"
         :class="
-          showActions
-            ? 'grid-cols-[max-content_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
-            : 'grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
+          showActions ?
+            'grid-cols-[max-content_minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
+          : 'grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
         ">
         <div v-if="showActions" class="flex items-center gap-1">
           <LabBaseButton

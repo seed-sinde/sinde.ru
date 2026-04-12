@@ -284,9 +284,9 @@
             v-if="isAuthenticated"
             :button-class="[
               'inline-flex h-9 items-center gap-2 border px-3 text-xs transition',
-              isFavoriteRecipe
-                ? 'border-rose-500/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25'
-                : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800'
+              isFavoriteRecipe ?
+                'border-rose-500/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25'
+              : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800'
             ]"
             :disabled="favoritePending"
             :icon="isFavoriteRecipe ? 'ic:round-favorite' : 'ic:round-favorite-border'"
@@ -348,14 +348,14 @@
                 :class="item.label === 'Порций' ? 'cursor-text' : ''"
                 @click="item.label === 'Порций' && !servingsEditing ? startServingsEditing() : undefined">
                 <div v-if="item.label === 'Порций'" class="flex items-center justify-between gap-2">
-                  <p class="text-[11px] uppercase tracking-[0.06em] text-zinc-500">{{ item.label }}</p>
+                  <p class="text-xs uppercase tracking-[0.06em] text-zinc-500">{{ item.label }}</p>
                   <p
                     class="max-w-36 truncate text-right text-[10px]"
                     :class="servingsEditing ? 'text-zinc-500' : 'text-cyan-300/80'">
                     {{ servingsEditing ? 'Enter/Esc' : 'Изменить' }}
                   </p>
                 </div>
-                <p v-else class="text-[11px] uppercase tracking-[0.06em] text-zinc-500">{{ item.label }}</p>
+                <p v-else class="text-xs uppercase tracking-[0.06em] text-zinc-500">{{ item.label }}</p>
                 <template v-if="item.label === 'Порций'">
                   <div class="mt-1">
                     <LabBaseInput
@@ -378,7 +378,7 @@
               <span
                 v-for="tag in recipe.tags"
                 :key="`tag:${tag}`"
-                class="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-300">
+                class="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-xs text-zinc-300">
                 {{ tag }}
               </span>
             </div>
@@ -393,7 +393,7 @@
               class="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0">
               <div class="mb-2 flex items-start gap-2">
                 <div
-                  class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-zinc-600 bg-zinc-800 text-[11px] font-semibold text-zinc-200">
+                  class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-zinc-600 bg-zinc-800 text-xs font-semibold text-zinc-200">
                   {{ step.order }}
                 </div>
                 <p class="text-sm leading-6 text-zinc-200">{{ step.text }}</p>

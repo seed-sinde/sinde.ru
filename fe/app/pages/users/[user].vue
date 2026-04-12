@@ -386,7 +386,7 @@
                           icon-only
                           variant="ghost"
                           size="sm"
-                          button-class="h-8 w-8 border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover) ring-0 focus:ring-0 focus-visible:ring-0"
+                          button-class="h-8 w-8 border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)"
                           aria-label="Статус подписки" />
                       </template>
                     </LabBaseTooltip>

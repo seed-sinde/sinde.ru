@@ -360,11 +360,11 @@
                 v-for="chip in donationPresetChips"
                 :key="chip.key"
                 type="button"
-                class="inline-flex h-8 items-center justify-center border px-4 text-xs font-black tabular-nums uppercase transition-all outline-none focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+                class="lab-focus inline-flex h-8 items-center justify-center border px-4 text-xs font-black tabular-nums uppercase transition-all"
                 :class="
-                  donationSelectedPresetAdd === chip.add
-                    ? 'border-(--lab-accent) bg-(--lab-accent) text-black'
-                    : 'bg-(--lab-bg-surface-subtle) text-(--lab-text-primary) hover:border-(--lab-border-strong)'
+                  donationSelectedPresetAdd === chip.add ?
+                    'border-(--lab-accent) bg-(--lab-accent) text-black'
+                  : 'bg-(--lab-bg-surface-subtle) text-(--lab-text-primary) hover:border-(--lab-border-strong)'
                 "
                 @click="applyDonationPreset(chip.add)">
                 {{ chip.label }}
@@ -376,17 +376,17 @@
                 tabindex="0"
                 role="switch"
                 :aria-checked="donationEnabled"
-                class="group flex cursor-pointer items-center gap-3 border bg-(--lab-bg-control) p-1 pr-4 outline-none transition-colors hover:bg-(--lab-bg-control-hover) focus-visible:ring-2 focus-visible:ring-(--lab-accent)"
+                class="group flex cursor-pointer items-center gap-3 border bg-(--lab-bg-control) p-1 pr-4 transition-colors hover:bg-(--lab-bg-control-hover)"
                 @keydown="handleDonationToggleKeydown">
+                <input
+                  type="checkbox"
+                  class="peer sr-only lab-focus"
+                  tabindex="-1"
+                  :checked="donationEnabled"
+                  @change="event => toggleDonation((event.target as HTMLInputElement).checked)" />
                 <div
-                  class="relative h-6 w-11 bg-(--lab-border) transition-colors"
+                  class="lab-focus-peer relative h-6 w-11 border bg-(--lab-border) transition-colors"
                   :class="{ 'bg-(--lab-accent)': donationEnabled }">
-                  <input
-                    type="checkbox"
-                    class="peer sr-only"
-                    tabindex="-1"
-                    :checked="donationEnabled"
-                    @change="event => toggleDonation((event.target as HTMLInputElement).checked)" />
                   <div class="absolute left-0.5 top-0.5 h-5 w-5 bg-white transition-all peer-checked:left-5.5"></div>
                 </div>
                 <span
@@ -403,10 +403,12 @@
                 id="payments-offer-accept"
                 v-model="offerAccepted"
                 type="checkbox"
-                class="border-(--lab-border-strong) focus-visible:ring-(--lab-accent) mt-0.5 h-4 w-4 shrink-0 border bg-transparent ring-0 outline-none focus-visible:ring-2" />
+                class="lab-focus border-(--lab-border-strong) mt-0.5 h-4 w-4 shrink-0 border bg-transparent" />
               <span>
                 {{ t('payments.index.offer_accept_prefix') }}
-                <NuxtLink to="/offer" class="text-(--lab-accent) ring-0 transition-colors hover:underline focus-visible:ring-2">
+                <NuxtLink
+                  to="/offer"
+                  class="lab-focus text-(--lab-accent) transition-colors hover:underline">
                   {{ t('payments.index.offer_accept_link') }}
                 </NuxtLink>
                 {{ t('payments.index.offer_accept_suffix') }}
@@ -419,7 +421,7 @@
               :loading="creatingPlan !== ''"
               :disabled="paymentActionDisabled"
               :label="t('payments.index.submit')"
-              button-class="w-full !rounded-none border-none font-black uppercase tracking-widest sm:w-80 focus-visible:ring-4 focus-visible:ring-(--lab-accent)/50"
+              button-class="w-full !rounded-none border-none font-black uppercase tracking-widest sm:w-80"
               @click="submitOrder()" />
           </div>
 
@@ -427,7 +429,7 @@
             <li v-for="item in featureItems" :key="item" class="lab-grid-table-cell flex items-center gap-3 p-3">
               <Icon name="ic:round-check" class="text-lg text-(--lab-accent) shrink-0" />
               <span
-                class="text-[11px] font-bold uppercase leading-tight text-(--lab-text-primary) wrap-break-word text-left">
+                class="text-xs font-bold uppercase leading-tight text-(--lab-text-primary) wrap-break-word text-left">
                 {{ item }}
               </span>
             </li>

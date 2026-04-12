@@ -61,7 +61,7 @@ const checkboxAttrs = computed(() => {
 const externalClass = computed(() => String(attrs.class || '').trim())
 const checkboxClassList = computed(() => {
   return [
-    'h-4 w-4 border bg-(--lab-bg-control) text-(--lab-accent) accent-(--lab-accent) transition hover:enabled:border-(--lab-border-strong) hover:enabled:bg-(--lab-bg-control-hover) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--lab-accent) disabled:cursor-not-allowed disabled:opacity-60',
+    'lab-focus h-4 w-4 border bg-(--lab-bg-control) text-(--lab-accent) accent-(--lab-accent) transition hover:enabled:border-(--lab-border-strong) hover:enabled:bg-(--lab-bg-control-hover) disabled:cursor-not-allowed disabled:opacity-60',
     props.checkboxClass,
     externalClass.value
   ]

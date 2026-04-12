@@ -263,7 +263,7 @@
           Убрать фото
         </LabBaseButton>
       </div>
-      <p class="text-[11px] text-zinc-500">Размер файла до {{ imageMaxMb }} МБ, форматы: {{ imageFormatsLabel }}.</p>
+      <p class="text-xs text-zinc-500">Размер файла до {{ imageMaxMb }} МБ, форматы: {{ imageFormatsLabel }}.</p>
       <LabNotify :text="coverImageError" tone="error" size="xs" />
       <LabViewerPreviewButton
         v-if="coverImageDraft.image_url"
@@ -288,9 +288,9 @@
             placeholder="например, томаты черри"
             :class="['w-full']"
             :input-class="
-              !editor.hideFormIngredientSuggestions && ingredientDraft.name.trim() && formIngredientSuggestions.length
-                ? 'rounded-b-none border-b-transparent'
-                : ''
+              !editor.hideFormIngredientSuggestions && ingredientDraft.name.trim() && formIngredientSuggestions.length ?
+                'rounded-b-none border-b-transparent'
+              : ''
             "
             @input="onIngredientDraftNameInput"
             @keydown.enter.prevent="addFormIngredient" />
@@ -299,7 +299,7 @@
               !editor.hideFormIngredientSuggestions && ingredientDraft.name.trim() && formIngredientSuggestions.length
             "
             class="absolute inset-x-0 top-full -mt-px z-30 rounded-b-md border border-zinc-700 border-t-0 bg-zinc-900/95">
-            <p class="px-2 py-1 text-[11px] text-zinc-500">Найдено: {{ formIngredientSuggestions.length }}</p>
+            <p class="px-2 py-1 text-xs text-zinc-500">Найдено: {{ formIngredientSuggestions.length }}</p>
             <div class="max-h-40 overflow-x-hidden overflow-y-auto px-2 pb-2">
               <div class="flex flex-wrap gap-2">
                 <LabBaseButton
@@ -425,9 +425,7 @@
               </div>
             </div>
             <div class="min-w-0 flex-1 space-y-3">
-              <p
-                v-if="draggingStepIndex === idx"
-                class="text-[11px] font-medium uppercase tracking-[0.08em] text-cyan-300">
+              <p v-if="draggingStepIndex === idx" class="text-xs font-medium uppercase tracking-[0.08em] text-cyan-300">
                 Отпустите, чтобы оставить шаг здесь
               </p>
               <LabBaseTextarea
@@ -541,7 +539,7 @@
             @click="clearStepDraftImage" />
           <LabBaseButton label="Добавить шаг" size="sm" variant="primary" @click="addFormStep" />
         </div>
-        <p class="text-[11px] text-zinc-500">
+        <p class="text-xs text-zinc-500">
           Размер файла до {{ imageMaxMb }} МБ, форматы: {{ imageFormatsLabel }}. Рекомендуемый размер для шага: не
           меньше {{ recommendedStepImageMinWidth }}×{{ recommendedStepImageMinHeight }} px.
         </p>

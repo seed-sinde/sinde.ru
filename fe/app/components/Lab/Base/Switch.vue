@@ -2,7 +2,7 @@
   <label
     :for="switchId"
     :class="[
-      'relative inline-flex select-none items-center gap-2',
+      ' text-xs whitespace-nowrap relative inline-flex select-none items-center gap-2',
       disabled ? 'cursor-default opacity-70' : 'cursor-pointer',
       containerClass
     ]">
@@ -11,34 +11,31 @@
       ref="inputRef"
       :name="name"
       type="checkbox"
-      class="peer sr-only"
+      class="peer sr-only lab-focus"
       :checked="modelValue"
       :disabled="disabled"
       @change="onChange" />
-    <span
-      aria-hidden="true"
-      :class="[
-        'relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-colors',
-        resolvedTrackClass,
-        trackClass
-      ]"
-      :style="resolvedTrackStyle">
+    <div class="lab-focus-peer flex items-center gap-2 rounded-2xl pr-2">
       <span
+        aria-hidden="true"
         :class="[
-          'absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full border transition-transform',
-          resolvedThumbClass,
-          thumbClass
+          'relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-colors',
+          resolvedTrackClass,
+          trackClass
         ]"
-        :style="resolvedThumbStyle"></span>
-    </span>
-    <span v-if="label" :class="['whitespace-nowrap text-[11px] text-zinc-300', labelClass]">
-      {{ label }}
-    </span>
-    <span
-      v-if="showStateLabel"
-      :class="['whitespace-nowrap text-[11px] uppercase tracking-[0.06em] text-zinc-500', stateClass]">
-      {{ resolvedStateLabel }}
-    </span>
+        :style="resolvedTrackStyle">
+        <span
+          :class="[
+            'absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full border transition-transform',
+            resolvedThumbClass,
+            thumbClass
+          ]"
+          :style="resolvedThumbStyle"></span>
+      </span>
+      <span v-if="resolvedText" :class="[stateClass, labelClass]">
+        {{ resolvedText }}
+      </span>
+    </div>
   </label>
 </template>
 <script setup lang="ts">
@@ -84,9 +81,12 @@
   const resolvedVisualState = computed<ToggleVisualState>(() => props.visualState || (props.modelValue ? 'on' : 'off'))
   const showStateLabel = computed(() => Boolean(props.trueLabel || props.falseLabel || props.partialLabel))
   const resolvedStateLabel = computed(() => {
-    if (resolvedVisualState.value === 'partial') return props.partialLabel || props.falseLabel || props.trueLabel
-    return props.modelValue ? props.trueLabel : props.falseLabel
+    if (resolvedVisualState.value === 'partial') {
+      return props.partialLabel || props.falseLabel || props.trueLabel || ''
+    }
+    return props.modelValue ? props.trueLabel || '' : props.falseLabel || ''
   })
+  const resolvedText = computed(() => [resolvedStateLabel.value, props.label].filter(Boolean).join(' '))
   const toneTrackClass = {
     cyan: {
       on: 'border-cyan-500/70 bg-cyan-600/30'

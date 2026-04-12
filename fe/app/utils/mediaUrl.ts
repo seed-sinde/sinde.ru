@@ -6,6 +6,15 @@ export const normalizeMediaKey = (value?: string) => {
 export const buildMediaFileUrl = (storageKey?: string) => {
   const key = normalizeMediaKey(storageKey)
   if (!key) return ''
-  const encodedPath = key.split('/').map(segment => encodeURIComponent(segment)).join('/')
+  const encodedPath = key
+    .split('/')
+    .map(segment => {
+      try {
+        return encodeURIComponent(decodeURIComponent(segment))
+      } catch {
+        return encodeURIComponent(segment)
+      }
+    })
+    .join('/')
   return `/api/proxy/media/files/${encodedPath}`
 }

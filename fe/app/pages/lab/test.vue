@@ -304,9 +304,9 @@
                 type="button"
                 class="rounded-2xl border px-3 py-2 text-left text-sm transition"
                 :class="
-                  selectedRole === role.key
-                    ? 'border-cyan-400/40 bg-cyan-500/10 text-white'
-                    : 'border-white/10 bg-black/20 text-zinc-300 hover:border-white/20 hover:text-white'
+                  selectedRole === role.key ?
+                    'border-cyan-400/40 bg-cyan-500/10 text-white'
+                  : 'border-white/10 bg-black/20 text-zinc-300 hover:border-white/20 hover:text-white'
                 "
                 @click="selectedRole = role.key">
                 {{ role.label }}
@@ -322,9 +322,9 @@
                 type="button"
                 class="rounded-full border px-3 py-1.5 text-sm transition"
                 :class="
-                  selectedDepth === depth.key
-                    ? 'border-indigo-400/40 bg-indigo-500/15 text-white'
-                    : 'border-white/10 bg-black/20 text-zinc-300 hover:border-white/20 hover:text-white'
+                  selectedDepth === depth.key ?
+                    'border-indigo-400/40 bg-indigo-500/15 text-white'
+                  : 'border-white/10 bg-black/20 text-zinc-300 hover:border-white/20 hover:text-white'
                 "
                 @click="selectedDepth = depth.key">
                 {{ depth.label }}
@@ -369,9 +369,9 @@
                   type="button"
                   class="group relative w-55 rounded-3xl border p-4 text-left transition"
                   :class="
-                    selectedStageId === stage.id
-                      ? 'border-cyan-400/40 bg-cyan-500/10'
-                      : 'border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/5'
+                    selectedStageId === stage.id ?
+                      'border-cyan-400/40 bg-cyan-500/10'
+                    : 'border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/5'
                   "
                   @click="selectedStageId = stage.id">
                   <div class="flex items-start justify-between gap-3">
@@ -379,7 +379,7 @@
                       <div class="text-sm font-medium text-white">{{ stage.title }}</div>
                       <div class="mt-1 text-xs text-zinc-400">{{ stage.short }}</div>
                     </div>
-                    <span class="rounded-full border px-2 py-1 text-[11px]" :class="statusClasses[stage.status]">
+                    <span class="rounded-full border px-2 py-1 text-xs" :class="statusClasses[stage.status]">
                       {{ statusLabel[stage.status] }}
                     </span>
                   </div>
@@ -483,20 +483,16 @@
               <div class="flex items-start justify-between gap-3">
                 <h3 class="text-sm font-medium leading-6 text-white">{{ hypothesis.title }}</h3>
                 <span
-                  class="rounded-full border px-2 py-1 text-[11px]"
+                  class="rounded-full border px-2 py-1 text-xs"
                   :class="
-                    hypothesis.status === 'accepted'
-                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                      : hypothesis.status === 'testing'
-                        ? 'border-sky-500/30 bg-sky-500/10 text-sky-300'
-                        : 'border-zinc-500/30 bg-zinc-500/10 text-zinc-300'
+                    hypothesis.status === 'accepted' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    : hypothesis.status === 'testing' ? 'border-sky-500/30 bg-sky-500/10 text-sky-300'
+                    : 'border-zinc-500/30 bg-zinc-500/10 text-zinc-300'
                   ">
                   {{
-                    hypothesis.status === 'accepted'
-                      ? 'Принято'
-                      : hypothesis.status === 'testing'
-                        ? 'Проверка'
-                        : 'Черновик'
+                    hypothesis.status === 'accepted' ? 'Принято'
+                    : hypothesis.status === 'testing' ? 'Проверка'
+                    : 'Черновик'
                   }}
                 </span>
               </div>

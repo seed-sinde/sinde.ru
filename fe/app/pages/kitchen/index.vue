@@ -1212,7 +1212,7 @@
               :options="ingredientCategoryOptions" />
           </LabField>
           <div class="flex flex-col gap-1">
-            <span class="text-[11px] text-zinc-500">Сортировка: {{ catalogSortLabel }}</span>
+            <span class="text-xs text-zinc-500">Сортировка: {{ catalogSortLabel }}</span>
             <LabNavTabs
               v-model="catalogSortMode"
               :items="catalogSortItems"
@@ -1226,7 +1226,7 @@
           <KitchenGroupByCategoryToggle v-model="groupCatalogByCategory" mode="button" />
         </div>
         <ClientOnly>
-          <span v-if="catalogFrequencyHint" class="text-[11px] text-zinc-500">
+          <span v-if="catalogFrequencyHint" class="text-xs text-zinc-500">
             {{ catalogFrequencyHint }}
           </span>
         </ClientOnly>
@@ -1255,7 +1255,7 @@
                   </div>
                   <div class="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-2">
                     <h3
-                      class="max-w-[calc(100%-4.5rem)] bg-zinc-950/70 px-2 py-1 text-[11px] font-medium leading-tight text-zinc-100 wrap-break-word">
+                      class="max-w-[calc(100%-4.5rem)] bg-zinc-950/70 px-2 py-1 text-xs font-medium leading-tight text-zinc-100 wrap-break-word">
                       {{ item.name }}
                     </h3>
                     <div
@@ -1537,7 +1537,7 @@
               <LabField label="Время приготовления" for-id="recipe-max-total-minutes" field-class="min-w-0">
                 <div class="relative">
                   <span
-                    class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-500">
+                    class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">
                     до
                   </span>
                   <LabBaseInput
@@ -1552,7 +1552,7 @@
                     class="w-full"
                     input-class="pl-7 pr-12" />
                   <span
-                    class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-500">
+                    class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">
                     мин.
                   </span>
                 </div>
@@ -1561,7 +1561,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                   <div class="relative min-w-0 flex-1">
                     <span
-                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-500">
+                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">
                       от
                     </span>
                     <LabBaseInput
@@ -1577,7 +1577,7 @@
                   </div>
                   <div class="relative min-w-0 flex-1">
                     <span
-                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-500">
+                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">
                       до
                     </span>
                     <LabBaseInput
@@ -1598,7 +1598,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                   <div class="relative min-w-0 flex-1">
                     <span
-                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-500">
+                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">
                       от
                     </span>
                     <LabBaseInput
@@ -1614,7 +1614,7 @@
                   </div>
                   <div class="relative min-w-0 flex-1">
                     <span
-                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-zinc-500">
+                      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-500">
                       до
                     </span>
                     <LabBaseInput
@@ -1676,7 +1676,7 @@
                 </div>
               </LabField>
               <div v-if="ingredientSuggestions.length" class="rounded-md border border-zinc-700 bg-zinc-900">
-                <p class="px-2 py-1 text-[11px] text-zinc-500">Найдено: {{ ingredientSuggestions.length }}</p>
+                <p class="px-2 py-1 text-xs text-zinc-500">Найдено: {{ ingredientSuggestions.length }}</p>
                 <div class="max-h-28 overflow-y-auto px-2 pb-2">
                   <div class="flex flex-wrap gap-2">
                     <LabBaseButton

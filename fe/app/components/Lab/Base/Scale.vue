@@ -51,7 +51,7 @@
   const isSelected = (value: string) => value === normalizedValue.value
   const isActive = (index: number) => selectedIndex.value >= 0 && index <= selectedIndex.value
   const segmentClass = (option: { value: string; label: string; activeColor: string }, index: number) => [
-    'h-8 min-w-0 border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-(--lab-accent)',
+    'lab-focus h-8 min-w-0 border transition-colors',
     props.disabled ? 'cursor-not-allowed' : 'cursor-pointer',
     isActive(index)
       ? props.disabled

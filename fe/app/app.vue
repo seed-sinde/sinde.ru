@@ -10,7 +10,7 @@
     if (configured) return configured.replace(/\/+$/, '')
     return `${requestUrl.protocol}//${requestUrl.host}`.replace(/\/+$/, '')
   })
-  const defaultOgImage = computed(() => `${siteUrl.value}${faviconDarkSrc.value}`)
+  const defaultOgImage = computed(() => siteUrl.value + faviconDarkSrc.value)
   const htmlThemeClass = computed(() => `theme-${effectiveTheme.value}`)
   const themeBootstrapScript = `(function(){try{var key=${JSON.stringify(UI_PREFERENCES_STORAGE_KEY)};var raw=window.localStorage.getItem(key);var preference='system';if(raw){var parsed=JSON.parse(raw);if(parsed&&typeof parsed.themePreference==='string'){preference=parsed.themePreference}}var root=document.documentElement;root.classList.remove('theme-dark','theme-light');if(preference==='dark'||preference==='light'){root.classList.add('theme-'+preference);return}var systemTheme=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';root.classList.add('theme-'+systemTheme)}catch(_){}})();`
   const faviconLinks = computed(() => [
@@ -26,7 +26,7 @@
     }
   ])
   useHead({
-    titleTemplate: t => (t ? `${t} · sinde` : 'sinde'),
+    titleTemplate: t => (t ? `${t} · sinde.ru` : 'sinde.ru'),
     htmlAttrs: {
       lang: localeTag,
       class: htmlThemeClass
@@ -54,9 +54,9 @@
         name: 'apple-mobile-web-app-status-bar-style',
         content: 'black-translucent'
       },
-      { key: 'apple-mobile-web-app-title', name: 'apple-mobile-web-app-title', content: 'sinde' },
+      { key: 'apple-mobile-web-app-title', name: 'apple-mobile-web-app-title', content: 'sinde.ru' },
       { key: 'twitter:card', name: 'twitter:card', content: 'summary' },
-      { key: 'og:site_name', property: 'og:site_name', content: 'sinde' },
+      { key: 'og:site_name', property: 'og:site_name', content: 'sinde.ru' },
       { key: 'og:image', property: 'og:image', content: defaultOgImage },
       { key: 'twitter:image', name: 'twitter:image', content: defaultOgImage }
     ]

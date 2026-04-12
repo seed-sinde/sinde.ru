@@ -61,8 +61,9 @@ const processRef = globalThis as typeof globalThis & {
   }
 }
 const supportsAnsi = Boolean(processRef.process?.stdout?.isTTY && processRef.process?.stderr?.isTTY)
-const color = supportsAnsi
-  ? ({
+const color =
+  supportsAnsi ?
+    ({
       reset: '\x1b[0m',
       blue: '\x1b[34m',
       yellow: '\x1b[33m',
@@ -132,6 +133,25 @@ function shouldForwardSetCookie(method: HTTPMethod, proxyPath: string, response:
   }
   return true
 }
+function normalizeMediaProxyPath(proxyPath: string) {
+  const rawProxyPath = String(proxyPath || '')
+  const [rawPathname = '', search = ''] = rawProxyPath.split('?')
+  const pathname = rawPathname
+  if (!pathname.startsWith('/media/files/')) return proxyPath
+  const prefix = '/media/files/'
+  const rawKey = pathname.slice(prefix.length)
+  const normalizedKey = rawKey
+    .split('/')
+    .map(segment => {
+      try {
+        return encodeURIComponent(decodeURIComponent(segment))
+      } catch {
+        return encodeURIComponent(segment)
+      }
+    })
+    .join('/')
+  return `${prefix}${normalizedKey}${search ? `?${search}` : ''}`
+}
 export default defineEventHandler(async event => {
   const { url } = event.node.req
   if (!url?.startsWith('/api/proxy')) return
@@ -139,6 +159,7 @@ export default defineEventHandler(async event => {
   const headers = getHeaders(event)
   const method = (event.method?.toUpperCase() || 'GET') as HTTPMethod
   const proxyPath = url.replace(/^\/api\/proxy/, '') // e.g., /sets/some-uuid
+  const normalizedProxyPath = normalizeMediaProxyPath(proxyPath)
   const apiBase = normalizeApiOrigin(String(config.apiInternalUrl || ''))
   const apiVersion =
     String(config.apiVersion || 'v1')
@@ -151,11 +172,11 @@ export default defineEventHandler(async event => {
       message: 'API_INTERNAL_URL is not configured'
     })
   }
-  const targetUrl = joinURL(apiBase, 'api', apiVersion, proxyPath)
+  const targetUrl = joinURL(apiBase, 'api', apiVersion, normalizedProxyPath)
   const hasBody = ['POST', 'PUT', 'PATCH'].includes(method)
   const requestContentType = String(headers['content-type'] || '').toLowerCase()
   const isMultipartRequest = hasBody && requestContentType.includes('multipart/form-data')
-  const isMediaFilePath = proxyPath.startsWith('/media/files/')
+  const isMediaFilePath = normalizedProxyPath.startsWith('/media/files/')
   const rawBody = hasBody ? await readRawBody(event, false) : undefined
   const requestHeaders = {
     ...headers
@@ -244,9 +265,9 @@ export default defineEventHandler(async event => {
       }
       if (!response.ok) {
         const message =
-          payload && typeof payload === 'object'
-            ? (payload as any)?.message || response.statusText || 'Unknown error'
-            : response.statusText || 'Unknown error'
+          payload && typeof payload === 'object' ?
+            (payload as any)?.message || response.statusText || 'Unknown error'
+          : response.statusText || 'Unknown error'
         const details = payload && typeof payload === 'object' ? (payload as any)?.details : undefined
         throw createError({
           statusCode: response.status,

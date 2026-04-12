@@ -3,20 +3,21 @@
     :type="type"
     :disabled="disabled"
     :aria-busy="loading ? 'true' : undefined"
-    :class="buttonClassList"
-    :style="buttonStyleList"
-    v-bind="buttonAttrs">
+    :class="buttonClass"
+    :style="[attrs.style, buttonStyle]"
+    v-bind="passThroughAttrs">
     <slot name="leading">
-      <Icon v-if="iconName" :key="iconName" :name="iconName" :class="iconClassList" :style="iconStyleList" />
+      <Icon v-if="iconName" :name="iconName" :class="iconClass" :style="iconStyle" />
     </slot>
-    <slot v-if="hasDefaultSlot" />
-    <span v-else-if="resolvedLabel" :class="labelClassList" :style="labelStyleList">
-      {{ resolvedLabel }}
+
+    <slot v-if="$slots.default" />
+    <span v-else-if="labelText" :class="labelClass" :style="labelStyle">
+      {{ labelText }}
     </span>
   </button>
 </template>
+
 <script setup lang="ts">
-  import { normalizeClass, normalizeStyle, type StyleValue } from 'vue'
   defineOptions({ inheritAttrs: false })
   const props = withDefaults(
     defineProps<{
@@ -31,7 +32,6 @@
       icon?: string
       iconOnly?: boolean
       iconSize?: LabButtonSize
-      class?: LabButtonClass
       buttonClass?: LabButtonClass
       labelClass?: LabButtonClass
       iconClass?: LabButtonClass
@@ -40,18 +40,17 @@
       iconStyle?: LabButtonStyle
     }>(),
     {
+      type: 'button',
       label: '',
-      icon: '',
       loading: false,
       loadingLabel: '',
       disabled: false,
-      block: false,
-      iconOnly: false,
       variant: 'default',
       size: 'sm',
+      block: false,
+      icon: '',
+      iconOnly: false,
       iconSize: 'md',
-      type: 'button',
-      class: '',
       buttonClass: '',
       labelClass: '',
       iconClass: '',
@@ -61,37 +60,27 @@
     }
   )
   const attrs = useAttrs()
-  const slots = useSlots()
-  const hasDefaultSlot = computed(() => Boolean(slots.default))
-  const resolvedLabel = computed(() => (props.loading && props.loadingLabel ? props.loadingLabel : props.label))
-  const iconName = computed(() => (props.loading ? 'ic:round-autorenew' : props.icon || ''))
-  const buttonAttrs = computed(() => {
-    const out: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(attrs)) {
-      if (key === 'class' || key === 'style') continue
-      out[key] = value
-    }
-    return out
-  })
-  const externalClass = computed(() => normalizeClass([attrs.class, props.class, props.buttonClass]))
-  const externalStyle = computed(() => normalizeStyle([attrs.style as StyleValue, props.buttonStyle]))
-  const buttonClassList = computed(() => [
-    'inline-flex shrink-0 items-center justify-center',
-    props.block ? 'w-full' : '',
-    props.iconOnly ? 'gap-0 rounded-full' : 'gap-2 rounded-none',
-    'min-w-0 select-none',
+  const labelText = computed(() => (props.loading && props.loadingLabel ? props.loadingLabel : props.label))
+  const iconName = computed(() => (props.loading ? 'ic:round-autorenew' : props.icon))
+  const passThroughAttrs = computed(() =>
+    Object.fromEntries(Object.entries(attrs).filter(([key]) => key !== 'class' && key !== 'style'))
+  )
+  const buttonClass = computed(() => [
+    'lab-button lab-focus min-w-0 select-none',
+    props.block && 'w-full',
+    props.iconOnly ? 'gap-0' : 'gap-2',
     props.iconOnly ? iconOnlySizeClassMap[props.size] : sizeClassMap[props.size],
     variantClassMap[props.variant],
-    externalClass.value
+    attrs.class,
+    props.buttonClass
   ])
-  const buttonStyleList = computed(() => externalStyle.value)
-  const labelClassList = computed(() => ['leading-none', props.labelClass])
-  const labelStyleList = computed(() => normalizeStyle(props.labelStyle))
-  const iconClassList = computed(() => [
+
+  const labelClass = computed(() => ['leading-none', props.labelClass])
+
+  const iconClass = computed(() => [
     'shrink-0 leading-none text-current',
     iconSizeClassMap[props.iconSize],
     props.iconClass,
-    props.loading ? 'animate-spin' : ''
+    props.loading && 'animate-spin'
   ])
-  const iconStyleList = computed(() => normalizeStyle(props.iconStyle))
 </script>

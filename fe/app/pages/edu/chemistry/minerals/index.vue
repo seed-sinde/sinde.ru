@@ -1,4 +1,9 @@
 <script setup lang="ts">
+  const title = 'Минералы'
+  usePageSeo({
+    title,
+    description: 'Каталог минералов с поиском, фильтрами по химическим элементам.'
+  })
   const DEFAULT_LIMIT = 30
   const LIMIT_OPTIONS = [30, 60, 100]
   const SEARCH_DEBOUNCE_MS = 350
@@ -306,29 +311,32 @@
     all: {
       title: 'ВСЕ',
       description: 'Минерал обязан содержать все выбранные элементы.',
-      accentClass: 'text-amber-300',
-      borderClass: 'border-l-amber-300',
-      activeClass: 'border-zinc-700 bg-amber-400/10',
-      activeTextClass: 'text-amber-100',
-      dotClass: 'bg-amber-300'
+      accentClass: 'text-(--lab-warning)',
+      borderClass: 'border-l-(--lab-warning)',
+      activeClass:
+        'border-[color-mix(in_srgb,var(--lab-warning)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-warning)_16%,var(--lab-bg-surface))] text-[color-mix(in_srgb,var(--lab-warning)_88%,black_18%)]',
+      activeTextClass: 'text-[color-mix(in_srgb,var(--lab-warning)_88%,black_18%)]',
+      dotClass: 'bg-(--lab-warning)'
     },
     any: {
       title: 'ЛЮБОЙ',
       description: 'Минерал должен содержать хотя бы один выбранный элемент.',
-      accentClass: 'text-cyan-300',
-      borderClass: 'border-l-cyan-300',
-      activeClass: 'border-zinc-700 bg-cyan-400/10',
-      activeTextClass: 'text-cyan-100',
-      dotClass: 'bg-cyan-300'
+      accentClass: 'text-(--lab-accent)',
+      borderClass: 'border-l-(--lab-accent)',
+      activeClass:
+        'border-[color-mix(in_srgb,var(--lab-accent)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-accent)_16%,var(--lab-bg-surface))] text-[color-mix(in_srgb,var(--lab-accent)_84%,black_18%)]',
+      activeTextClass: 'text-[color-mix(in_srgb,var(--lab-accent)_84%,black_18%)]',
+      dotClass: 'bg-(--lab-accent)'
     },
     none: {
-      title: 'ИСКЛ',
+      title: 'ИСКЛЮЧЕНИЕ',
       description: 'Минерал не должен содержать ни одного выбранного элемента.',
-      accentClass: 'text-rose-300',
-      borderClass: 'border-l-rose-300',
-      activeClass: 'border-zinc-700 bg-rose-400/10',
-      activeTextClass: 'text-rose-100',
-      dotClass: 'bg-rose-300'
+      accentClass: 'text-(--lab-danger)',
+      borderClass: 'border-l-(--lab-danger)',
+      activeClass:
+        'border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-[color-mix(in_srgb,var(--lab-danger)_84%,black_22%)]',
+      activeTextClass: 'text-[color-mix(in_srgb,var(--lab-danger)_84%,black_22%)]',
+      dotClass: 'bg-(--lab-danger)'
     }
   }
   const chemistryBuckets = computed(() =>
@@ -342,11 +350,17 @@
     }))
   )
   const chemistryBucketClass = (bucket: ChemistryBucket) => {
-    const baseClass = `w-full border border-l-2 px-0 py-0 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/60 ${chemistryBucketMeta[bucket].borderClass}`
+    const baseClass = `lab-focus w-full border border-l-2 px-0 py-0 text-left transition ${chemistryBucketMeta[bucket].borderClass}`
     if (activeChemistryBucket.value === bucket) {
       return `${baseClass} ${chemistryBucketMeta[bucket].activeClass}`
     }
-    return `${baseClass} border-zinc-800 bg-zinc-950/90 hover:border-zinc-700 hover:bg-zinc-900/90`
+    if (bucket === 'all') {
+      return `${baseClass} bg-(--lab-bg-surface) hover:border-[color-mix(in_srgb,var(--lab-warning)_38%,var(--lab-border))] hover:bg-[color-mix(in_srgb,var(--lab-warning)_16%,var(--lab-bg-surface))] hover:text-[color-mix(in_srgb,var(--lab-warning)_88%,black_18%)]`
+    }
+    if (bucket === 'any') {
+      return `${baseClass} bg-(--lab-bg-surface) hover:border-[color-mix(in_srgb,var(--lab-accent)_38%,var(--lab-border))] hover:bg-[color-mix(in_srgb,var(--lab-accent)_16%,var(--lab-bg-surface))] hover:text-[color-mix(in_srgb,var(--lab-accent)_84%,black_18%)]`
+    }
+    return `${baseClass} bg-(--lab-bg-surface) hover:border-[color-mix(in_srgb,var(--lab-danger)_38%,var(--lab-border))] hover:bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] hover:text-[color-mix(in_srgb,var(--lab-danger)_84%,black_22%)]`
   }
   const chemistryBucketText = (values: string[]) => values.join(', ')
   const selectedElementNumbers = computed(() =>
@@ -354,16 +368,8 @@
       .filter(element => Boolean(selectedBucketByElement.value[element.symbol]))
       .map(element => element.number)
   )
-  const dimmedElementNumbers = computed(() =>
-    !hasChemistryAvailability.value ?
-      []
-    : periodicTableElements.value
-        .filter(element => {
-          const isSelected = Boolean(selectedBucketByElement.value[element.symbol])
-          if (isSelected) return false
-          return Number(chemistryAvailability.value[element.symbol] || 0) <= 0
-        })
-        .map(element => element.number)
+  const hiddenElementNumbers = computed(() =>
+    periodicTableElements.value.filter(element => element.xpos === 18).map(element => element.number)
   )
   const selectionToneByNumber = computed(() =>
     periodicTableElements.value.reduce<Partial<Record<number, ChemistryBucket>>>((acc, element) => {
@@ -380,8 +386,7 @@
       return acc
     }, {})
   )
-  const mineralsTableCompact = computed(() => !isMediumViewport.value || isExtraLargeViewport.value)
-  const preserveCompactCellWidth = computed(() => !isMediumViewport.value)
+  const useCompactMineralsTable = computed(() => !isMediumViewport.value)
   const onPeriodicElementClick = async (element: PeriodicTableElement) => {
     await toggleElementSelection(element.symbol)
   }
@@ -406,11 +411,7 @@
     state.offset = 0
     await syncRouteFromState()
   }
-  const title = 'Минералы'
-  usePageSeo({
-    title,
-    description: 'Каталог минералов с поиском, фильтрами по химическим элементам.'
-  })
+
   onMounted(async () => {
     mediumViewportQuery = window.matchMedia('(min-width: 768px)')
     extraLargeViewportQuery = window.matchMedia('(min-width: 1280px)')
@@ -431,7 +432,7 @@
   })
 </script>
 <template>
-  <div class="space-y-4">
+  <div>
     <LabNavHeader
       :title
       :breadcrumb-items="[
@@ -439,208 +440,190 @@
         { label: 'Химия', to: '/edu/chemistry' },
         { label: title, current: true }
       ]" />
-    <section class="px-4">
-      <section class="min-w-0 overflow-hidden border border-zinc-800 bg-zinc-950/70">
-        <div class="grid min-w-0 gap-3 border-b border-zinc-800 p-4 md:grid-cols-12">
-          <LabField label="Поиск минерала" for-id="minerals-search" class="min-w-0 md:col-span-12 xl:col-span-6">
-            <LabBaseInput
-              id="minerals-search"
-              name="minerals_search"
-              :model-value="state.q"
-              placeholder="Название минерала"
-              @update:model-value="onSearchInput" />
-          </LabField>
-          <LabField label="Сортировка" for-id="minerals-sort" class="min-w-0 md:col-span-6 xl:col-span-3">
-            <LabBaseSelect
-              id="minerals-sort"
-              name="minerals_sort"
-              :model-value="state.sort"
-              :options="sortOptions"
-              @update:model-value="onSortChange" />
-          </LabField>
-          <LabField label="На страницу" for-id="minerals-limit" class="min-w-0 md:col-span-6 xl:col-span-3">
-            <LabBaseSelect
-              id="minerals-limit"
-              name="minerals_limit"
-              :model-value="String(state.limit)"
-              :options="limitOptions"
-              @update:model-value="onLimitChange" />
-          </LabField>
-          <div
-            class="min-w-0 flex flex-col flex-wrap items-center justify-between gap-2 text-sm text-zinc-400 xl:col-span-12">
-            <div class="flex flex-wrap items-center gap-3">
-              <LabBaseSwitch
-                :model-value="state.onlyWithImages"
-                label="Только с изображениями"
-                false-label="все"
-                true-label="только фото"
-                tone="cyan"
-                container-class="gap-1.5"
-                label-class="text-[11px] font-medium text-zinc-300"
-                state-class="text-[10px] text-zinc-500"
-                @update:model-value="onOnlyWithImagesChange" />
-              <LabBaseButton variant="secondary" size="sm" label="Сбросить все фильтры" @click="clearAllFilters" />
+    <section class="overflow-hidden">
+      <div class="flex flex-wrap min-w-0 gap-3 border-b p-4">
+        <LabField label="Поиск минерала" for-id="minerals-search">
+          <LabBaseInput
+            id="minerals-search"
+            name="minerals_search"
+            :model-value="state.q"
+            placeholder="Название минерала"
+            class="max-w-fit"
+            @update:model-value="onSearchInput" />
+        </LabField>
+        <LabField label="Сортировка" for-id="minerals-sort">
+          <LabBaseSelect
+            id="minerals-sort"
+            name="minerals_sort"
+            :model-value="state.sort"
+            :options="sortOptions"
+            class="max-w-fit"
+            @update:model-value="onSortChange" />
+        </LabField>
+        <LabField label="На страницу" for-id="minerals-limit">
+          <LabBaseSelect
+            id="minerals-limit"
+            name="minerals_limit"
+            :model-value="String(state.limit)"
+            :options="limitOptions"
+            class="max-w-fit"
+            @update:model-value="onLimitChange" />
+        </LabField>
+        <div class="min-w-0 flex flex-wrap items-center justify-between gap-2 text-sm text-zinc-400 xl:col-span-12">
+          <LabBaseSwitch
+            :model-value="state.onlyWithImages"
+            label="фото"
+            false-label="без"
+            true-label="с"
+            tone="cyan"
+            @update:model-value="onOnlyWithImagesChange" />
+          <LabBaseButton variant="secondary" size="sm" label="Сбросить все фильтры" @click="clearAllFilters" />
+        </div>
+        <LabSpoiler
+          v-model="isElementsFilterOpen"
+          label="Химический фильтр"
+          container-class="min-w-0 max-w-6xl md:col-span-12">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-sm leading-6 text-zinc-400">Выберите режим и отмечайте элементы прямо в таблице.</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <LabBaseButton variant="secondary" size="sm" label="Очистить химию" @click="clearChemistry" />
+              <LabBaseButton variant="danger" size="sm" label="Исключить остальные" @click="excludeAllNonSelected" />
             </div>
           </div>
-          <LabSpoiler
-            v-model="isElementsFilterOpen"
-            title="Химический фильтр"
-            :default-expanded="false"
-            container-class="min-w-0 space-y-3 md:col-span-12"
-            header-class="min-w-0 w-full"
-            title-class="text-sm font-semibold text-zinc-100"
-            content-class="space-y-3">
-            <div class="flex flex-wrap items-center gap-2">
-              <p class="text-sm leading-6 text-zinc-400">Выберите режим и отмечайте элементы прямо в таблице.</p>
-              <div class="flex flex-wrap items-center gap-2">
-                <LabBaseButton variant="secondary" size="sm" label="Очистить химию" @click="clearChemistry" />
-                <LabBaseButton variant="danger" size="sm" label="Исключить остальные" @click="excludeAllNonSelected" />
-              </div>
-            </div>
-            <div class="grid grid-cols-1 gap-px overflow-hidden border border-zinc-800 bg-zinc-800 sm:grid-cols-3">
-              <button
-                v-for="bucket in chemistryBuckets"
-                :key="bucket.key"
-                type="button"
-                :aria-pressed="activeChemistryBucket === bucket.key"
-                :class="chemistryBucketClass(bucket.key)"
-                @click="activeChemistryBucket = bucket.key">
-                <div class="flex items-center justify-between gap-2 px-2 py-1">
-                  <div class="inline-flex items-center gap-2">
-                    <span
-                      class="text-[11px] font-semibold tracking-[0.14em]"
-                      :class="activeChemistryBucket === bucket.key ? bucket.accentClass : 'text-zinc-200'">
+          <div class="grid grid-cols-1 gap-px overflow-hidden border sm:grid-cols-3">
+            <button
+              v-for="bucket in chemistryBuckets"
+              :key="bucket.key"
+              type="button"
+              :aria-pressed="activeChemistryBucket === bucket.key"
+              :class="chemistryBucketClass(bucket.key)"
+              @click="activeChemistryBucket = bucket.key">
+              <div class="flex items-center justify-between gap-2 px-2 py-1">
+                <LabBaseTooltip
+                  :text="bucket.description"
+                  underline-trigger
+                  :trigger-class="activeChemistryBucket === bucket.key ? bucket.accentClass : 'text-current'">
+                  <template #trigger>
+                    <span class="text-xs font-semibold tracking-[0.14em]">
                       {{ bucket.title }}
                     </span>
-                    <span
-                      class="inline-flex h-4 w-4 items-center justify-center rounded-full border border-zinc-600 bg-zinc-800 text-[10px] font-mono font-semibold leading-none text-zinc-300"
-                      :title="bucket.description"
-                      :aria-label="bucket.description">
-                      ?
-                    </span>
-                  </div>
-                  <span
-                    class="text-[10px] uppercase tracking-[0.12em]"
-                    :class="activeChemistryBucket === bucket.key ? bucket.accentClass : 'text-zinc-500'">
-                    {{ activeChemistryBucket === bucket.key ? 'выбран' : 'выбрать' }}
-                  </span>
-                </div>
-                <div
-                  class="min-h-4 px-2 pb-1 text-[11px] leading-4 wrap-break-word"
-                  :class="activeChemistryBucket === bucket.key ? bucket.activeTextClass : 'text-zinc-400'">
-                  {{ chemistryBucketText(bucket.values) || '\u00A0' }}
-                </div>
-              </button>
-            </div>
-            <ChemistryPeriodicTableGridNew />
+                  </template>
+                </LabBaseTooltip>
+                <span
+                  class="uppercase tracking-[0.12em] opacity-65"
+                  :class="activeChemistryBucket === bucket.key ? bucket.accentClass : ''">
+                  {{ activeChemistryBucket === bucket.key ? 'выбран' : 'выбрать' }}
+                </span>
+              </div>
+              <div
+                class="min-h-4 px-2 pb-1 text-xs leading-4 wrap-break-word"
+                :class="activeChemistryBucket === bucket.key ? bucket.activeTextClass : 'opacity-70'">
+                {{ chemistryBucketText(bucket.values) || '\u00A0' }}
+              </div>
+            </button>
+          </div>
+          <div class="min-w-0 overflow-x-auto">
             <ChemistryPeriodicTableGrid
               layout="minerals"
               :elements="periodicTableElements"
-              :hidden-element-numbers="hiddenMineralElementNumbers"
-              :dimmed-element-numbers="dimmedElementNumbers"
+              :hidden-element-numbers="hiddenElementNumbers"
               :highlighted-element-numbers="selectedElementNumbers"
               :selection-tone-by-number="selectionToneByNumber"
               :availability-by-number="chemistryAvailabilityByNumber"
               :disable-unavailable="hasChemistryAvailability"
               use-theme-card-colors
-              compact-scroll-breakpoint="md"
               compact-cell-height="1.7rem"
               compact-cell-height-wide="2.5rem"
-              :preserve-compact-cell-width="preserveCompactCellWidth"
-              :compact="mineralsTableCompact"
+              :preserve-compact-cell-width="useCompactMineralsTable"
+              :compact="useCompactMineralsTable"
               interactive
-              :show-group-headers="false"
-              :show-period-headers="false"
               :show-series-labels="false"
               @element-click="onPeriodicElementClick" />
-            <div class="space-y-2 border-t border-zinc-800 pt-3">
-              <div class="flex flex-wrap items-center gap-2">
-                <div class="inline-flex min-w-0 shrink-0 items-center gap-2 whitespace-nowrap">
-                  <div class="text-sm font-medium text-zinc-100">Кристаллическая система</div>
-                  <LabHelpTooltip :text="crystalSystemHelpText" />
-                </div>
-                <LabBaseSwitch
-                  :model-value="state.crystalSystemMode === 'all'"
-                  label="Совпадают все / Совпадает хотя бы одно"
-                  false-label="ИЛИ"
-                  true-label="И"
-                  tone="amber"
-                  container-class="gap-1.5"
-                  label-class="text-[11px] font-medium text-zinc-300"
-                  state-class="text-[10px] text-zinc-500"
-                  @update:model-value="onCrystalSystemModeChange" />
+          </div>
+          <div class="space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="inline-flex min-w-0 shrink-0 items-center gap-2 whitespace-nowrap">
+                <div class="text-sm text-zinc-100">Кристаллическая система</div>
+                <LabHelpTooltip :text="crystalSystemHelpText" />
               </div>
-              <div class="min-w-0 overflow-x-auto">
-                <div class="flex w-max min-w-full flex-nowrap gap-2">
-                  <button
-                    v-for="item in crystalSystemOptions"
-                    :key="item.value"
-                    type="button"
-                    class="shrink-0 border px-3 py-2 text-left text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/60"
-                    :class="
-                      state.crystalSystems.includes(item.value) ?
-                        'border-zinc-500 bg-zinc-900 text-zinc-100 ring-1 ring-inset ring-zinc-500'
-                      : 'border-zinc-800 bg-zinc-950/90 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
-                    "
-                    @click="toggleCrystalSystem(item.value)">
-                    {{ crystalSystemLabel(item.value) }}
-                  </button>
-                </div>
+              <LabBaseSwitch
+                :model-value="state.crystalSystemMode === 'all'"
+                label="совпадения"
+                false-label="или"
+                true-label="и"
+                tone="amber"
+                @update:model-value="onCrystalSystemModeChange" />
+            </div>
+            <div class="min-w-0 overflow-x-auto">
+              <div class="flex w-max min-w-full flex-nowrap gap-2">
+                <button
+                  v-for="item in crystalSystemOptions"
+                  :key="item.value"
+                  type="button"
+                  class="lab-focus shrink-0 border px-3 py-2 text-left text-sm transition"
+                  :class="
+                    state.crystalSystems.includes(item.value) ?
+                      'border-zinc-500 bg-zinc-900 text-zinc-100 ring-1 ring-inset ring-zinc-500'
+                    : 'border-zinc-800 bg-zinc-950/90 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                  "
+                  @click="toggleCrystalSystem(item.value)">
+                  {{ crystalSystemLabel(item.value) }}
+                </button>
               </div>
             </div>
-          </LabSpoiler>
-        </div>
-        <div v-if="error" class="border-b bg-rose-950/20 p-5">
-          <LabErrorMessage :text="errorMessage" error-class="text-sm" />
-          <div class="mt-3">
-            <LabBaseButton variant="secondary" size="sm" label="Повторить" @click="refresh" />
           </div>
+        </LabSpoiler>
+      </div>
+      <div v-if="error" class="border-b bg-rose-950/20 p-5">
+        <LabErrorMessage :text="errorMessage" error-class="text-sm" />
+        <div class="mt-3">
+          <LabBaseButton variant="secondary" size="sm" label="Повторить" @click="refresh" />
         </div>
-        <div v-else-if="pending && !minerals.length" class="flex min-h-72 items-center justify-center border-b p-6">
-          <LabLoader size="md" variant="inline" label="Загружаем минералы..." />
+      </div>
+      <div v-else-if="pending && !minerals.length" class="flex min-h-72 items-center justify-center border-b p-6">
+        <LabLoader size="md" variant="inline" label="Загружаем минералы..." />
+      </div>
+      <div v-else-if="!minerals.length" class="border-b p-6 text-sm leading-6 text-zinc-400">
+        По текущим условиям ничего не найдено. Попробуйте ослабить поиск или очистить chemistry-фильтр.
+      </div>
+      <div v-else class="divide-y">
+        <div class="text-xs text-zinc-100">Найдено: {{ meta.total }}</div>
+        <div v-for="mineral in minerals" :key="mineral.database_id">
+          <NuxtLink
+            :to="`/edu/chemistry/minerals/${mineral.database_id}`"
+            class="block px-4 py-2 transition hover:bg-white/10 hover:ring-1 hover:ring-inset hover:ring-zinc-600/70">
+            <LabViewerLaTex
+              v-if="showMineralListItemNameAsFormula(mineral)"
+              :formula="mineralListItemNameLatex(mineral)"
+              class="text-sm font-semibold text-zinc-100" />
+            <div v-else class="text-sm font-semibold leading-5 text-zinc-100 wrap-break-word">
+              {{ mineralListItemName(mineral) }}
+            </div>
+          </NuxtLink>
         </div>
-        <div v-else-if="!minerals.length" class="border-b p-6 text-sm leading-6 text-zinc-400">
-          По текущим условиям ничего не найдено. Попробуйте ослабить поиск или очистить chemistry-фильтр.
+      </div>
+      <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-sm text-zinc-400">
+          Страница
+          <span class="text-zinc-100">{{ currentPage }}</span>
+          из
+          <span class="text-zinc-100">{{ totalPages }}</span>
         </div>
-        <div v-else class="divide-y">
-          <div class="text-xs text-zinc-100">Найдено: {{ meta.total }}</div>
-          <div v-for="mineral in minerals" :key="mineral.database_id">
-            <NuxtLink
-              :to="`/edu/chemistry/minerals/${mineral.database_id}`"
-              class="block px-4 py-2 transition hover:bg-white/10 hover:ring-1 hover:ring-inset hover:ring-zinc-600/70">
-              <LabViewerLaTex
-                v-if="showMineralListItemNameAsFormula(mineral)"
-                :formula="mineralListItemNameLatex(mineral)"
-                class="text-sm font-semibold text-zinc-100" />
-              <div v-else class="text-sm font-semibold leading-5 text-zinc-100 wrap-break-word">
-                {{ mineralListItemName(mineral) }}
-              </div>
-            </NuxtLink>
-          </div>
+        <div class="flex items-center gap-2">
+          <LabBaseButton
+            variant="secondary"
+            size="sm"
+            label="Назад"
+            :disabled="!hasPreviousPage || pending"
+            @click="setPageOffset(Math.max(0, meta.offset - meta.limit))" />
+          <LabBaseButton
+            variant="secondary"
+            size="sm"
+            label="Вперёд"
+            :disabled="!hasNextPage || pending"
+            @click="setPageOffset(meta.offset + meta.limit)" />
         </div>
-        <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="text-sm text-zinc-400">
-            Страница
-            <span class="font-medium text-zinc-100">{{ currentPage }}</span>
-            из
-            <span class="font-medium text-zinc-100">{{ totalPages }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <LabBaseButton
-              variant="secondary"
-              size="sm"
-              label="Назад"
-              :disabled="!hasPreviousPage || pending"
-              @click="setPageOffset(Math.max(0, meta.offset - meta.limit))" />
-            <LabBaseButton
-              variant="secondary"
-              size="sm"
-              label="Вперёд"
-              :disabled="!hasNextPage || pending"
-              @click="setPageOffset(meta.offset + meta.limit)" />
-          </div>
-        </div>
-      </section>
+      </div>
     </section>
   </div>
 </template>

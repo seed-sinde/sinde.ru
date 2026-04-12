@@ -74,7 +74,7 @@
   <Teleport to="body">
     <span
       v-if="open"
-      class="pointer-events-none fixed z-9999 rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1.5 text-[11px] leading-snug text-zinc-200 transition"
+      class="pointer-events-none fixed z-9999 rounded-md border border-zinc-700 bg-zinc-900/95 px-2 py-1.5 text-xs leading-snug text-zinc-200 transition"
       :class="[tooltipPositionClass, maxWidthClass, minWidthClass, 'translate-y-0 opacity-100']"
       :style="{ left: `${tooltipPos.left}px`, top: `${tooltipPos.top}px` }">
       {{ text }}

@@ -43,14 +43,12 @@
     return isProfileVersion.value ? 'Аватар профиля' : 'Аватар пользователя'
   })
   const previewRootClass = computed(() =>
-    isProfileVersion.value
-      ? 'bg-(--lab-bg-surface-subtle) flex h-36 w-36 items-center justify-center overflow-hidden border sm:h-40 sm:w-40'
-      : 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full'
+    isProfileVersion.value ?
+      'bg-(--lab-bg-surface-subtle) flex h-36 w-36 items-center justify-center overflow-hidden border sm:h-40 sm:w-40'
+    : 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full'
   )
   const previewImageClass = computed(() =>
-    isProfileVersion.value
-      ? 'h-full w-full object-cover'
-      : 'h-6 w-6 shrink-0 rounded-full border object-cover'
+    isProfileVersion.value ? 'h-full w-full object-cover' : 'h-6 w-6 shrink-0 rounded-full border object-cover'
   )
   const fallbackIconClass = computed(() =>
     isProfileVersion.value ? 'text-(--lab-text-muted) h-20 w-20 text-6xl' : 'text-(--lab-text-muted) h-5 w-5 shrink-0'
@@ -128,7 +126,7 @@
     v-if="isStatusVersion"
     :to="authStatusTo"
     class="text-(--lab-text-muted) hover:text-(--lab-text-primary) relative inline-flex min-w-0 items-center gap-1.5 transition-colors"
-    :class="linkClass"
+    :class="['rounded-full', linkClass]"
     :title="authStatusTitle"
     :aria-label="authStatusTitle"
     @click="onAvatarClick">

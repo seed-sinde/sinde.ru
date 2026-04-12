@@ -619,7 +619,7 @@
               :href="setupOtpAuthUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-(--lab-info) ring-1 ring-transparent focus-visible:outline-none focus-visible:ring-2">
+              class="lab-focus text-(--lab-info)">
               {{ t('auth.account.twofa.qr_fallback_link') }}
             </a>
             {{ t('auth.account.twofa.qr_fallback').split('{link}')[1] }}

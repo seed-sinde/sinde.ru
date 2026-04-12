@@ -54,7 +54,7 @@
   const externalClass = computed(() => String(attrs.class || '').trim())
   const textareaClassList = computed(() => {
     const stateClass = props.invalid ? 'lab-control-invalid' : ''
-    return twMerge('lab-control min-h-24 resize-y', stateClass, props.textareaClass, externalClass.value)
+    return twMerge('lab-control lab-focus min-h-24 resize-y', stateClass, props.textareaClass, externalClass.value)
   })
   const resolvedValue = computed(() => String(props.modelValue || ''))
   const onInput = (event: Event) => {

@@ -209,7 +209,7 @@
                 <NuxtLink
                   v-if="item.href"
                   :to="item.href"
-                  class="mt-2 inline-flex min-w-0 text-sm ring-1 ring-transparent transition focus-visible:outline-none focus-visible:ring-2 sm:text-base">
+                  class="lab-focus mt-2 inline-flex min-w-0 text-sm sm:text-base">
                   <span class="wrap-break-word">{{ item.value }}</span>
                 </NuxtLink>
                 <p v-else class="mt-2 text-sm leading-6 sm:text-base">{{ item.value }}</p>

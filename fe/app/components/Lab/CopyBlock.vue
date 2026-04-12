@@ -18,7 +18,7 @@
     </LabBaseButton>
     <span
       v-if="showStateTooltip && copyState !== 'idle'"
-      class="pointer-events-none absolute -top-1 right-2 -translate-y-full px-2 py-1 text-[11px] leading-none"
+      class="pointer-events-none absolute -top-1 right-2 -translate-y-full px-2 py-1 text-xs leading-none"
       :class="stateTooltipClass"
       role="status"
       aria-live="polite">

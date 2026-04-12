@@ -1,7 +1,7 @@
 <template>
   <fieldset :class="containerClass">
     <div class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span class="px-1 text-[11px] uppercase tracking-[0.06em]" :class="titleClass">{{ title }}</span>
+      <span class="px-1 text-xs uppercase tracking-[0.06em]" :class="titleClass">{{ title }}</span>
       <slot name="header-extra" />
       <LabBaseSwitch
         v-if="toggleLabel"

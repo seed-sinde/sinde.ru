@@ -41,7 +41,7 @@ type StoredFile struct {
 	Reused   bool
 }
 
-var storageKeyPattern = regexp.MustCompile(`^[a-zA-Z0-9/_\.-]+$`)
+var storageKeyPattern = regexp.MustCompile(`^[a-zA-Z0-9/_().-]+$`)
 
 func RootDir() string {
 	if raw := strings.TrimSpace(os.Getenv("MEDIA_FILES_DIR")); raw != "" {

@@ -171,7 +171,7 @@
   const externalClass = computed(() => String(attrs.class || '').trim())
   const selectClassList = computed(() => {
     const stateClass = props.invalid ? 'lab-control-invalid' : ''
-    return twMerge('lab-control relative pr-10 text-left', stateClass, props.selectClass, externalClass.value)
+    return twMerge('lab-control lab-focus relative pr-10 text-left', stateClass, props.selectClass, externalClass.value)
   })
   const triggerStyle = computed(() => {
     if (measuredMinWidthPx.value <= 0) return undefined

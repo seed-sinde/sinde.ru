@@ -1,29 +1,11 @@
 <template>
-  <section
-    :class="[
-      'min-w-0 w-full space-y-3',
-      isOpen ? 'bg-(--lab-bg-surface)' : '',
-      containerClass
-    ]">
-    <button
-      type="button"
+  <section :class="['space-y-3', isOpen ? 'bg-(--lab-bg-surface)' : '', containerClass]">
+    <LabBaseButton
+      :class="headerClass"
       :aria-expanded="isOpen ? 'true' : 'false'"
-      :aria-label="isOpen ? hideLabel : showLabel"
-      :class="[
-        'flex min-w-0 w-full items-center justify-between gap-3 text-left text-(--lab-text-primary) transition focus:outline-none focus-visible:ring-2 focus-visible:ring-(--lab-accent)',
-        headerClass
-      ]"
-      @click="toggle">
-      <span class="min-w-0 flex-1">
-        <span :class="['inline-flex max-w-full border-b border-(--lab-text-primary) pb-0.5', titleClass]">
-          {{ title }}
-        </span>
-      </span>
-      <span class="shrink-0 text-(--lab-text-secondary)" aria-hidden="true">
-        <Icon :name="isOpen ? collapseIcon : expandIcon" class="text-xl" />
-      </span>
-    </button>
-
+      :label="label"
+      :label-class="labelClass"
+      @click="toggle" />
     <div v-if="isOpen" :class="['min-w-0', contentClass]">
       <slot :expanded="isOpen"></slot>
     </div>
@@ -33,28 +15,20 @@
 <script setup lang="ts">
   const props = withDefaults(
     defineProps<{
-      title: string
+      label: string
       modelValue?: boolean
       defaultExpanded?: boolean
-      showLabel?: string
-      hideLabel?: string
-      expandIcon?: string
-      collapseIcon?: string
       containerClass?: string
       headerClass?: string
-      titleClass?: string
+      labelClass?: string
       contentClass?: string
     }>(),
     {
-      title: 'Спойлер',
+      label: 'Спойлер',
       defaultExpanded: false,
-      showLabel: 'Показать',
-      hideLabel: 'Скрыть',
-      expandIcon: 'ic:round-keyboard-double-arrow-down',
-      collapseIcon: 'ic:round-keyboard-double-arrow-up',
       containerClass: '',
       headerClass: '',
-      titleClass: '',
+      labelClass: '',
       contentClass: ''
     }
   )

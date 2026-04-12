@@ -7,12 +7,29 @@ const modules = ['@nuxt/fonts', '@nuxt/icon', '@pinia/nuxt', '@vite-pwa/nuxt']
 if (!isVitest) {
   modules.splice(2, 0, 'nuxt-security')
 }
+// Перехват стандартного потока ошибок, куда Tailwind шлет ворнинги
+if (process.env.NODE_ENV === 'production') {
+  const originalStderrWrite = process.stderr.write
+  // @ts-ignore
+  process.stderr.write = function (chunk, encoding, callback) {
+    const message = chunk.toString()
+    // Список фраз для блокировки
+    if (
+      message.includes('@tailwindcss/vite:generate:build') ||
+      message.includes('Sourcemap is likely to be incorrect') ||
+      message.includes('serverBundle.externalizeIconsJson')
+    ) {
+      return true // Просто поглощаем сообщение, не выводя его
+    }
+    return originalStderrWrite.call(process.stderr, chunk, encoding, callback)
+  }
+}
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
   sourcemap: false,
   typescript: {
-    typeCheck: false,
+    typeCheck: true,
     strict: true,
     tsConfig: {
       exclude: ['../node_modules', '../.git', '../.output', '../dist', '../coverage', '../.cache'],
@@ -51,9 +68,9 @@ export default defineNuxtConfig({
       scan: true
     }
   },
-  security: isVitest
-    ? undefined
-    : {
+  security:
+    isVitest ? undefined : (
+      {
         hidePoweredBy: true,
         sri: true,
         removeLoggers: true,
@@ -62,9 +79,12 @@ export default defineNuxtConfig({
             'img-src': ["'self'", 'data:', 'blob:']
           }
         }
-      },
+      }
+    ),
   nitro: {
+    sourceMap: false,
     preset: 'bun',
+    logLevel: 1,
     typescript: {
       strict: true,
       tsConfig: {
@@ -83,8 +103,14 @@ export default defineNuxtConfig({
   runtimeConfig,
   css: ['~/assets/css/main.css'],
   pwa: pwaConfig,
-  vite: isVitest
-    ? {
+  hooks: {
+    close: () => {
+      setTimeout(() => process.exit(0), 100)
+    }
+  },
+  vite:
+    isVitest ?
+      {
         logLevel: 'error'
       }
     : viteConfig

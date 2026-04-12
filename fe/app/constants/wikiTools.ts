@@ -1,4 +1,4 @@
-export type WikiToolCategory = 'chemistry' | 'astronomy' | 'engineering'
+export type WikiToolCategory = 'chemistry' | 'engineering'
 export type WikiToolArt =
   | 'elements'
   | 'crystal'
@@ -63,17 +63,6 @@ export const wikiTools: WikiTool[] = [
     accentColor: '#3b82f6',
     accentSoftColor: '#93c5fd',
     art: 'elements'
-  },
-  {
-    title: 'Астрономия',
-    text: 'Обзор Солнечной системы, галактики и сравнительных масштабов космических объектов.',
-    to: '/edu/astronomy',
-    icon: 'ic:round-auto-awesome',
-    category: 'astronomy',
-    categoryLabel: 'Астрономия',
-    accentColor: '#f97316',
-    accentSoftColor: '#facc15',
-    art: 'orbit'
   },
   {
     title: 'Инженерные материалы',
