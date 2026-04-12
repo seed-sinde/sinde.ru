@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
+import { canonicalDateText, compareDateText, maskDateText } from '../../app/composables/useDateText'
 
 describe('useDateText helpers', () => {
   it('masks raw digits into a datetime string', () => {

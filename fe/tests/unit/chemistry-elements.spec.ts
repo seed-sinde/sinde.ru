@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
+import { buildPeriodicTableCategoryCounts, mapChemistryElementApi, resolvePeriodicTableElement } from '../../app/utils/chemistryElements'
+import type { ChemistryElementApi } from '../../shared/types/chemistry'
 
 describe('chemistryElements utils', () => {
   const apiElement: ChemistryElementApi = {

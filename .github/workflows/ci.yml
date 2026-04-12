@@ -73,9 +73,10 @@ jobs:
         working-directory: fe
         run: bun install --frozen-lockfile
 
-      - name: Run frontend checks
+      - name: Run frontend tests, checks, and build
         working-directory: fe
         run: |
+          bun test
           bun run typecheck
           bun run build
 

@@ -10,13 +10,7 @@ const viteConfig = {
   ...(isDev ?
     {
       optimizeDeps: {
-        include: [
-          'tailwind-merge',
-          'cropperjs',
-          'highlight.js/lib/common',
-          'highlightjs-vue',
-          'highlight.js/lib/languages/stylus'
-        ]
+        include: ['tailwind-merge', 'cropperjs']
       }
     }
   : {})

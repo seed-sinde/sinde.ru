@@ -4,14 +4,13 @@
     "composite": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["node", "vitest/globals", "bun-types"]
+    "types": ["node", "bun-types"]
   },
   "include": [
     "./.nuxt/**/*.d.ts",
     "./app/**/*",
     "./shared/**/*",
     "./server/**/*",
-    "./vitest.config.ts",
     "./tests/**/*.ts",
     "./types/**/*.d.ts"
   ],

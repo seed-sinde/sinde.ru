@@ -2,8 +2,7 @@
 import { env, isDev, runtimeConfig } from './config/nuxt-env'
 import { pwaConfig } from './config/nuxt-pwa'
 import { viteConfig } from './config/nuxt-vite'
-const isVitest = env.VITEST === '1' || env.VITEST === 'true' || env.NODE_ENV === 'test'
-const modules = ['@nuxt/fonts', '@nuxt/icon', ...(!isVitest ? ['nuxt-security'] : []), '@pinia/nuxt', '@vite-pwa/nuxt']
+const modules = ['@nuxt/fonts', '@nuxt/icon', 'nuxt-security', '@pinia/nuxt', '@vite-pwa/nuxt']
 const ignoreWarnings = [
   '@tailwindcss/vite:generate:build',
   'Sourcemap is likely to be incorrect',
@@ -38,19 +37,16 @@ export default defineNuxtConfig({
       scan: true
     }
   },
-  security:
-    isVitest ? undefined : (
-      {
-        hidePoweredBy: true,
-        sri: true,
-        removeLoggers: true,
-        headers: {
-          contentSecurityPolicy: {
-            'img-src': ["'self'", 'data:', 'blob:']
-          }
-        }
+  security: {
+    hidePoweredBy: true,
+    sri: true,
+    removeLoggers: true,
+    headers: {
+      contentSecurityPolicy: {
+        'img-src': ["'self'", 'data:', 'blob:']
       }
-    ),
+    }
+  },
   nitro: {
     sourceMap: false,
     preset: 'bun',
@@ -67,10 +63,5 @@ export default defineNuxtConfig({
         }
       }
     : undefined,
-  vite:
-    isVitest ?
-      {
-        logLevel: 'error'
-      }
-    : viteConfig
+  vite: viteConfig
 })

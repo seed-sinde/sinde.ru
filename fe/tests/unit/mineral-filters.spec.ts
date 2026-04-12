@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
+import { buildMineralsRouteQuery, hasMineralsRouteQueryValues, readMineralsRouteState } from '../../app/utils/mineralFilters'
+import type { MineralCrystalSystem } from '../../shared/types/chemistry'
 
 describe('mineralFilters route helpers', () => {
   const compareElementOrder = (left: string, right: string) => ['H', 'O', 'Na', 'Cl'].indexOf(left) - ['H', 'O', 'Na', 'Cl'].indexOf(right)
