@@ -91,7 +91,7 @@
     state.sort = next.sort
     state.limit = next.limit
     state.offset = next.offset
-    state.onlyWithImages = next.onlyWithImages
+    state.imageFilter = next.imageFilter
     state.crystalSystems = next.crystalSystems
     state.crystalSystemMode = next.crystalSystemMode
     state.chemistryAll = next.chemistryAll
@@ -120,7 +120,7 @@
       current.sort === state.sort &&
       current.limit === state.limit &&
       current.offset === state.offset &&
-      current.onlyWithImages === state.onlyWithImages &&
+      current.imageFilter === state.imageFilter &&
       JSON.stringify(current.crystalSystems) === JSON.stringify(state.crystalSystems) &&
       current.crystalSystemMode === state.crystalSystemMode &&
       JSON.stringify(current.chemistryAll) === JSON.stringify(sortElements(state.chemistryAll)) &&
@@ -135,7 +135,7 @@
         sort: state.sort,
         limit: state.limit,
         offset: state.offset,
-        onlyWithImages: state.onlyWithImages,
+        imageFilter: state.imageFilter,
         crystalSystems: state.crystalSystems,
         crystalSystemMode: state.crystalSystemMode,
         chemistryAll: state.chemistryAll,
@@ -177,8 +177,8 @@
     state.offset = 0
     await syncRouteFromState()
   }
-  const onOnlyWithImagesChange = async (value: boolean) => {
-    state.onlyWithImages = Boolean(value)
+  const onImageFilterChange = async (value: MineralImageFilter) => {
+    state.imageFilter = value
     state.offset = 0
     await syncRouteFromState()
   }
@@ -235,7 +235,7 @@
     state.sort = 'name_asc'
     state.limit = DEFAULT_LIMIT
     state.offset = 0
-    state.onlyWithImages = false
+    state.imageFilter = 'any'
     state.crystalSystems = []
     state.crystalSystemMode = 'any'
     state.chemistryAll = []
@@ -258,6 +258,11 @@
   const sortOptions: SelectOptionInput[] = [
     { value: 'name_asc', label: 'Имя А-Я' },
     { value: 'name_desc', label: 'Имя Я-А' }
+  ]
+  const imageFilterOptions: Array<{ value: MineralImageFilter; label: string }> = [
+    { value: 'without', label: 'без' },
+    { value: 'any', label: 'без/с' },
+    { value: 'with', label: 'с' }
   ]
   const limitOptions = computed<SelectOptionInput[]>(() =>
     visibleLimitOptions.value.map(limitValue => ({
@@ -469,14 +474,25 @@
             class="max-w-fit"
             @update:model-value="onLimitChange" />
         </LabField>
-        <div class="min-w-0 flex flex-wrap items-center justify-between gap-2 text-sm text-zinc-400 xl:col-span-12">
-          <LabBaseSwitch
-            :model-value="state.onlyWithImages"
-            label="фото"
-            false-label="без"
-            true-label="с"
-            tone="cyan"
-            @update:model-value="onOnlyWithImagesChange" />
+        <div class="min-w-0 flex flex-wrap items-end justify-between gap-2 text-sm text-zinc-400 xl:col-span-12">
+          <LabField label="Фото">
+            <div class="flex min-w-0 items-center gap-1">
+              <button
+                v-for="option in imageFilterOptions"
+                :key="option.value"
+                type="button"
+                class="lab-focus px-2 py-1 text-xs transition"
+                :class="
+                  state.imageFilter === option.value ?
+                    'ring-1 ring-(--lab-accent) text-(--lab-text-primary)'
+                  : 'text-(--lab-text-secondary) hover:ring-1 hover:ring-(--lab-border) hover:text-(--lab-text-primary)'
+                "
+                :aria-pressed="state.imageFilter === option.value"
+                @click="onImageFilterChange(option.value)">
+                {{ option.label }}
+              </button>
+            </div>
+          </LabField>
           <LabBaseButton variant="secondary" size="sm" label="Сбросить все фильтры" @click="clearAllFilters" />
         </div>
         <LabSpoiler

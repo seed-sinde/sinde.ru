@@ -48,48 +48,27 @@
         </span>
       </LabBaseButton>
     </div>
-    <template v-for="section in sections" :key="section.key">
-      <div v-if="section.label" class="px-1">
-        <div
-          v-if="collapsed && section.marker"
-          class="relative mx-1 flex h-5 items-center"
-          :class="animate ? 'transition-opacity duration-200' : ''">
-          <span class="bg-(--lab-border) h-px flex-1"></span>
-          <span
-            class="border-(--lab-bg-canvas) absolute left-1/2 top-1/2 inline-flex h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-(--lab-warning) animate-pulse"></span>
-        </div>
-        <div v-else-if="collapsed" class="bg-(--lab-border) mx-1 h-px"></div>
-        <div
-          v-else
-          class="text-(--lab-text-soft) flex w-full items-center gap-2 overflow-hidden text-[10px] uppercase tracking-[0.08em]"
-          :class="animate ? 'transition-opacity duration-200' : ''">
-          <span class="bg-(--lab-border) h-px flex-1"></span>
-          <span class="truncate whitespace-nowrap">{{ section.label }}</span>
-          <span class="bg-(--lab-border) h-px flex-1"></span>
-        </div>
-      </div>
-      <div class="space-y-1 px-1" :class="section.muted ? 'opacity-55' : ''">
-        <NuxtLink
-          v-for="item in section.items"
-          :key="item.to"
-          :to="item.to"
-          :title="item.label"
-          :class="navItemClass(item.to)">
-          <span class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden">
-            <Icon
-              v-if="item.icon"
-              :name="item.icon"
-              :class="['h-4.5 w-4.5 shrink-0', item.iconColor || 'text-current']" />
-          </span>
-          <span
-            v-if="!collapsed"
-            class="ml-1 truncate whitespace-nowrap text-sm"
-            :class="animate ? 'transition-opacity duration-150' : ''">
-            {{ item.label }}
-          </span>
-        </NuxtLink>
-      </div>
-    </template>
+    <div class="space-y-1 px-1">
+      <NuxtLink
+        v-for="item in props.items"
+        :key="item.to"
+        :to="item.to"
+        :title="item.label"
+        :class="navItemClass(item.to)">
+        <span class="relative inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden">
+          <Icon
+            v-if="item.icon"
+            :name="item.icon"
+            :class="['h-4.5 w-4.5 shrink-0', item.iconColor || 'text-current']" />
+        </span>
+        <span
+          v-if="!collapsed"
+          class="ml-1 truncate whitespace-nowrap text-sm"
+          :class="animate ? 'transition-opacity duration-150' : ''">
+          {{ item.label }}
+        </span>
+      </NuxtLink>
+    </div>
     <div class="mt-auto space-y-1">
       <div v-if="!collapsed" class="px-1">
         <LabNavFooter :collapsed="collapsed" :show-controls="true" :show-links="false" />
@@ -128,7 +107,7 @@
       animate: false
     }
   )
-  const { items, collapsed, showToggle, animate } = toRefs(props)
+  const { collapsed, showToggle, animate } = toRefs(props)
   const isPrimaryControlHovered = ref(false)
   const isCollapsedHoverToggle = computed(() => showToggle.value && collapsed.value && isPrimaryControlHovered.value)
   const primaryButtonAriaLabel = computed(() => (isCollapsedHoverToggle.value ? t('nav.expand_menu') : t('nav.home')))
@@ -163,26 +142,6 @@
     if (target === '/') return current === '/'
     return current === target || current.startsWith(`${target}/`)
   }
-  const primaryItems = computed(() => items.value.filter(item => !item.isDev))
-  const devItems = computed(() => items.value.filter(item => item.isDev))
-  const sections = computed(() =>
-    [
-      {
-        key: 'primary',
-        label: '',
-        items: primaryItems.value,
-        muted: false,
-        marker: false
-      },
-      {
-        key: 'dev',
-        label: t('nav.not_ready'),
-        items: devItems.value,
-        muted: true,
-        marker: true
-      }
-    ].filter(section => section.items.length)
-  )
   const navItemClass = (itemTo: string) => [
     'text-(--lab-text-secondary) hover:bg-(--lab-bg-surface-hover) hover:text-(--lab-text-primary) focus-visible:bg-(--lab-bg-surface-hover) focus-visible:text-(--lab-text-primary) flex h-8 w-full items-center justify-start overflow-hidden px-0 select-none transition-colors',
     isItemActive(itemTo) ? 'bg-[color-mix(in_srgb,var(--lab-accent)_16%,transparent)] text-(--lab-accent)' : ''

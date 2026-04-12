@@ -15,7 +15,7 @@ describe('mineralFilters route helpers', () => {
         chemistryNone: 'cl',
         crystalSystem: 'hexagonal,unknown',
         crystalSystemMode: 'all',
-        onlyWithImages: '1',
+        image: 'with',
         limit: '60',
         offset: '30',
         sort: 'name_desc'
@@ -32,7 +32,7 @@ describe('mineralFilters route helpers', () => {
       sort: 'name_desc',
       limit: 60,
       offset: 30,
-      onlyWithImages: true,
+      imageFilter: 'with',
       crystalSystems: ['hexagonal', 'unknown'],
       crystalSystemMode: 'all',
       chemistryAll: ['H', 'O'],
@@ -48,7 +48,7 @@ describe('mineralFilters route helpers', () => {
         sort: 'name_asc',
         limit: 30,
         offset: 0,
-        onlyWithImages: false,
+        imageFilter: 'any',
         crystalSystems: [],
         crystalSystemMode: 'any',
         chemistryAll: ['O', 'H'],
@@ -66,6 +66,30 @@ describe('mineralFilters route helpers', () => {
       chemistryAll: 'H,O',
       chemistryNone: 'Cl'
     })
+  })
+
+  it('normalizes image filter query values', () => {
+    expect(
+      readMineralsRouteState(
+        { image: 'without' },
+        {
+          defaultLimit: 30,
+          allowedCrystalSystems,
+          compareElementOrder
+        }
+      ).imageFilter
+    ).toBe('without')
+
+    expect(
+      readMineralsRouteState(
+        { image: 'garbage' },
+        {
+          defaultLimit: 30,
+          allowedCrystalSystems,
+          compareElementOrder
+        }
+      ).imageFilter
+    ).toBe('any')
   })
 
   it('detects whether route query contains any active filters', () => {

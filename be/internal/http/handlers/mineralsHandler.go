@@ -86,6 +86,7 @@ func parseMineralsListQuery(c fiber.Ctx) (models.MineralsListQuery, error) {
 		Limit:             defaultMineralsLimit,
 		Offset:            0,
 		Sort:              models.MineralSortNameAsc,
+		ImageFilter:       models.MineralImageFilterAny,
 		CrystalSystemMode: models.MineralCrystalSystemModeAny,
 	}
 	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
@@ -112,12 +113,12 @@ func parseMineralsListQuery(c fiber.Ctx) (models.MineralsListQuery, error) {
 		}
 		query.Sort = sort
 	}
-	if rawOnlyWithImages := strings.TrimSpace(c.Query("onlyWithImages")); rawOnlyWithImages != "" {
-		switch strings.ToLower(rawOnlyWithImages) {
-		case "1", "true", "yes", "on":
-			query.OnlyWithImages = true
-		case "0", "false", "no", "off":
-			query.OnlyWithImages = false
+	if rawImageFilter := strings.TrimSpace(c.Query("image")); rawImageFilter != "" {
+		switch strings.ToLower(rawImageFilter) {
+		case string(models.MineralImageFilterWith):
+			query.ImageFilter = models.MineralImageFilterWith
+		case string(models.MineralImageFilterWithout):
+			query.ImageFilter = models.MineralImageFilterWithout
 		default:
 			return query, fiber.NewError(fiber.StatusBadRequest, "Некорректный запрос")
 		}

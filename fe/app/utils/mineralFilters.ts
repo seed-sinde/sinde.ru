@@ -46,9 +46,11 @@ export const parseQuerySort = (value: unknown): MineralsRouteState['sort'] => {
   return parsed === 'name_desc' ? 'name_desc' : 'name_asc'
 }
 
-export const parseQueryOnlyWithImages = (value: unknown) => {
+export const parseQueryImageFilter = (value: unknown): MineralImageFilter => {
   const parsed = parseQueryStringValue(value).toLowerCase()
-  return parsed === '1' || parsed === 'true' || parsed === 'yes' || parsed === 'on'
+  if (parsed === 'with') return 'with'
+  if (parsed === 'without') return 'without'
+  return 'any'
 }
 
 export const hasMineralsRouteQueryValues = (query: Record<string, unknown>) =>
@@ -69,7 +71,7 @@ export const readMineralsRouteState = (
   sort: parseQuerySort(query.sort),
   limit: parseQueryLimit(query.limit, options.defaultLimit),
   offset: parseQueryOffset(query.offset),
-  onlyWithImages: parseQueryOnlyWithImages(query.onlyWithImages),
+  imageFilter: parseQueryImageFilter(query.image),
   crystalSystems: parseQueryCrystalSystems(query.crystalSystem, options.allowedCrystalSystems),
   crystalSystemMode: parseQueryCrystalSystemMode(query.crystalSystemMode),
   chemistryAll: parseQueryElementList(query.chemistryAll, options.compareElementOrder),
@@ -90,7 +92,7 @@ export const buildMineralsRouteQuery = (
   if (state.sort !== 'name_asc') query.sort = state.sort
   if (state.limit !== options.defaultLimit) query.limit = String(state.limit)
   if (state.offset > 0) query.offset = String(state.offset)
-  if (state.onlyWithImages) query.onlyWithImages = '1'
+  if (state.imageFilter !== 'any') query.image = state.imageFilter
   if (state.crystalSystems.length) query.crystalSystem = state.crystalSystems.join(',')
   if (state.crystalSystemMode !== 'any') query.crystalSystemMode = state.crystalSystemMode
   if (state.chemistryAll.length) query.chemistryAll = options.sortElements(state.chemistryAll).join(',')

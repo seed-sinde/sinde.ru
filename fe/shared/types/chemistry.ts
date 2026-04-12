@@ -114,12 +114,13 @@ export type PeriodicTableSample = {
   license: string | null
 }
 type MineralSortOption = 'name_asc' | 'name_desc'
+export type MineralImageFilter = 'without' | 'any' | 'with'
 export type MineralsFiltersSnapshot = {
   q: string
   sort: MineralSortOption
   limit: number
   offset: number
-  onlyWithImages: boolean
+  imageFilter: MineralImageFilter
   crystalSystems: MineralCrystalSystem[]
   crystalSystemMode: MineralCrystalSystemMode
   chemistryAll: string[]
@@ -218,7 +219,7 @@ export type MineralsRouteState = {
   sort: MineralSortOption
   limit: number
   offset: number
-  onlyWithImages: boolean
+  imageFilter: MineralImageFilter
   crystalSystems: MineralCrystalSystem[]
   crystalSystemMode: MineralCrystalSystemMode
   chemistryAll: string[]

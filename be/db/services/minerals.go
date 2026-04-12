@@ -157,8 +157,7 @@ func scanMineral(row mineralScanner) (*models.Mineral, error) {
 func buildMineralsFilterSQL(params models.MineralsListQuery) (string, []any) {
 	clauses := make([]string, 0, 4)
 	args := make([]any, 0, 8)
-	if params.OnlyWithImages {
-		clauses = append(clauses, `
+	imageUsageClause := `
 			EXISTS (
 				SELECT 1
 				FROM storage_object_usages usage
@@ -168,7 +167,12 @@ func buildMineralsFilterSQL(params models.MineralsListQuery) (string, []any) {
 					AND usage.usage_type = 'image'
 					AND usage.field_name = 'gallery'
 			)
-		`)
+		`
+	if params.ImageFilter == models.MineralImageFilterWith {
+		clauses = append(clauses, imageUsageClause)
+	}
+	if params.ImageFilter == models.MineralImageFilterWithout {
+		clauses = append(clauses, fmt.Sprintf("NOT (%s)", imageUsageClause))
 	}
 	if pattern := buildMineralsSearchPattern(params.Search); pattern != "" {
 		args = append(args, pattern)

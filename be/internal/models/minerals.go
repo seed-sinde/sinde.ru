@@ -3,10 +3,14 @@ package models
 import "time"
 
 type MineralSort string
+type MineralImageFilter string
 
 const (
 	MineralSortNameAsc  MineralSort = "name_asc"
 	MineralSortNameDesc MineralSort = "name_desc"
+	MineralImageFilterAny MineralImageFilter = "any"
+	MineralImageFilterWith MineralImageFilter = "with"
+	MineralImageFilterWithout MineralImageFilter = "without"
 )
 
 type MineralCrystalSystem string
@@ -78,7 +82,7 @@ type MineralsListQuery struct {
 	Limit             int
 	Offset            int
 	Sort              MineralSort
-	OnlyWithImages    bool
+	ImageFilter       MineralImageFilter
 	CrystalSystems    []string
 	CrystalSystemMode MineralCrystalSystemMode
 	ChemistryAll      []string

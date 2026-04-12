@@ -3,11 +3,7 @@ const SIDEBAR_TRANSLATION_KEYS = {
   '/lab': 'sidebar.lab',
   '/traits': 'sidebar.traits',
   '/kitchen': 'sidebar.kitchen',
-  '/edu': 'sidebar.wiki',
-  '/perception': 'sidebar.perception',
-  '/experience': 'sidebar.experience',
-  '/careers': 'sidebar.careers',
-  '/family': 'sidebar.family'
+  '/edu': 'sidebar.wiki'
 } as const satisfies Record<string, InterfaceMessageKey>
 export const useSidebarItems = () => {
   const { t } = useInterfacePreferences()

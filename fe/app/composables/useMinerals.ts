@@ -3,7 +3,7 @@ type MineralsListParams = {
   limit?: number
   offset?: number
   sort?: 'name_asc' | 'name_desc'
-  onlyWithImages?: boolean
+  imageFilter?: MineralImageFilter
   crystalSystems?: MineralCrystalSystem[]
   crystalSystemMode?: MineralCrystalSystemMode
   chemistryAll?: string[]
@@ -23,7 +23,7 @@ export const getMineralsList = async (params: MineralsListParams = {}) => {
   if (typeof params.limit === 'number' && Number.isFinite(params.limit)) query.set('limit', String(params.limit))
   if (typeof params.offset === 'number' && Number.isFinite(params.offset)) query.set('offset', String(params.offset))
   if (params.sort) query.set('sort', params.sort)
-  if (params.onlyWithImages) query.set('onlyWithImages', '1')
+  if (params.imageFilter === 'with' || params.imageFilter === 'without') query.set('image', params.imageFilter)
   appendMineralsArrayParam(query, 'crystalSystem', params.crystalSystems)
   if (params.crystalSystemMode === 'all') query.set('crystalSystemMode', 'all')
   appendMineralsArrayParam(query, 'chemistryAll', params.chemistryAll)

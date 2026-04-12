@@ -36,7 +36,7 @@ const createDefaultMineralsFilters = (): MineralsFiltersSnapshot => ({
   sort: 'name_asc',
   limit: DEFAULT_LIMIT,
   offset: 0,
-  onlyWithImages: false,
+  imageFilter: 'any',
   crystalSystems: [],
   crystalSystemMode: 'any',
   chemistryAll: [],
@@ -56,7 +56,7 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
       mineralsFilters.sort !== 'name_asc' ||
       mineralsFilters.limit !== DEFAULT_LIMIT ||
       mineralsFilters.offset > 0 ||
-      mineralsFilters.onlyWithImages ||
+      mineralsFilters.imageFilter !== 'any' ||
       mineralsFilters.crystalSystems.length ||
       mineralsFilters.crystalSystemMode !== 'any' ||
       mineralsFilters.chemistryAll.length ||
@@ -68,7 +68,7 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
     sort: mineralsFilters.sort,
     limit: mineralsFilters.limit,
     offset: mineralsFilters.offset,
-    onlyWithImages: mineralsFilters.onlyWithImages,
+    imageFilter: mineralsFilters.imageFilter,
     crystalSystems: mineralsFilters.crystalSystems.slice(),
     crystalSystemMode: mineralsFilters.crystalSystemMode,
     chemistryAll: mineralsFilters.chemistryAll.slice(),
@@ -82,7 +82,8 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
       typeof next.limit === 'number' && Number.isFinite(next.limit) && next.limit > 0 ? next.limit : DEFAULT_LIMIT
     mineralsFilters.offset =
       typeof next.offset === 'number' && Number.isFinite(next.offset) && next.offset >= 0 ? next.offset : 0
-    mineralsFilters.onlyWithImages = Boolean(next.onlyWithImages)
+    mineralsFilters.imageFilter =
+      next.imageFilter === 'with' || next.imageFilter === 'without' ? next.imageFilter : 'any'
     mineralsFilters.crystalSystems = Array.isArray(next.crystalSystems) ? next.crystalSystems.slice() : []
     mineralsFilters.crystalSystemMode = next.crystalSystemMode === 'all' ? 'all' : 'any'
     mineralsFilters.chemistryAll = Array.isArray(next.chemistryAll) ? next.chemistryAll.slice() : []
@@ -158,7 +159,7 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
         mineralsFilters.sort,
         mineralsFilters.limit,
         mineralsFilters.offset,
-        mineralsFilters.onlyWithImages,
+        mineralsFilters.imageFilter,
         mineralsFilters.chemistryAll,
         mineralsFilters.chemistryAny,
         mineralsFilters.chemistryNone

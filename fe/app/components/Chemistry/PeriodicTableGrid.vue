@@ -103,8 +103,8 @@
   const frameStyle = computed(() => ({
     '--periodic-gap': '0.25rem',
     '--periodic-highlight-reserve': '6px',
-    '--periodic-mobile-cell-width': isMineralsLayout.value ? '2.15rem' : '2.85rem',
-    '--periodic-mobile-cell-height': isMineralsLayout.value ? '1.85rem' : '2.2rem',
+    '--periodic-mobile-cell-width': isMineralsLayout.value ? '2.45rem' : '2.85rem',
+    '--periodic-mobile-cell-height': isMineralsLayout.value ? '2.1rem' : '2.2rem',
     '--periodic-compact-cell-height': props.compactCellHeight || undefined,
     '--periodic-compact-cell-height-wide': props.compactCellHeightWide || undefined,
     '--periodic-row-count': String(visiblePeriodRows.value.length),
@@ -115,7 +115,7 @@
   const frameClass = computed(() => [
     'box-border shrink-0 p-(--periodic-highlight-reserve) [--periodic-cell-width:var(--periodic-mobile-cell-width)] [--periodic-cell-height:var(--periodic-mobile-cell-height)] [--periodic-series-gap-height:0rem] [--periodic-row-label-size:0px] [--periodic-column-label-size:0px] w-[calc(var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] h-[calc(var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))]',
     props.compact ?
-      'sm:[--periodic-row-label-size:1rem] sm:[--periodic-column-label-size:1rem] sm:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] sm:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.2rem] lg:[--periodic-compact-cell-width:1.65rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.45rem)] xl:[--periodic-gap:0.24rem] xl:[--periodic-compact-cell-width:1.75rem] xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))] 2xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))]'
+      'md:[--periodic-row-label-size:1rem] md:[--periodic-column-label-size:1rem] md:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] md:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.2rem] lg:[--periodic-compact-cell-width:1.65rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.45rem)] xl:[--periodic-gap:0.24rem] xl:[--periodic-compact-cell-width:1.75rem] xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))] 2xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))]'
     : 'sm:[--periodic-row-label-size:1.5rem] sm:[--periodic-column-label-size:1.5rem] sm:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] sm:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.35rem] lg:[--periodic-compact-cell-width:2.1rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.8rem)] xl:[--periodic-gap:0.4rem] xl:[--periodic-compact-cell-width:2.2rem] 2xl:[--periodic-full-cell-height:4.75rem] 2xl:[--periodic-cell-height:var(--periodic-full-cell-height)]',
     props.preserveCompactCellWidth ?
       props.compactScrollBreakpoint === 'md' ?
@@ -127,6 +127,9 @@
     gridTemplateColumns: 'var(--periodic-row-label-size) minmax(0, 1fr)',
     gridTemplateRows: 'var(--periodic-column-label-size) minmax(0, 1fr)'
   }))
+  const cornerSpacerClass = computed(() => (props.compact ? 'hidden md:block' : 'hidden sm:block'))
+  const columnHeaderClass = computed(() => (props.compact ? 'hidden md:grid' : 'hidden sm:grid'))
+  const rowHeaderClass = computed(() => (props.compact ? 'hidden md:grid' : 'hidden sm:grid'))
   const tableColumnHeaderStyle = computed(() => ({
     display: 'grid',
     gridTemplateColumns: `repeat(${groupHeaders.value.length}, minmax(0, 1fr))`
@@ -215,21 +218,21 @@
   <div class="flex min-h-0 w-full max-w-full items-start justify-start overflow-x-auto overflow-y-hidden">
     <div :class="frameClass" :style="frameStyle">
       <div class="grid h-full w-full gap-(--periodic-gap)" :style="layoutStyle">
-        <div class="hidden sm:block" aria-hidden="true"></div>
-        <div class="hidden gap-(--periodic-gap) text-center sm:grid" :style="tableColumnHeaderStyle">
+        <div :class="cornerSpacerClass" aria-hidden="true"></div>
+        <div :class="['gap-(--periodic-gap) text-center', columnHeaderClass]" :style="tableColumnHeaderStyle">
           <div
             v-for="group in groupHeaders"
             :key="`group-header:${group}`"
-            class="flex items-center justify-center font-medium tracking-[0.12em] text-(--lab-text-muted) text-[0.55rem] sm:text-[0.68rem]"
+            class="flex items-center justify-center font-medium tracking-[0.12em] text-(--lab-text-muted) text-[0.55rem] md:text-[0.68rem]"
             :class="compact ? 'lg:text-[0.5rem]' : ''">
             {{ group }}
           </div>
         </div>
-        <div class="hidden h-full min-h-0 gap-(--periodic-gap) text-right sm:grid" :style="tableRowHeaderStyle">
+        <div :class="['h-full min-h-0 gap-(--periodic-gap) text-right', rowHeaderClass]" :style="tableRowHeaderStyle">
           <div
             v-for="(period, index) in periodHeaders"
             :key="`period-header:${visiblePeriodRows[index]}`"
-            class="flex items-center justify-end pr-1 font-medium tracking-[0.12em] text-(--lab-text-muted) text-[0.55rem] sm:text-[0.68rem]"
+            class="flex items-center justify-end pr-1 font-medium tracking-[0.12em] text-(--lab-text-muted) text-[0.55rem] md:text-[0.68rem]"
             :class="compact ? 'lg:text-[0.5rem]' : ''"
             aria-hidden="true">
             {{ period }}
