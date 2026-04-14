@@ -4,10 +4,7 @@ const AUTH_SERVER_COOKIE_NAMES = [
   '__Host-refresh_token',
   'refresh_token'
 ] as const
-const AUTH_CLIENT_COOKIE_NAMES = [
-  '__Host-auth_session_hint',
-  'auth_session_hint'
-] as const
+const AUTH_CLIENT_COOKIE_NAMES = ['__Host-auth_session_hint', 'auth_session_hint'] as const
 const AUTH_SESSION_RUNTIME_KEY = '__traitsAuthSessionHint__'
 const hasNamedCookie = (cookieHeader: string | null | undefined, names: readonly string[]) => {
   const raw = String(cookieHeader || '').trim()

@@ -31,11 +31,11 @@ const CYRILLIC_TO_LATIN: Record<string, string> = {
   ь: '',
   э: 'e',
   ю: 'yu',
-  я: 'ya',
+  я: 'ya'
 }
 export const transliterateCyrillicToLatin = (value: string) =>
   Array.from(String(value || '').toLowerCase())
-    .map(char => CYRILLIC_TO_LATIN[char] ?? char)
+    .map((char) => CYRILLIC_TO_LATIN[char] ?? char)
     .join('')
 type SlugifyOptions = {
   fallback?: string
@@ -50,8 +50,6 @@ export const slugifyLatin = (raw: string, options: SlugifyOptions = {}) => {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
-  const clipped = maxLength > 0
-    ? source.slice(0, maxLength).replace(/-+$/g, '')
-    : source
+  const clipped = maxLength > 0 ? source.slice(0, maxLength).replace(/-+$/g, '') : source
   return clipped || fallback
 }

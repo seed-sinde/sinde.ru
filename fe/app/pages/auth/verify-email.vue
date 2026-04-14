@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   title: 'подтверждение email',
-  description: 'Завершение регистрации и активация аккаунта.',
+  description: 'Завершение регистрации и активация аккаунта.'
 })
 const route = useRoute()
 const router = useRouter()
@@ -42,9 +42,9 @@ onMounted(async () => {
 </script>
 <template>
   <div class="px-3 py-6 md:px-5">
-    <section class="max-w-xl space-y-4 border p-5 lab-surface">
-      <h1 class="text-2xl font-semibold lab-text-primary">{{ t('auth.verify.title') }}</h1>
-      <p v-if="pending" class="text-sm lab-text-secondary">{{ t('auth.verify.pending') }}</p>
+    <section class="lab-surface max-w-xl space-y-4 border p-5">
+      <h1 class="lab-text-primary text-2xl font-semibold">{{ t('auth.verify.title') }}</h1>
+      <p v-if="pending" class="lab-text-secondary text-sm">{{ t('auth.verify.pending') }}</p>
       <LabNotify :text="errorText" tone="error" />
       <LabNotify :text="successText" tone="success" />
       <NuxtLink to="/auth/login" class="text-sm text-(--lab-accent) transition hover:text-(--lab-accent-hover)">

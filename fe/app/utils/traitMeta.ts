@@ -207,7 +207,7 @@ export const resolveColorMode = (meta?: Partial<KeyMeta> | Record<string, unknow
  */
 export const resolveUnitCategory = (category?: string | null): TraitUnitCategory => {
   const raw = String(category || '').trim()
-  const found = UNIT_CATEGORIES.find(item => item.id === raw)
+  const found = UNIT_CATEGORIES.find((item) => item.id === raw)
   return found?.id || 'unitless'
 }
 /**
@@ -244,7 +244,7 @@ export const normalizeKeyMeta = (meta?: KeyMeta | null, enumOptionsRaw?: string)
   if (dataType === 'number') {
     const unitCategory = resolveUnitCategory(base.unitCategory)
     const units = getUnitOptionsByCategory(unitCategory)
-    const unit = units.find(item => item.value === base.unit)?.value || units[0]?.value || ''
+    const unit = units.find((item) => item.value === base.unit)?.value || units[0]?.value || ''
     return {
       ...base,
       unitCategory,
@@ -283,7 +283,6 @@ export const keyMetaEquals = (a?: KeyMeta | null, b?: KeyMeta | null): boolean =
   return JSON.stringify(normalizeMetaForEquality(a)) === JSON.stringify(normalizeMetaForEquality(b))
 }
 const re = {
-  stringSafe: /^[^\x00-\x1F\x7F]+$/,
   number: /^-?\d+(\.\d+)?$/,
   datetimeLocal: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/,
   timeLocal: /^\d{2}:\d{2}$/,
@@ -300,6 +299,11 @@ const re = {
   validityTemporary: /^temporary:([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2})$/,
   hex: /^#?[0-9a-fA-F]{6}$/
 }
+const isSafeStringValue = (value: string): boolean =>
+  Array.from(value).every((char) => {
+    const code = char.charCodeAt(0)
+    return (code >= 0x20 && code !== 0x7f) || code > 0x7f
+  })
 /**
  * Parses a canonical local datetime string into a UTC timestamp.
  */
@@ -377,7 +381,7 @@ export const validateValue = (value: unknown, meta: KeyMeta): boolean => {
   const v = typeof value === 'string' ? value.trim() : value
   switch (meta.dataType) {
     case 'string':
-      return typeof v === 'string' && v.length > 0 && re.stringSafe.test(v)
+      return typeof v === 'string' && v.length > 0 && isSafeStringValue(v)
     case 'enum':
       return typeof v === 'string' && v.length > 0
     case 'number':

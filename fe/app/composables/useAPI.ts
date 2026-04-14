@@ -299,7 +299,9 @@ export const useAPI = () => {
           ) {
             onLine(parsed)
           }
-        } catch {}
+        } catch {
+          // Ignore malformed NDJSON chunks and continue reading the stream.
+        }
       }
     }
     const tail = buffer.trim()

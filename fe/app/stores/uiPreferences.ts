@@ -1,36 +1,5 @@
 const DEFAULT_LIMIT = 30
 const STORAGE_KEY = 'ui.preferences.v1'
-const DEFAULT_CODE_VIEWER_THEME_DARK: CodeViewerTheme = 'vs2015'
-const DEFAULT_CODE_VIEWER_THEME_LIGHT: CodeViewerTheme = 'stackoverflow-light'
-const CODE_VIEWER_THEMES = new Set<CodeViewerTheme>([
-  'atom-one-dark',
-  'atom-one-light',
-  'base16/google-dark',
-  'base16/google-light',
-  'base16/gruvbox-dark-hard',
-  'base16/gruvbox-light-soft',
-  'default',
-  'github',
-  'github-dark',
-  'github-dark-dimmed',
-  'mono-blue',
-  'monokai',
-  'night-owl',
-  'nnfx-dark',
-  'stackoverflow-dark',
-  'stackoverflow-light',
-  'tokyo-night-dark',
-  'vs',
-  'vs2015'
-])
-const normalizeCodeViewerTheme = (value?: string | null): CodeViewerTheme => {
-  const candidate = String(value || '').trim() as CodeViewerTheme
-  return CODE_VIEWER_THEMES.has(candidate) ? candidate : DEFAULT_CODE_VIEWER_THEME_DARK
-}
-const normalizeCodeViewerThemeOverride = (value?: string | null): CodeViewerTheme | null => {
-  const candidate = String(value || '').trim() as CodeViewerTheme
-  return CODE_VIEWER_THEMES.has(candidate) ? candidate : null
-}
 const createDefaultMineralsFilters = (): MineralsFiltersSnapshot => ({
   q: '',
   sort: 'name_asc',
@@ -46,8 +15,6 @@ const createDefaultMineralsFilters = (): MineralsFiltersSnapshot => ({
 export const useUiPreferencesStore = defineStore('uiPreferences', () => {
   const interfaceLocale = ref<InterfaceLocaleCode>('ru')
   const themePreference = ref<ThemePreference>('system')
-  const codeViewerSoftWrap = ref(false)
-  const codeViewerThemeOverride = ref<CodeViewerTheme | null>(null)
   const mineralsFilters = reactive<MineralsFiltersSnapshot>(createDefaultMineralsFilters())
   const restored = ref(false)
   const hasActiveMineralsFilters = () =>
@@ -96,8 +63,6 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
   const snapshot = (): UiPreferencesSnapshot => ({
     interfaceLocale: interfaceLocale.value,
     themePreference: themePreference.value,
-    codeViewerSoftWrap: codeViewerSoftWrap.value,
-    codeViewerThemeOverride: codeViewerThemeOverride.value,
     mineralsFilters: mineralsFiltersSnapshot()
   })
   const restorePersisted = () => {
@@ -111,17 +76,11 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
       const parsed = JSON.parse(raw) as Partial<UiPreferencesSnapshot>
       interfaceLocale.value = normalizeInterfaceLocale(parsed.interfaceLocale)
       themePreference.value = normalizeThemePreference(parsed.themePreference)
-      codeViewerSoftWrap.value = Boolean(parsed.codeViewerSoftWrap)
-      codeViewerThemeOverride.value = normalizeCodeViewerThemeOverride(
-        parsed.codeViewerThemeOverride ?? parsed.codeViewerTheme
-      )
       replaceMineralsFilters(parsed.mineralsFilters || {})
     } catch {
       window.localStorage.removeItem(STORAGE_KEY)
       interfaceLocale.value = 'ru'
       themePreference.value = 'system'
-      codeViewerSoftWrap.value = false
-      codeViewerThemeOverride.value = null
       clearMineralsFilters()
     } finally {
       restored.value = true
@@ -131,11 +90,7 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
     if (!import.meta.client || !restored.value) return
     try {
       const hasMeaningfulState =
-        interfaceLocale.value !== 'ru' ||
-        themePreference.value !== 'system' ||
-        codeViewerSoftWrap.value ||
-        codeViewerThemeOverride.value !== null ||
-        hasActiveMineralsFilters()
+        interfaceLocale.value !== 'ru' || themePreference.value !== 'system' || hasActiveMineralsFilters()
       if (!hasMeaningfulState) {
         window.localStorage.removeItem(STORAGE_KEY)
         return
@@ -153,8 +108,6 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
       () => [
         interfaceLocale.value,
         themePreference.value,
-        codeViewerSoftWrap.value,
-        codeViewerThemeOverride.value,
         mineralsFilters.q,
         mineralsFilters.sort,
         mineralsFilters.limit,
@@ -172,8 +125,6 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
     restored,
     interfaceLocale,
     themePreference,
-    codeViewerSoftWrap,
-    codeViewerThemeOverride,
     mineralsFilters,
     snapshot,
     restorePersisted,
@@ -181,20 +132,11 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
     mineralsFiltersSnapshot,
     replaceMineralsFilters,
     clearMineralsFilters,
-    defaultCodeViewerThemeFor(theme: 'dark' | 'light') {
-      return theme === 'light' ? DEFAULT_CODE_VIEWER_THEME_LIGHT : DEFAULT_CODE_VIEWER_THEME_DARK
-    },
     setInterfaceLocale(value: InterfaceLocaleCode) {
       interfaceLocale.value = normalizeInterfaceLocale(value)
     },
     setThemePreference(value: ThemePreference) {
       themePreference.value = normalizeThemePreference(value)
-    },
-    setCodeViewerSoftWrap(value: boolean) {
-      codeViewerSoftWrap.value = Boolean(value)
-    },
-    setCodeViewerThemeOverride(value: CodeViewerTheme | null) {
-      codeViewerThemeOverride.value = value ? normalizeCodeViewerTheme(value) : null
     }
   }
 })

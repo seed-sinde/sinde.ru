@@ -25,7 +25,7 @@ export default defineNuxtPlugin(() => {
   }
   watch(
     () => user.value,
-    nextUser => {
+    (nextUser) => {
       if (!nextUser) return
       interfacePreferences.applyAccountPreferences(nextUser)
     },

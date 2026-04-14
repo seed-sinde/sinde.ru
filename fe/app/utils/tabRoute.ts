@@ -17,16 +17,16 @@ export const stringifyTabValue = (value: TabRouteValue): string => String(value)
 export const normalizeTabRouteValue = (
   raw: unknown,
   allowedValues: TabRouteValue[],
-  fallback: TabRouteValue,
+  fallback: TabRouteValue
 ): TabRouteValue => {
   const candidate = readRouteValue(raw)
-  const match = allowedValues.find(value => stringifyTabValue(value) === candidate)
+  const match = allowedValues.find((value) => stringifyTabValue(value) === candidate)
   return match ?? fallback
 }
 export const buildTabRouteLocation = (
   route: RouteLocationNormalizedLoaded,
   value: TabRouteValue,
-  options: BuildTabRouteOptions,
+  options: BuildTabRouteOptions
 ): RouteLocationRaw | undefined => {
   const valueKey = stringifyTabValue(value)
   const mapped = options.targetMap?.[valueKey]
@@ -35,13 +35,17 @@ export const buildTabRouteLocation = (
   const query = { ...route.query }
   const defaultKey = stringifyTabValue(options.defaultValue ?? value)
   if (!options.persistDefault && valueKey === defaultKey) {
-    delete query[options.queryKey]
-  } else {
-    query[options.queryKey] = valueKey
+    const { [options.queryKey]: _removed, ...restQuery } = query
+    return {
+      path: options.path || route.path,
+      query: restQuery,
+      hash: route.hash
+    }
   }
+  query[options.queryKey] = valueKey
   return {
     path: options.path || route.path,
     query,
-    hash: route.hash,
+    hash: route.hash
   }
 }

@@ -61,9 +61,8 @@ const processRef = globalThis as typeof globalThis & {
   }
 }
 const supportsAnsi = Boolean(processRef.process?.stdout?.isTTY && processRef.process?.stderr?.isTTY)
-const color =
-  supportsAnsi ?
-    ({
+const color = supportsAnsi
+  ? ({
       reset: '\x1b[0m',
       blue: '\x1b[34m',
       yellow: '\x1b[33m',
@@ -99,7 +98,7 @@ function logProxyResult(method: HTTPMethod, proxyPath: string, status: number, m
 function splitSetCookieHeader(raw: string) {
   return raw
     .split(/,(?=\s*[!#$%&'*+\-.^_`|~0-9A-Za-z]+=)/g)
-    .map(value => value.trim())
+    .map((value) => value.trim())
     .filter(Boolean)
 }
 function appendSetCookies(
@@ -142,7 +141,7 @@ function normalizeMediaProxyPath(proxyPath: string) {
   const rawKey = pathname.slice(prefix.length)
   const normalizedKey = rawKey
     .split('/')
-    .map(segment => {
+    .map((segment) => {
       try {
         return encodeURIComponent(decodeURIComponent(segment))
       } catch {
@@ -152,7 +151,7 @@ function normalizeMediaProxyPath(proxyPath: string) {
     .join('/')
   return `${prefix}${normalizedKey}${search ? `?${search}` : ''}`
 }
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   const { url } = event.node.req
   if (!url?.startsWith('/api/proxy')) return
   const config = useRuntimeConfig()
@@ -178,14 +177,9 @@ export default defineEventHandler(async event => {
   const isMultipartRequest = hasBody && requestContentType.includes('multipart/form-data')
   const isMediaFilePath = normalizedProxyPath.startsWith('/media/files/')
   const rawBody = hasBody ? await readRawBody(event, false) : undefined
-  const requestHeaders = {
-    ...headers
-  } as Record<string, string>
-  for (const key of Object.keys(requestHeaders)) {
-    if (shouldSkipRequestHeader(key)) {
-      delete requestHeaders[key]
-    }
-  }
+  const requestHeaders = Object.fromEntries(
+    Object.entries(headers).filter(([key]) => !shouldSkipRequestHeader(key))
+  ) as Record<string, string>
   if (isMultipartRequest || isMediaFilePath) {
     const doRawRequest = async (url: string) =>
       await fetch(url, {
@@ -265,9 +259,9 @@ export default defineEventHandler(async event => {
       }
       if (!response.ok) {
         const message =
-          payload && typeof payload === 'object' ?
-            (payload as any)?.message || response.statusText || 'Unknown error'
-          : response.statusText || 'Unknown error'
+          payload && typeof payload === 'object'
+            ? (payload as any)?.message || response.statusText || 'Unknown error'
+            : response.statusText || 'Unknown error'
         const details = payload && typeof payload === 'object' ? (payload as any)?.details : undefined
         throw createError({
           statusCode: response.status,

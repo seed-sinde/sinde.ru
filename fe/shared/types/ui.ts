@@ -46,26 +46,6 @@ export type NormalizedSelectOption = {
 export type LabDataTableColumn = TableColumn
 export type LabDataTableRow = TableRow
 export type ViewerMode = 'fit' | 'original'
-export type CodeViewerTheme =
-  | 'atom-one-dark'
-  | 'atom-one-light'
-  | 'base16/google-dark'
-  | 'base16/google-light'
-  | 'base16/gruvbox-dark-hard'
-  | 'base16/gruvbox-light-soft'
-  | 'default'
-  | 'github'
-  | 'github-dark'
-  | 'github-dark-dimmed'
-  | 'mono-blue'
-  | 'monokai'
-  | 'night-owl'
-  | 'nnfx-dark'
-  | 'stackoverflow-dark'
-  | 'stackoverflow-light'
-  | 'tokyo-night-dark'
-  | 'vs'
-  | 'vs2015'
 export type ImageViewerItem = {
   src: string
   title?: string | null
@@ -97,56 +77,6 @@ export type LanguageOption = {
   key: string
   label: string
   category: string
-}
-export type ToolMenu = 'none' | 'textStyle' | 'heading' | 'align' | 'color' | 'language' | 'emoji' | 'link' | 'image'
-export type PreviewMode = 'edit' | 'preview'
-export type SavedRange = any
-export type SelectionState = {
-  value: string
-  start: number
-  end: number
-  selected: string
-}
-export type UrlTargetKind = 'link' | 'image'
-export type ImageAlignMode = '' | 'left' | 'center' | 'right'
-export type MarkdownInlineToken = {
-  start: number
-  end: number
-  isImage: boolean
-  label: string
-  url: string
-  width: string
-  align: ImageAlignMode
-  wrap: boolean
-}
-export type MarkdownViewerTableColumn = {
-  key: string
-  label: string
-}
-export type MarkdownViewerTableRow = Record<string, string>
-export type MarkdownViewerHtmlBlock = {
-  type: 'html'
-  key: string
-  html: string
-}
-export type MarkdownViewerTableBlock = {
-  type: 'table'
-  key: string
-  columns: MarkdownViewerTableColumn[]
-  rows: MarkdownViewerTableRow[]
-}
-export type MarkdownViewerBlock = MarkdownViewerHtmlBlock | MarkdownViewerTableBlock
-export type StyleOption = {
-  label: string
-  icon: string
-  command: 'bold' | 'italic' | 'underline' | 'strikeThrough'
-  before: string
-  after: string
-  placeholder: string
-}
-export type HeadingOption = {
-  level: number
-  size: string
 }
 export type InterfaceLocaleCode = 'ru' | 'en' | 'ch' | 'jp'
 export type ThemePreference = 'system' | 'dark' | 'light'

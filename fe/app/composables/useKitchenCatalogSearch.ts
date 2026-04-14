@@ -42,7 +42,10 @@ export const useKitchenCatalogSearch = (options: {
     { value: 'freq', label: 'Частота' }
   ]
   /** Normalizes a tag-like value for stable comparisons. */
-  const normalizeTag = (value: string) => String(value || '').trim().toLowerCase()
+  const normalizeTag = (value: string) =>
+    String(value || '')
+      .trim()
+      .toLowerCase()
   /** Parses a positive integer filter value and returns null when the input is empty or invalid. */
   const normalizePositiveInt = (raw: string) => {
     const parsed = Number.parseInt(String(raw || '').trim(), 10)
@@ -95,14 +98,14 @@ export const useKitchenCatalogSearch = (options: {
   }
   /** Counts active favorite names after dismissed entries are removed from the effective filter scope. */
   const countActiveFavoriteNames = (allNames: string[], dismissedNames: string[]) => {
-    const dismissedSet = new Set(dismissedNames.map(item => normalizeTag(item)))
-    return allNames.filter(name => !dismissedSet.has(normalizeTag(name))).length
+    const dismissedSet = new Set(dismissedNames.map((item) => normalizeTag(item)))
+    return allNames.filter((name) => !dismissedSet.has(normalizeTag(name))).length
   }
   /** Returns ingredient suggestions while excluding items already selected in the current filter state. */
   const getIngredientSuggestions = (query: string, selectedValues: string[]) => {
     const normalizedQuery = query.trim().toLowerCase()
     if (!normalizedQuery) return [] as Array<{ name: string; category: string }>
-    const selected = new Set(selectedValues.map(value => normalizeTag(value)))
+    const selected = new Set(selectedValues.map((value) => normalizeTag(value)))
     const seen = new Set<string>()
     const items = options.catalogItems.value
     const result: Array<{ name: string; category: string }> = []
@@ -121,34 +124,34 @@ export const useKitchenCatalogSearch = (options: {
     const trimmed = String(name || '').trim()
     if (!trimmed) return
     dismissedFavoriteIncludedInSearch.value = dismissedFavoriteIncludedInSearch.value.filter(
-      item => normalizeTag(item) !== normalizeTag(trimmed)
+      (item) => normalizeTag(item) !== normalizeTag(trimmed)
     )
-    if (!selectedIngredients.value.some(item => normalizeTag(item) === normalizeTag(trimmed))) {
+    if (!selectedIngredients.value.some((item) => normalizeTag(item) === normalizeTag(trimmed))) {
       selectedIngredients.value = [...selectedIngredients.value, trimmed]
     }
-    excludedIngredients.value = excludedIngredients.value.filter(item => normalizeTag(item) !== normalizeTag(trimmed))
+    excludedIngredients.value = excludedIngredients.value.filter((item) => normalizeTag(item) !== normalizeTag(trimmed))
     searchIngredientInput.value = ''
   }
   /** Removes a manually selected include-filter ingredient. */
   const removeSearchIngredient = (name: string) => {
-    selectedIngredients.value = selectedIngredients.value.filter(item => normalizeTag(item) !== normalizeTag(name))
+    selectedIngredients.value = selectedIngredients.value.filter((item) => normalizeTag(item) !== normalizeTag(name))
   }
   /** Adds an ingredient to the exclusion list and removes duplicates from includes. */
   const addExcludedIngredient = (name: string) => {
     const trimmed = String(name || '').trim()
     if (!trimmed) return
     dismissedFavoriteExcludedInSearch.value = dismissedFavoriteExcludedInSearch.value.filter(
-      item => normalizeTag(item) !== normalizeTag(trimmed)
+      (item) => normalizeTag(item) !== normalizeTag(trimmed)
     )
-    if (!excludedIngredients.value.some(item => normalizeTag(item) === normalizeTag(trimmed))) {
+    if (!excludedIngredients.value.some((item) => normalizeTag(item) === normalizeTag(trimmed))) {
       excludedIngredients.value = [...excludedIngredients.value, trimmed]
     }
-    selectedIngredients.value = selectedIngredients.value.filter(item => normalizeTag(item) !== normalizeTag(trimmed))
+    selectedIngredients.value = selectedIngredients.value.filter((item) => normalizeTag(item) !== normalizeTag(trimmed))
     searchIngredientInput.value = ''
   }
   /** Removes a manually excluded ingredient. */
   const removeExcludedIngredient = (name: string) => {
-    excludedIngredients.value = excludedIngredients.value.filter(item => normalizeTag(item) !== normalizeTag(name))
+    excludedIngredients.value = excludedIngredients.value.filter((item) => normalizeTag(item) !== normalizeTag(name))
   }
   /** Adds the current typed ingredient to includes. */
   const addSearchIngredientFromInput = () => addSearchIngredient(searchIngredientInput.value)
@@ -156,12 +159,12 @@ export const useKitchenCatalogSearch = (options: {
   const addExcludedIngredientFromInput = () => addExcludedIngredient(searchIngredientInput.value)
   /** Marks a favorite include ingredient as dismissed from the effective search scope. */
   const dismissFavoriteIncludedForSearch = (name: string) => {
-    if (dismissedFavoriteIncludedInSearch.value.some(item => normalizeTag(item) === normalizeTag(name))) return
+    if (dismissedFavoriteIncludedInSearch.value.some((item) => normalizeTag(item) === normalizeTag(name))) return
     dismissedFavoriteIncludedInSearch.value = [...dismissedFavoriteIncludedInSearch.value, name]
   }
   /** Marks a favorite exclude ingredient as dismissed from the effective search scope. */
   const dismissFavoriteExcludedForSearch = (name: string) => {
-    if (dismissedFavoriteExcludedInSearch.value.some(item => normalizeTag(item) === normalizeTag(name))) return
+    if (dismissedFavoriteExcludedInSearch.value.some((item) => normalizeTag(item) === normalizeTag(name))) return
     dismissedFavoriteExcludedInSearch.value = [...dismissedFavoriteExcludedInSearch.value, name]
   }
   /** Resets the full advanced recipe search state to its initial values. */
@@ -191,14 +194,14 @@ export const useKitchenCatalogSearch = (options: {
   }
   const availableCategories = computed(() => ['все', ...options.categoryLabels.value])
   const ingredientCategoryOptions = computed(() =>
-    availableCategories.value.map(category => ({
+    availableCategories.value.map((category) => ({
       value: category,
       label: category
     }))
   )
   const filteredCatalog = computed(() => {
     const query = ingredientCatalogQuery.value.trim().toLowerCase()
-    return options.catalogItems.value.filter(item => {
+    return options.catalogItems.value.filter((item) => {
       const byCategory = categoryFilter.value === 'все' || item.category === categoryFilter.value
       if (!byCategory) return false
       if (!query) return true
@@ -237,11 +240,11 @@ export const useKitchenCatalogSearch = (options: {
       current.push(item)
       byCategory.set(category, current)
     }
-    const known = options.categoryLabels.value.filter(category => byCategory.has(category))
+    const known = options.categoryLabels.value.filter((category) => byCategory.has(category))
     const unknown = Array.from(byCategory.keys())
-      .filter(category => !options.categoryLabels.value.includes(category))
+      .filter((category) => !options.categoryLabels.value.includes(category))
       .sort((a, b) => a.localeCompare(b, 'ru-RU'))
-    return [...known, ...unknown].map(category => ({
+    return [...known, ...unknown].map((category) => ({
       category,
       items: byCategory.get(category) || []
     }))
@@ -252,13 +255,13 @@ export const useKitchenCatalogSearch = (options: {
   const favoriteIncludeIngredientNames = computed(() => favoriteNamesFrom(options.favoriteIncludeIngredients.value))
   const favoriteExcludeIngredientNames = computed(() => favoriteNamesFrom(options.favoriteExcludeIngredients.value))
   const isFavoriteIncludedDismissed = (name: string) =>
-    dismissedFavoriteIncludedInSearch.value.some(item => normalizeTag(item) === normalizeTag(name))
+    dismissedFavoriteIncludedInSearch.value.some((item) => normalizeTag(item) === normalizeTag(name))
   const isFavoriteExcludedDismissed = (name: string) =>
-    dismissedFavoriteExcludedInSearch.value.some(item => normalizeTag(item) === normalizeTag(name))
+    dismissedFavoriteExcludedInSearch.value.some((item) => normalizeTag(item) === normalizeTag(name))
   const isFavoriteIncludedName = (name: string) =>
-    favoriteIncludeIngredientNames.value.some(item => normalizeTag(item) === normalizeTag(name))
+    favoriteIncludeIngredientNames.value.some((item) => normalizeTag(item) === normalizeTag(name))
   const isFavoriteExcludedName = (name: string) =>
-    favoriteExcludeIngredientNames.value.some(item => normalizeTag(item) === normalizeTag(name))
+    favoriteExcludeIngredientNames.value.some((item) => normalizeTag(item) === normalizeTag(name))
   const activeFavoriteIncludeCount = computed(() =>
     countActiveFavoriteNames(favoriteIncludeIngredientNames.value, dismissedFavoriteIncludedInSearch.value)
   )
@@ -322,7 +325,7 @@ export const useKitchenCatalogSearch = (options: {
     if (includeFavoriteIngredientsInSearch.value) {
       for (const name of favoriteIncludeIngredientNames.value) {
         if (isFavoriteIncludedDismissed(name)) continue
-        if (!selected.some(item => normalizeTag(item) === normalizeTag(name))) {
+        if (!selected.some((item) => normalizeTag(item) === normalizeTag(name))) {
           selected.push(name)
         }
       }
@@ -330,14 +333,14 @@ export const useKitchenCatalogSearch = (options: {
     if (excludeFavoriteIngredientsInSearch.value) {
       for (const name of favoriteExcludeIngredientNames.value) {
         if (isFavoriteExcludedDismissed(name)) continue
-        if (!excluded.some(item => normalizeTag(item) === normalizeTag(name))) {
+        if (!excluded.some((item) => normalizeTag(item) === normalizeTag(name))) {
           excluded.push(name)
         }
       }
     }
-    const excludedNormalized = new Set(excluded.map(item => normalizeTag(item)))
+    const excludedNormalized = new Set(excluded.map((item) => normalizeTag(item)))
     return {
-      selected: selected.filter(item => !excludedNormalized.has(normalizeTag(item))),
+      selected: selected.filter((item) => !excludedNormalized.has(normalizeTag(item))),
       excluded
     }
   }
@@ -345,9 +348,9 @@ export const useKitchenCatalogSearch = (options: {
   const displaySelectedIngredients = computed(() => resolvedSearchFilters.value.selected)
   const displayExcludedIngredients = computed(() => resolvedSearchFilters.value.excluded)
   const isManuallySelectedIngredient = (name: string) =>
-    selectedIngredients.value.some(item => normalizeTag(item) === normalizeTag(name))
+    selectedIngredients.value.some((item) => normalizeTag(item) === normalizeTag(name))
   const isManuallyExcludedIngredient = (name: string) =>
-    excludedIngredients.value.some(item => normalizeTag(item) === normalizeTag(name))
+    excludedIngredients.value.some((item) => normalizeTag(item) === normalizeTag(name))
   const removeEffectiveSelectedIngredient = (name: string) => {
     if (isManuallySelectedIngredient(name)) removeSearchIngredient(name)
     if (includeFavoriteIngredientsInSearch.value && isFavoriteIncludedName(name)) {
@@ -360,19 +363,19 @@ export const useKitchenCatalogSearch = (options: {
       dismissFavoriteExcludedForSearch(name)
     }
   }
-  watch(includeFavoriteIngredientsInSearch, enabled => {
+  watch(includeFavoriteIngredientsInSearch, (enabled) => {
     if (enabled) return
     dismissedFavoriteIncludedInSearch.value = []
   })
-  watch(excludeFavoriteIngredientsInSearch, enabled => {
+  watch(excludeFavoriteIngredientsInSearch, (enabled) => {
     if (enabled) return
     dismissedFavoriteExcludedInSearch.value = []
   })
-  watch(activeFavoriteIncludeCount, count => {
+  watch(activeFavoriteIncludeCount, (count) => {
     if (!includeFavoriteIngredientsInSearch.value || count > 0) return
     includeFavoriteIngredientsInSearch.value = false
   })
-  watch(activeFavoriteExcludeCount, count => {
+  watch(activeFavoriteExcludeCount, (count) => {
     if (!excludeFavoriteIngredientsInSearch.value || count > 0) return
     excludeFavoriteIngredientsInSearch.value = false
   })

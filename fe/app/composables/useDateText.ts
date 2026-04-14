@@ -12,7 +12,9 @@ const textLengthLimitByMode: Record<DateTextMode, number> = {
   datetime: 16
 }
 const parseDateRu = (value: string): { year: number; month: number; day: number; ts: number } | null => {
-  const m = String(value || '').trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+  const m = String(value || '')
+    .trim()
+    .match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
   if (!m) return null
   const day = Number(m[1])
   const month = Number(m[2])
@@ -26,7 +28,9 @@ const parseDateRu = (value: string): { year: number; month: number; day: number;
   return { year, month, day, ts: dt.getTime() }
 }
 const parseTime = (value: string): { hour: number; minute: number; ts: number } | null => {
-  const m = String(value || '').trim().match(/^(\d{2}):(\d{2})$/)
+  const m = String(value || '')
+    .trim()
+    .match(/^(\d{2}):(\d{2})$/)
   if (!m) return null
   const hour = Number(m[1])
   const minute = Number(m[2])
@@ -34,7 +38,9 @@ const parseTime = (value: string): { hour: number; minute: number; ts: number } 
   return { hour, minute, ts: hour * 60 + minute }
 }
 const parseDateTimeRu = (value: string): Parsed | null => {
-  const m = String(value || '').trim().match(/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})$/)
+  const m = String(value || '')
+    .trim()
+    .match(/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})$/)
   if (!m) return null
   const datePart = m[1] || ''
   const timePart = m[2] || ''
@@ -45,7 +51,9 @@ const parseDateTimeRu = (value: string): Parsed | null => {
   return { canonical: `${pad(d.year, 4)}-${pad(d.month)}-${pad(d.day)}T${pad(t.hour)}:${pad(t.minute)}`, ts }
 }
 export const maskDateText = (raw: string, mode: DateTextMode): string => {
-  const digits = String(raw || '').replace(/\D/g, '').slice(0, digitsLimitByMode[mode])
+  const digits = String(raw || '')
+    .replace(/\D/g, '')
+    .slice(0, digitsLimitByMode[mode])
   if (mode === 'time') {
     const d = digits
     const hh = d.slice(0, 2)

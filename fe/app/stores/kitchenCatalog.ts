@@ -6,9 +6,9 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   let loadPromise: Promise<void> | null = null
-  const categoryLabels = computed(() => categories.value.map(item => item.label))
+  const categoryLabels = computed(() => categories.value.map((item) => item.label))
   const ingredientItems = computed(() =>
-    ingredients.value.map(item => ({
+    ingredients.value.map((item) => ({
       id: `catalog:${item.ingredient_id}`,
       ingredient_id: item.ingredient_id,
       name: item.name,
@@ -36,7 +36,7 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
     if (!raw) return ''
     const normalized = raw.toLowerCase()
     const match = getOptions(kind).find(
-      option => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
+      (option) => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
     )
     return match?.label || raw
   }
@@ -45,7 +45,7 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
     if (!raw) return ''
     const normalized = raw.toLowerCase()
     const match = getOptions(kind).find(
-      option => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
+      (option) => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
     )
     return match?.code || raw
   }

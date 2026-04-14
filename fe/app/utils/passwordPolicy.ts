@@ -26,20 +26,13 @@ export const getPasswordPolicyRules = (password: unknown, email: unknown, minLen
     {
       key: 'email',
       passed: hasPassword && hasEmail && !normalizedPasswordLower.includes(normalizedEmail),
-      state: !hasPassword || !hasEmail
-        ? 'idle'
-        : !normalizedPasswordLower.includes(normalizedEmail)
-          ? 'passed'
-          : 'failed'
+      state:
+        !hasPassword || !hasEmail ? 'idle' : !normalizedPasswordLower.includes(normalizedEmail) ? 'passed' : 'failed'
     },
     {
       key: 'common',
       passed: hasPassword && !COMMON_PASSWORDS.has(normalizedPasswordLower),
-      state: !hasPassword
-        ? 'idle'
-        : !COMMON_PASSWORDS.has(normalizedPasswordLower)
-          ? 'passed'
-          : 'failed'
+      state: !hasPassword ? 'idle' : !COMMON_PASSWORDS.has(normalizedPasswordLower) ? 'passed' : 'failed'
     }
   ]
 }

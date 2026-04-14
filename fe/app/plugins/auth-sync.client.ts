@@ -12,11 +12,10 @@ const authSyncRuntime = (() => {
   }
   return scope[AUTH_SYNC_RUNTIME_KEY]!
 })()
-export default defineNuxtPlugin(nuxtApp => {
+export default defineNuxtPlugin((nuxtApp) => {
   if (!import.meta.client) return
   authSyncRuntime.cleanup?.()
-  const { loadMe, loaded, refreshSharedSummaries, ensureSummaryRealtime } =
-    useAuth()
+  const { loadMe, loaded, refreshSharedSummaries, ensureSummaryRealtime } = useAuth()
   let inFlight = false
   let syncReady = loaded.value
   let lastSyncAt = Date.now()
@@ -26,7 +25,7 @@ export default defineNuxtPlugin(nuxtApp => {
   }
   const stopLoadedWatch = watch(
     loaded,
-    next => {
+    (next) => {
       if (!next) return
       markSyncReady()
     },

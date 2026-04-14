@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test'
-import { buildPeriodicTableCategoryCounts, mapChemistryElementApi, resolvePeriodicTableElement } from '../../app/utils/chemistryElements'
+import {
+  buildPeriodicTableCategoryCounts,
+  mapChemistryElementApi,
+  resolvePeriodicTableElement
+} from '../../app/utils/chemistryElements'
 import type { ChemistryElementApi } from '../../shared/types/chemistry'
 
 describe('chemistryElements utils', () => {

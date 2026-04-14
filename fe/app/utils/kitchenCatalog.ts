@@ -8,12 +8,12 @@ const palette = [
   '#14b8a6',
   '#c084fc',
   '#f97316',
-  '#94a3b8',
+  '#94a3b8'
 ] as const
 const hashString = (value: string) => {
   let hash = 0
   for (let i = 0; i < value.length; i += 1) {
-    hash = ((hash << 5) - hash) + value.charCodeAt(i)
+    hash = (hash << 5) - hash + value.charCodeAt(i)
     hash |= 0
   }
   return Math.abs(hash)
@@ -25,11 +25,13 @@ const hexToRgb = (hex: string) => {
   return {
     r: (num >> 16) & 255,
     g: (num >> 8) & 255,
-    b: num & 255,
+    b: num & 255
   }
 }
 export const kitchenCategoryColor = (category: string) => {
-  const key = String(category || '').trim().toLowerCase()
+  const key = String(category || '')
+    .trim()
+    .toLowerCase()
   if (!key) return '#94a3b8'
   return palette[hashString(key) % palette.length] || '#94a3b8'
 }

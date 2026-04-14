@@ -1,10 +1,23 @@
 import { describe, expect, it } from 'bun:test'
-import { buildMineralsRouteQuery, hasMineralsRouteQueryValues, readMineralsRouteState } from '../../app/utils/mineralFilters'
+import {
+  buildMineralsRouteQuery,
+  hasMineralsRouteQueryValues,
+  readMineralsRouteState
+} from '../../app/utils/mineralFilters'
 import type { MineralCrystalSystem } from '../../shared/types/chemistry'
 
 describe('mineralFilters route helpers', () => {
-  const compareElementOrder = (left: string, right: string) => ['H', 'O', 'Na', 'Cl'].indexOf(left) - ['H', 'O', 'Na', 'Cl'].indexOf(right)
-  const allowedCrystalSystems = new Set<MineralCrystalSystem>(['cubic', 'hexagonal', 'monoclinic', 'orthorhombic', 'tetragonal', 'triclinic', 'unknown'])
+  const compareElementOrder = (left: string, right: string) =>
+    ['H', 'O', 'Na', 'Cl'].indexOf(left) - ['H', 'O', 'Na', 'Cl'].indexOf(right)
+  const allowedCrystalSystems = new Set<MineralCrystalSystem>([
+    'cubic',
+    'hexagonal',
+    'monoclinic',
+    'orthorhombic',
+    'tetragonal',
+    'triclinic',
+    'unknown'
+  ])
 
   it('reads ALL / ANY / NONE chemistry filters from route query', () => {
     const state = readMineralsRouteState(
@@ -57,7 +70,7 @@ describe('mineralFilters route helpers', () => {
       },
       {
         defaultLimit: 30,
-        sortElements: values => values.slice().sort(compareElementOrder)
+        sortElements: (values) => values.slice().sort(compareElementOrder)
       }
     )
 

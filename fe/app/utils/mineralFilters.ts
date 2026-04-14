@@ -8,14 +8,16 @@ export const normalizeMineralElementSymbol = (value: unknown) => formatPeriodicT
 export const uniqueElementSymbols = (values: string[]) =>
   Array.from(new Set(values.map(normalizeMineralElementSymbol).filter(Boolean)))
 
-export const sortMineralElementSymbols = (values: string[], compareElementOrder: (left: string, right: string) => number) =>
-  uniqueElementSymbols(values).sort(compareElementOrder)
+export const sortMineralElementSymbols = (
+  values: string[],
+  compareElementOrder: (left: string, right: string) => number
+) => uniqueElementSymbols(values).sort(compareElementOrder)
 
 export const parseQueryElementList = (value: unknown, compareElementOrder: (left: string, right: string) => number) =>
   sortMineralElementSymbols(
     parseQueryStringValue(value)
       .split(',')
-      .map(item => normalizeMineralElementSymbol(item))
+      .map((item) => normalizeMineralElementSymbol(item))
       .filter(Boolean),
     compareElementOrder
   )
@@ -23,8 +25,8 @@ export const parseQueryElementList = (value: unknown, compareElementOrder: (left
 export const parseQueryCrystalSystems = (value: unknown, allowedCrystalSystems: Set<MineralCrystalSystem>) =>
   parseQueryStringValue(value)
     .split(',')
-    .map(item => item.trim() as MineralCrystalSystem)
-    .filter(item => allowedCrystalSystems.has(item))
+    .map((item) => item.trim() as MineralCrystalSystem)
+    .filter((item) => allowedCrystalSystems.has(item))
 
 export const parseQueryCrystalSystemMode = (value: unknown): MineralCrystalSystemMode =>
   parseQueryStringValue(value) === 'all' ? 'all' : 'any'
@@ -54,8 +56,8 @@ export const parseQueryImageFilter = (value: unknown): MineralImageFilter => {
 }
 
 export const hasMineralsRouteQueryValues = (query: Record<string, unknown>) =>
-  Object.values(query).some(value => {
-    if (Array.isArray(value)) return value.some(item => String(item || '').trim())
+  Object.values(query).some((value) => {
+    if (Array.isArray(value)) return value.some((item) => String(item || '').trim())
     return String(value || '').trim() !== ''
   })
 

@@ -192,13 +192,12 @@ export const useAuth = () => {
     })
   }
   const verifyEmail = async (token: string) => {
-    return await useApiJson<AuthApiResult<{ verified: boolean; action?: string; email?: string; session_hints?: boolean }>>(
-      '/auth/verify-email/confirm',
-      {
+    return await useApiJson<
+      AuthApiResult<{ verified: boolean; action?: string; email?: string; session_hints?: boolean }>
+    >('/auth/verify-email/confirm', {
       method: 'POST',
       body: { token }
-      }
-    )
+    })
   }
   const login = async (email: string, password: string) => {
     clearMfaState()
@@ -591,7 +590,7 @@ export const useAuth = () => {
     authSummaryRuntimeInitialized = true
     const openSummaryStream = <T>(path: string, apply: (payload: T | null) => void) => {
       const stream = new EventSource(`/api/proxy${path}`, { withCredentials: true })
-      stream.addEventListener('summary', event => {
+      stream.addEventListener('summary', (event) => {
         const message = event as MessageEvent<string>
         try {
           const payload = JSON.parse(String(message.data || 'null')) as T | null
@@ -607,18 +606,18 @@ export const useAuth = () => {
     }
     const ensureUserSummaryStream = () => {
       if (authSummaryUserStream) return
-      authSummaryUserStream = openSummaryStream<UserSummary>('/auth/summary/stream', payload => {
+      authSummaryUserStream = openSummaryStream<UserSummary>('/auth/summary/stream', (payload) => {
         applyUserSummary(payload)
       })
     }
     const ensureAdminSummaryStream = () => {
       if (!isAdmin.value || authSummaryAdminStream) return
-      authSummaryAdminStream = openSummaryStream<AdminSummary>('/auth/admin/summary/stream', payload => {
+      authSummaryAdminStream = openSummaryStream<AdminSummary>('/auth/admin/summary/stream', (payload) => {
         applyAdminSummary(payload)
       })
     }
     authSummarySyncCleanup?.()
-    authSummarySyncCleanup = subscribeAuthSyncEvents(event => {
+    authSummarySyncCleanup = subscribeAuthSyncEvents((event) => {
       if (event.type !== 'summary-refresh') return
       void nuxtApp.runWithContext(async () => {
         await refreshSharedSummaries()

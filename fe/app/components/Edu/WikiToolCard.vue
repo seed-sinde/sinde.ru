@@ -1,30 +1,31 @@
 <script setup lang="ts">
-  import type { WikiTool } from '~/constants/wikiTools'
-  const props = withDefaults(
-    defineProps<{
-      tool: WikiTool
-      compact?: boolean
-    }>(),
-    {
-      compact: false
-    }
-  )
-  const cardStyle = computed(() => ({
-    '--wiki-accent': props.tool.accentColor,
-    '--wiki-accent-soft': props.tool.accentSoftColor
-  }))
+import type { WikiTool } from '~/constants/wikiTools'
+const props = withDefaults(
+  defineProps<{
+    tool: WikiTool
+    compact?: boolean
+  }>(),
+  {
+    compact: false
+  }
+)
+const cardStyle = computed(() => ({
+  '--wiki-accent': props.tool.accentColor,
+  '--wiki-accent-soft': props.tool.accentSoftColor
+}))
 </script>
 <template>
   <NuxtLink
     :to="tool.to"
     class="wiki-tool-card group flex h-full flex-col border transition-colors"
     :class="compact ? 'wiki-tool-card-compact' : 'wiki-tool-card-regular'"
-    :style="cardStyle">
+    :style="cardStyle"
+  >
     <div class="wiki-tool-card__body flex min-w-0 flex-1 flex-col gap-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 space-y-3">
           <div class="wiki-tool-card__badge inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium">
-            <span class="wiki-tool-card__badge-dot h-2 w-2 shrink-0 rounded-full"></span>
+            <span class="wiki-tool-card__badge-dot h-2 w-2 shrink-0 rounded-full" />
             <span class="truncate">{{ tool.categoryLabel }}</span>
           </div>
           <div class="flex items-start gap-3">
@@ -32,8 +33,8 @@
               <Icon :name="tool.icon" class="h-5 w-5" />
             </span>
             <div class="min-w-0 space-y-2">
-              <h3 class="text-lg font-semibold leading-tight lab-text-primary">{{ tool.title }}</h3>
-              <p class="wrap-break-word text-sm leading-6 lab-text-secondary">{{ tool.text }}</p>
+              <h3 class="lab-text-primary text-lg leading-tight font-semibold">{{ tool.title }}</h3>
+              <p class="lab-text-secondary text-sm leading-6 wrap-break-word">{{ tool.text }}</p>
             </div>
           </div>
         </div>
@@ -86,7 +87,8 @@
             <circle cx="82" cy="60" r="11" class="wiki-tool-card__shape-soft" />
             <path
               d="M38 37v10M38 73v10M15 60h10M51 60h10M24 46l7 7M45 67l7 7M24 74l7-7M45 53l7-7M82 43v8M82 69v8M65 60h8M91 60h8"
-              class="wiki-tool-card__line" />
+              class="wiki-tool-card__line"
+            />
           </svg>
           <svg v-else viewBox="0 0 120 120" class="h-full w-full">
             <circle cx="60" cy="60" r="16" class="wiki-tool-card__shape-main" />
@@ -103,140 +105,140 @@
   </NuxtLink>
 </template>
 <style scoped>
-  .wiki-tool-card {
-    border-color: color-mix(in srgb, var(--wiki-accent) 22%, var(--lab-border));
-    background:
-      radial-gradient(
-        circle at top right,
-        color-mix(in srgb, var(--wiki-accent-soft) 26%, transparent) 0,
-        transparent 54%
-      ),
-      linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--wiki-accent) 10%, var(--lab-bg-surface)) 0%,
-        color-mix(in srgb, var(--wiki-accent-soft) 6%, var(--lab-bg-surface)) 100%
-      );
-    overflow: hidden;
+.wiki-tool-card {
+  border-color: color-mix(in srgb, var(--wiki-accent) 22%, var(--lab-border));
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--wiki-accent-soft) 26%, transparent) 0,
+      transparent 54%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--wiki-accent) 10%, var(--lab-bg-surface)) 0%,
+      color-mix(in srgb, var(--wiki-accent-soft) 6%, var(--lab-bg-surface)) 100%
+    );
+  overflow: hidden;
+}
+.wiki-tool-card:hover {
+  border-color: color-mix(in srgb, var(--wiki-accent) 44%, var(--lab-border-strong));
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--wiki-accent-soft) 32%, transparent) 0,
+      transparent 58%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--wiki-accent) 14%, var(--lab-bg-surface-hover)) 0%,
+      color-mix(in srgb, var(--wiki-accent-soft) 9%, var(--lab-bg-surface-hover)) 100%
+    );
+}
+.wiki-tool-card-regular .wiki-tool-card__body {
+  padding: 1.25rem;
+}
+.wiki-tool-card-compact .wiki-tool-card__body {
+  padding: 1rem;
+}
+.wiki-tool-card__badge {
+  border: 1px solid color-mix(in srgb, var(--wiki-accent) 28%, var(--lab-border));
+  background: color-mix(in srgb, var(--wiki-accent) 12%, var(--lab-bg-control));
+  color: color-mix(in srgb, var(--wiki-accent) 72%, var(--lab-text-primary));
+}
+.wiki-tool-card__badge-dot {
+  background: var(--wiki-accent);
+}
+.wiki-tool-card__icon {
+  border: 1px solid color-mix(in srgb, var(--wiki-accent) 28%, var(--lab-border));
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--wiki-accent-soft) 34%, transparent) 0, transparent 62%),
+    color-mix(in srgb, var(--wiki-accent) 12%, var(--lab-bg-surface-muted));
+  color: color-mix(in srgb, var(--wiki-accent) 76%, var(--lab-text-primary));
+}
+.wiki-tool-card__art {
+  width: 6.5rem;
+  height: 6.5rem;
+  color: var(--wiki-accent);
+  opacity: 0.96;
+}
+.wiki-tool-card__footer {
+  color: color-mix(in srgb, var(--wiki-accent) 82%, var(--lab-text-primary));
+}
+.wiki-tool-card__shape-main,
+.wiki-tool-card__shape-soft,
+.wiki-tool-card__shape-stroke,
+.wiki-tool-card__ring,
+.wiki-tool-card__ring-soft,
+.wiki-tool-card__line {
+  vector-effect: non-scaling-stroke;
+}
+.wiki-tool-card__shape-main {
+  fill: color-mix(in srgb, var(--wiki-accent) 40%, transparent);
+  stroke: color-mix(in srgb, var(--wiki-accent) 70%, transparent);
+  stroke-width: 4;
+}
+.wiki-tool-card__shape-soft {
+  fill: color-mix(in srgb, var(--wiki-accent-soft) 34%, transparent);
+  stroke: color-mix(in srgb, var(--wiki-accent-soft) 68%, transparent);
+  stroke-width: 3;
+}
+.wiki-tool-card__shape-stroke {
+  fill: transparent;
+  stroke: color-mix(in srgb, var(--wiki-accent) 58%, transparent);
+  stroke-width: 3;
+}
+.wiki-tool-card__ring {
+  fill: none;
+  stroke: color-mix(in srgb, var(--wiki-accent) 50%, transparent);
+  stroke-width: 4;
+  stroke-dasharray: 10 9;
+}
+.wiki-tool-card__ring-soft {
+  fill: none;
+  stroke: color-mix(in srgb, var(--wiki-accent-soft) 44%, transparent);
+  stroke-width: 3;
+  stroke-dasharray: 6 8;
+}
+.wiki-tool-card__line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--wiki-accent-soft) 58%, transparent);
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+:global(.dark) .wiki-tool-card {
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--wiki-accent-soft) 16%, transparent) 0,
+      transparent 54%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--wiki-accent) 9%, var(--lab-bg-surface)) 0%,
+      color-mix(in srgb, var(--wiki-accent-soft) 5%, var(--lab-bg-surface)) 100%
+    );
+}
+:global(.dark) .wiki-tool-card:hover {
+  background:
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--wiki-accent-soft) 20%, transparent) 0,
+      transparent 58%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--wiki-accent) 11%, var(--lab-bg-surface-hover)) 0%,
+      color-mix(in srgb, var(--wiki-accent-soft) 6%, var(--lab-bg-surface-hover)) 100%
+    );
+}
+@media (max-width: 639px) {
+  .wiki-tool-card__art {
+    width: 5rem;
+    height: 5rem;
   }
-  .wiki-tool-card:hover {
-    border-color: color-mix(in srgb, var(--wiki-accent) 44%, var(--lab-border-strong));
-    background:
-      radial-gradient(
-        circle at top right,
-        color-mix(in srgb, var(--wiki-accent-soft) 32%, transparent) 0,
-        transparent 58%
-      ),
-      linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--wiki-accent) 14%, var(--lab-bg-surface-hover)) 0%,
-        color-mix(in srgb, var(--wiki-accent-soft) 9%, var(--lab-bg-surface-hover)) 100%
-      );
-  }
-  .wiki-tool-card-regular .wiki-tool-card__body {
-    padding: 1.25rem;
-  }
+  .wiki-tool-card-regular .wiki-tool-card__body,
   .wiki-tool-card-compact .wiki-tool-card__body {
     padding: 1rem;
   }
-  .wiki-tool-card__badge {
-    border: 1px solid color-mix(in srgb, var(--wiki-accent) 28%, var(--lab-border));
-    background: color-mix(in srgb, var(--wiki-accent) 12%, var(--lab-bg-control));
-    color: color-mix(in srgb, var(--wiki-accent) 72%, var(--lab-text-primary));
-  }
-  .wiki-tool-card__badge-dot {
-    background: var(--wiki-accent);
-  }
-  .wiki-tool-card__icon {
-    border: 1px solid color-mix(in srgb, var(--wiki-accent) 28%, var(--lab-border));
-    background:
-      radial-gradient(circle at top, color-mix(in srgb, var(--wiki-accent-soft) 34%, transparent) 0, transparent 62%),
-      color-mix(in srgb, var(--wiki-accent) 12%, var(--lab-bg-surface-muted));
-    color: color-mix(in srgb, var(--wiki-accent) 76%, var(--lab-text-primary));
-  }
-  .wiki-tool-card__art {
-    width: 6.5rem;
-    height: 6.5rem;
-    color: var(--wiki-accent);
-    opacity: 0.96;
-  }
-  .wiki-tool-card__footer {
-    color: color-mix(in srgb, var(--wiki-accent) 82%, var(--lab-text-primary));
-  }
-  .wiki-tool-card__shape-main,
-  .wiki-tool-card__shape-soft,
-  .wiki-tool-card__shape-stroke,
-  .wiki-tool-card__ring,
-  .wiki-tool-card__ring-soft,
-  .wiki-tool-card__line {
-    vector-effect: non-scaling-stroke;
-  }
-  .wiki-tool-card__shape-main {
-    fill: color-mix(in srgb, var(--wiki-accent) 40%, transparent);
-    stroke: color-mix(in srgb, var(--wiki-accent) 70%, transparent);
-    stroke-width: 4;
-  }
-  .wiki-tool-card__shape-soft {
-    fill: color-mix(in srgb, var(--wiki-accent-soft) 34%, transparent);
-    stroke: color-mix(in srgb, var(--wiki-accent-soft) 68%, transparent);
-    stroke-width: 3;
-  }
-  .wiki-tool-card__shape-stroke {
-    fill: transparent;
-    stroke: color-mix(in srgb, var(--wiki-accent) 58%, transparent);
-    stroke-width: 3;
-  }
-  .wiki-tool-card__ring {
-    fill: none;
-    stroke: color-mix(in srgb, var(--wiki-accent) 50%, transparent);
-    stroke-width: 4;
-    stroke-dasharray: 10 9;
-  }
-  .wiki-tool-card__ring-soft {
-    fill: none;
-    stroke: color-mix(in srgb, var(--wiki-accent-soft) 44%, transparent);
-    stroke-width: 3;
-    stroke-dasharray: 6 8;
-  }
-  .wiki-tool-card__line {
-    fill: none;
-    stroke: color-mix(in srgb, var(--wiki-accent-soft) 58%, transparent);
-    stroke-linecap: round;
-    stroke-width: 3;
-  }
-  :global(.dark) .wiki-tool-card {
-    background:
-      radial-gradient(
-        circle at top right,
-        color-mix(in srgb, var(--wiki-accent-soft) 16%, transparent) 0,
-        transparent 54%
-      ),
-      linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--wiki-accent) 9%, var(--lab-bg-surface)) 0%,
-        color-mix(in srgb, var(--wiki-accent-soft) 5%, var(--lab-bg-surface)) 100%
-      );
-  }
-  :global(.dark) .wiki-tool-card:hover {
-    background:
-      radial-gradient(
-        circle at top right,
-        color-mix(in srgb, var(--wiki-accent-soft) 20%, transparent) 0,
-        transparent 58%
-      ),
-      linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--wiki-accent) 11%, var(--lab-bg-surface-hover)) 0%,
-        color-mix(in srgb, var(--wiki-accent-soft) 6%, var(--lab-bg-surface-hover)) 100%
-      );
-  }
-  @media (max-width: 639px) {
-    .wiki-tool-card__art {
-      width: 5rem;
-      height: 5rem;
-    }
-    .wiki-tool-card-regular .wiki-tool-card__body,
-    .wiki-tool-card-compact .wiki-tool-card__body {
-      padding: 1rem;
-    }
-  }
+}
 </style>

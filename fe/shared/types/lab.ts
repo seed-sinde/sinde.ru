@@ -1,5 +1,19 @@
-export type LabTestDepthKey = 'figurative' | 'process' | 'technology' | 'engineering' | 'industrial' | 'economic' | 'strategic'
-export type LabTestRoleKey = 'engineer' | 'technologist' | 'operator' | 'analyst' | 'procurement' | 'researcher' | 'architect'
+export type LabTestDepthKey =
+  | 'figurative'
+  | 'process'
+  | 'technology'
+  | 'engineering'
+  | 'industrial'
+  | 'economic'
+  | 'strategic'
+export type LabTestRoleKey =
+  | 'engineer'
+  | 'technologist'
+  | 'operator'
+  | 'analyst'
+  | 'procurement'
+  | 'researcher'
+  | 'architect'
 export type LabTestStageStatus = 'stable' | 'warning' | 'critical' | 'improving'
 export type LabTestOption<T extends string> = {
   key: T

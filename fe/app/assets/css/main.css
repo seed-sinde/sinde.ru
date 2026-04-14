@@ -134,13 +134,14 @@
 
 @layer components {
   .lab-focus {
-    @apply outline-none transition-[box-shadow,border-color] duration-150;
+    @apply transition-[box-shadow,border-color] duration-150 outline-none;
   }
 
   .lab-focus:focus,
   .lab-focus:focus-visible {
     border-color: var(--lab-accent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--lab-accent) 28%, transparent),
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--lab-accent) 28%, transparent),
       0 0 0 4px var(--lab-focus-ring);
   }
 
@@ -158,7 +159,8 @@
   .peer:focus ~ .lab-focus-peer,
   .peer:focus-visible ~ .lab-focus-peer {
     border-color: var(--lab-accent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--lab-accent) 28%, transparent),
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--lab-accent) 28%, transparent),
       0 0 0 4px var(--lab-focus-ring);
   }
 
@@ -168,6 +170,23 @@
   .peer[aria-disabled='true'] ~ .lab-focus-peer {
     box-shadow: none;
   }
+
+  .lab-tabs-focus {
+    @apply transition-[box-shadow,color,background-color,border-color] duration-150 outline-none;
+  }
+
+  .lab-tabs-focus:focus,
+  .lab-tabs-focus:focus-visible {
+    color: var(--lab-text-primary);
+    border-color: var(--lab-accent);
+    background: color-mix(in srgb, var(--lab-bg-surface-subtle) 72%, transparent);
+    box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--lab-accent) 82%, transparent);
+  }
+
+  .lab-tabs-focus[aria-disabled='true'] {
+    box-shadow: none;
+  }
+
   .lab-text-primary {
     color: var(--lab-text-primary);
   }
@@ -210,7 +229,7 @@
   }
 
   .lab-control {
-    @apply block w-full min-h-11 border px-3.5 py-2.5 text-sm outline-none transition-colors;
+    @apply block min-h-11 w-full border px-3.5 py-2.5 text-sm transition-colors outline-none;
     border-color: var(--lab-border);
     background: var(--lab-bg-control);
     color: var(--lab-text-primary);
@@ -372,7 +391,7 @@
   }
 
   .lab-button {
-    @apply text-nowrap inline-flex shrink-0 items-center justify-center gap-2 border outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex shrink-0 items-center justify-center gap-2 border text-nowrap transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-60;
     border-color: transparent;
     background: transparent;
     color: var(--lab-text-primary);
@@ -491,7 +510,7 @@
   }
 
   .lab-badge {
-    @apply inline-flex items-center whitespace-nowrap border font-medium;
+    @apply inline-flex items-center border font-medium whitespace-nowrap;
   }
 
   .lab-badge-default {

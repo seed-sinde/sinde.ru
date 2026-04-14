@@ -159,7 +159,7 @@ export const mapChemistryElementApi = (raw: ChemistryElementApi, index: number):
   const category = normalizeText(raw.category) || 'unknown'
   const samples: PeriodicTableSample[] = Array.isArray(raw.samples)
     ? raw.samples
-        .map(sample => {
+        .map((sample) => {
           const file = String(sample?.file || '').trim()
           if (!file) return null
           return {
@@ -278,7 +278,7 @@ export const resolvePeriodicTableElement = (
     : String(value ?? '')
         .split('/')
         .filter(Boolean)
-  const segments = rawSegments.map(segment => decodeURIComponent(String(segment || '').trim())).filter(Boolean)
+  const segments = rawSegments.map((segment) => decodeURIComponent(String(segment || '').trim())).filter(Boolean)
   if (!segments.length) return null
   const lookup = new Map<string, PeriodicTableElement>()
   for (const element of elements) {

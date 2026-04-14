@@ -166,8 +166,8 @@ export const isTraitFormValueFilled = (meta: KeyMeta, value: unknown): boolean =
         if (!raw) return false
         if (configuredMode === 'hex') return isHexColor(raw)
         if (configuredMode === 'lab') {
-          const parts = raw.split(',').map(part => part.trim())
-          return parts.length === 3 && parts.every(part => Number.isFinite(Number(part)))
+          const parts = raw.split(',').map((part) => part.trim())
+          return parts.length === 3 && parts.every((part) => Number.isFinite(Number(part)))
         }
         return true
       }
@@ -180,7 +180,7 @@ export const isTraitFormValueFilled = (meta: KeyMeta, value: unknown): boolean =
       if (mode === 'hex') return isHexColor(String((value as any).hex ?? '').trim())
       if (mode === 'lab') {
         const lab = (value as any).lab
-        return Boolean(lab && ['L', 'a', 'b'].every(key => Number.isFinite(Number(lab[key]))))
+        return Boolean(lab && ['L', 'a', 'b'].every((key) => Number.isFinite(Number(lab[key]))))
       }
       if (mode === 'spectrum') return Boolean(String((value as any).spectrum ?? '').trim())
       return Boolean(String((value as any).hex ?? (value as any).spectrum ?? '').trim())
@@ -213,7 +213,7 @@ const serializeColorValue = (meta: KeyMeta, value: unknown): string => {
   }
   if (mode === 'lab' && (value as any).lab) {
     const lab = (value as any).lab
-    if (!['L', 'a', 'b'].every(key => Number.isFinite(Number(lab[key])))) return ''
+    if (!['L', 'a', 'b'].every((key) => Number.isFinite(Number(lab[key])))) return ''
     return `${Number(lab.L)},${Number(lab.a)},${Number(lab.b)}`
   }
   if (mode === 'spectrum') {
@@ -435,7 +435,7 @@ export const parseTraitStoredValue = (
       }
     }
     case 'geo-point': {
-      const parts = raw.split(',').map(part => part.trim())
+      const parts = raw.split(',').map((part) => part.trim())
       if (parts.length !== 2) return defaultTraitFormValue(meta)
       return { lat: parts[0], lng: parts[1] }
     }

@@ -61,13 +61,13 @@ export const useInterfacePreferences = () => {
     return formatMessage(String(messages[key] || fallback), params)
   }
   const localeOptions = computed<SelectOptionInput[]>(() =>
-    INTERFACE_LOCALE_OPTIONS.map(option => ({
+    INTERFACE_LOCALE_OPTIONS.map((option) => ({
       value: option.code,
       label: option.nativeLabel
     }))
   )
   const themeOptions = computed<SelectOptionInput[]>(() =>
-    INTERFACE_THEME_OPTIONS.map(value => ({
+    INTERFACE_THEME_OPTIONS.map((value) => ({
       value,
       label: t(`theme.${value}` as InterfaceMessageKey)
     }))

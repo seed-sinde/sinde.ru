@@ -8,7 +8,7 @@ const manifestDisplayOverride = (
   env.NUXT_PWA_MANIFEST_DISPLAY_OVERRIDE || 'fullscreen,standalone,window-controls-overlay,browser'
 )
   .split(',')
-  .map(item => item.trim())
+  .map((item) => item.trim())
   .filter(Boolean) as Array<'window-controls-overlay' | 'fullscreen' | 'standalone' | 'minimal-ui' | 'browser'>
 const manifestOrientation = (env.NUXT_PWA_MANIFEST_ORIENTATION || 'portrait') as
   | 'any'
@@ -21,7 +21,7 @@ const manifestOrientation = (env.NUXT_PWA_MANIFEST_ORIENTATION || 'portrait') as
   | 'portrait-secondary'
 const manifestCategories = (env.NUXT_PWA_MANIFEST_CATEGORIES || 'education,productivity,utilities')
   .split(',')
-  .map(item => item.trim())
+  .map((item) => item.trim())
   .filter(Boolean)
 const pwaConfig = {
   strategies: 'injectManifest' as const,
@@ -65,13 +65,7 @@ const pwaConfig = {
   injectManifest: {
     maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
     globPatterns: ['**/*.{js,css,ico,svg,webmanifest,txt,woff2}'],
-    globIgnores: [
-      '**/*.glb',
-      '**/avatars/**/*',
-      '**/recipes/**/*',
-      '**/uploads/**/*',
-      '**/user-content/**/*'
-    ]
+    globIgnores: ['**/*.glb', '**/avatars/**/*', '**/recipes/**/*', '**/uploads/**/*', '**/user-content/**/*']
   },
   devOptions: {
     enabled: false,

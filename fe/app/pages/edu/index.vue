@@ -1,10 +1,10 @@
 <script setup lang="ts">
-  const title = 'Вики'
-  const dataWikiTools = wikiTools
-  usePageSeo({
-    title,
-    description: 'Сжатый справочник знаний и интерактивные инструменты.'
-  })
+const title = 'Вики'
+const dataWikiTools = wikiTools
+usePageSeo({
+  title,
+  description: 'Сжатый справочник знаний и интерактивные инструменты.'
+})
 </script>
 <template>
   <div class="space-y-6">

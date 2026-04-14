@@ -18,7 +18,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   modelViewer.addEventListener('load', hideLoader, { once: true })
   modelViewer.addEventListener('error', hideLoader, { once: true })
 
-  window.addEventListener('keydown', event => {
+  window.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return
     window.parent.postMessage({ type: 'lab-3d-viewer-close' }, window.location.origin)
   })

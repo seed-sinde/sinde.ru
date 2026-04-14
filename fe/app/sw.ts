@@ -49,14 +49,14 @@ registerRoute(
     plugins: ICON_CACHE_PLUGINS
   })
 )
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys()
       await Promise.all(
-        keys.map(cacheKey => {
+        keys.map((cacheKey) => {
           const isCurrent = CURRENT_CACHE_NAMES.has(cacheKey)
-          const isObsolete = OBSOLETE_CACHE_PATTERNS.some(pattern => pattern.test(cacheKey))
+          const isObsolete = OBSOLETE_CACHE_PATTERNS.some((pattern) => pattern.test(cacheKey))
           if (isCurrent || !isObsolete) return Promise.resolve(false)
           return caches.delete(cacheKey)
         })

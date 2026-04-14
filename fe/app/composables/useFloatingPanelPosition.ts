@@ -92,7 +92,9 @@ export const useFloatingPanelPosition = (options: {
     let top = 0
     if (nextSide === 'top' || nextSide === 'bottom') {
       left =
-        nextAlign === 'left' ? triggerRect.left + crossAxisOffset : triggerRect.right - panelRect.width - crossAxisOffset
+        nextAlign === 'left'
+          ? triggerRect.left + crossAxisOffset
+          : triggerRect.right - panelRect.width - crossAxisOffset
       top = nextSide === 'bottom' ? triggerRect.bottom + offset : triggerRect.top - panelRect.height - offset
     } else {
       left = nextSide === 'right' ? triggerRect.right + offset : triggerRect.left - panelRect.width - offset

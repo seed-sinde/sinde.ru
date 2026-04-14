@@ -26,9 +26,10 @@ export const useDatePairModel = (model: Ref<DatePairModel>, options: DatePairOpt
   watch([left, right], ([leftValue, rightValue]) => {
     const current = model.value ?? {}
     if (
-      String(current?.[options.leftKey] ?? '') === leftValue
-      && String(current?.[options.rightKey] ?? '') === rightValue
-    ) return
+      String(current?.[options.leftKey] ?? '') === leftValue &&
+      String(current?.[options.rightKey] ?? '') === rightValue
+    )
+      return
     model.value = {
       ...current,
       [options.leftKey]: leftValue,
@@ -36,10 +37,10 @@ export const useDatePairModel = (model: Ref<DatePairModel>, options: DatePairOpt
     }
   })
   watch(
-    (): [string, string] => ([
+    (): [string, string] => [
       String(model.value?.[options.leftKey] ?? ''),
       String(model.value?.[options.rightKey] ?? '')
-    ]),
+    ],
     ([nextLeft, nextRight]) => {
       if (left.value !== nextLeft) left.value = nextLeft
       if (right.value !== nextRight) right.value = nextRight

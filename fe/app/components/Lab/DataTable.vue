@@ -11,7 +11,8 @@
                     name="ic:round-autorenew"
                     class="h-3.5 w-3.5 transition-opacity"
                     :class="loading ? 'animate-spin opacity-100' : 'opacity-0'"
-                    aria-hidden="true" />
+                    aria-hidden="true"
+                  />
                   <span class="sr-only">{{ loading ? 'Загрузка' : 'Ожидание' }}</span>
                 </div>
               </slot>
@@ -30,11 +31,12 @@
             </td>
           </tr>
           <tr v-for="(row, index) in normalizedRows" :key="resolveRowKey(row, index)" :class="rowClass">
-            <td class="w-7 py-2 pr-2"></td>
+            <td class="w-7 py-2 pr-2" />
             <td
               v-for="column in columns"
               :key="`${String(resolveRowKey(row, index))}:${column.key}`"
-              :class="cellClass(column)">
+              :class="cellClass(column)"
+            >
               <slot :name="`cell-${column.key}`" :row="row" :column="column" :value="row?.[column.key]" :index="index">
                 <slot name="cell" :row="row" :column="column" :value="row?.[column.key]" :index="index">
                   {{ formatCellValue(row?.[column.key]) }}
@@ -48,75 +50,77 @@
     <div
       class="lab-scroll-fade lab-scroll-fade-x-left"
       :class="{ 'lab-scroll-fade-visible': scrollEdges.left }"
-      aria-hidden="true"></div>
+      aria-hidden="true"
+    />
     <div
       class="lab-scroll-fade lab-scroll-fade-x-right"
       :class="{ 'lab-scroll-fade-visible': scrollEdges.right }"
-      aria-hidden="true"></div>
+      aria-hidden="true"
+    />
   </div>
 </template>
 <script setup lang="ts">
-  const props = withDefaults(
-    defineProps<{
-      columns: LabDataTableColumn[]
-      rows: any[]
-      loading?: boolean
-      emptyText?: string
-      rowKey?: string | ((row: any, index: number) => PropertyKey)
-      tableClass?: string
-      theadClass?: string
-      tbodyClass?: string
-      rowClass?: string
-      maxHeightClass?: string
-      containerClass?: string
-    }>(),
-    {
-      loading: false,
-      emptyText: 'Ничего не найдено.',
-      rowKey: 'id',
-      tableClass: 'min-w-full text-xs',
-      theadClass: 'sticky top-0 z-10',
-      tbodyClass: '',
-      rowClass: 'border-b align-top',
-      maxHeightClass: 'max-h-136',
-      containerClass: ''
-    }
-  )
-  const scrollerRef = ref<HTMLElement | null>(null)
-  const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(scrollerRef, { axis: 'x' })
-  const normalizedRows = computed(() => (Array.isArray(props.rows) ? props.rows : []))
-  const tableClassList = computed(() => [props.tableClass])
-  const theadClassList = computed(() => [props.theadClass])
-  const resolveRowKey = (row: LabDataTableRow, index: number): PropertyKey => {
-    if (typeof props.rowKey === 'function') return props.rowKey(row, index)
-    const keyName = String(props.rowKey || 'id')
-    const value = row?.[keyName]
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'symbol') return value
-    if (value !== undefined && value !== null && String(value) !== '') return String(value)
-    return `${index}`
+const props = withDefaults(
+  defineProps<{
+    columns: LabDataTableColumn[]
+    rows: any[]
+    loading?: boolean
+    emptyText?: string
+    rowKey?: string | ((row: any, index: number) => PropertyKey)
+    tableClass?: string
+    theadClass?: string
+    tbodyClass?: string
+    rowClass?: string
+    maxHeightClass?: string
+    containerClass?: string
+  }>(),
+  {
+    loading: false,
+    emptyText: 'Ничего не найдено.',
+    rowKey: 'id',
+    tableClass: 'min-w-full text-xs',
+    theadClass: 'sticky top-0 z-10',
+    tbodyClass: '',
+    rowClass: 'border-b align-top',
+    maxHeightClass: 'max-h-136',
+    containerClass: ''
   }
-  const headerClass = (column: LabDataTableColumn) => [
-    'py-2 pr-3 text-left font-medium whitespace-nowrap',
-    column.nowrap ? 'whitespace-nowrap' : '',
-    column.widthClass || '',
-    column.headerClass || ''
-  ]
-  const cellClass = (column: LabDataTableColumn) => [
-    'py-2 pr-3 whitespace-nowrap',
-    column.nowrap ? 'whitespace-nowrap' : '',
-    column.widthClass || '',
-    column.cellClass || ''
-  ]
-  const formatCellValue = (value: unknown) => {
-    if (value === null || value === undefined) return '—'
-    if (typeof value === 'string') return value || '—'
-    return String(value)
-  }
-  watch(
-    () => [normalizedRows.value.length, props.columns.length, props.loading] as const,
-    () => {
-      nextTick(syncScrollEdges)
-    },
-    { immediate: true }
-  )
+)
+const scrollerRef = ref<HTMLElement | null>(null)
+const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(scrollerRef, { axis: 'x' })
+const normalizedRows = computed(() => (Array.isArray(props.rows) ? props.rows : []))
+const tableClassList = computed(() => [props.tableClass])
+const theadClassList = computed(() => [props.theadClass])
+const resolveRowKey = (row: LabDataTableRow, index: number): PropertyKey => {
+  if (typeof props.rowKey === 'function') return props.rowKey(row, index)
+  const keyName = String(props.rowKey || 'id')
+  const value = row?.[keyName]
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'symbol') return value
+  if (value !== undefined && value !== null && String(value) !== '') return String(value)
+  return `${index}`
+}
+const headerClass = (column: LabDataTableColumn) => [
+  'py-2 pr-3 text-left font-medium whitespace-nowrap',
+  column.nowrap ? 'whitespace-nowrap' : '',
+  column.widthClass || '',
+  column.headerClass || ''
+]
+const cellClass = (column: LabDataTableColumn) => [
+  'py-2 pr-3 whitespace-nowrap',
+  column.nowrap ? 'whitespace-nowrap' : '',
+  column.widthClass || '',
+  column.cellClass || ''
+]
+const formatCellValue = (value: unknown) => {
+  if (value === null || value === undefined) return '—'
+  if (typeof value === 'string') return value || '—'
+  return String(value)
+}
+watch(
+  () => [normalizedRows.value.length, props.columns.length, props.loading] as const,
+  () => {
+    nextTick(syncScrollEdges)
+  },
+  { immediate: true }
+)
 </script>

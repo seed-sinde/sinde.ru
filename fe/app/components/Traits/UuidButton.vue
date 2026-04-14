@@ -1,53 +1,53 @@
 <script setup lang="ts">
-  const { localeCode } = useInterfacePreferences()
-  const formatShortUuid = shortUuid
-  const props = withDefaults(
-    defineProps<{
-      action: 'copy' | 'paste'
-      uuid?: string
-      compact?: boolean
-      disabled?: boolean
-      variant?: LabButtonVariant
-      size?: LabButtonSize
-      buttonClass?: string
-      label?: string
-      title?: string
-    }>(),
-    {
-      uuid: '',
-      compact: false,
-      disabled: false,
-      variant: 'ghost',
-      size: 'sm',
-      buttonClass: '',
-      label: '',
-      title: ''
-    }
-  )
-  const emit = defineEmits<{
-    (e: 'click'): void
-  }>()
-  const { copyFrom } = useClipboard()
-  const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
-  const isCopy = computed(() => props.action === 'copy')
-  const resolvedDisabled = computed(() => props.disabled || (isCopy.value && !props.uuid))
-  const iconName = computed(() => (isCopy.value ? 'ic:round-content-copy' : 'ic:round-content-paste'))
-  const actionLabel = computed(() =>
-    props.title || props.label || (isCopy.value ? copy.value.uuidButton.copyUuid : copy.value.uuidButton.pasteUuid)
-  )
-  const copyIdleLabel = computed(() => props.label || formatShortUuid(props.uuid, 5) || copy.value.uuidButton.emptyUuid)
-  const sharedButtonClass = computed(() =>
-    ['text-zinc-200 hover:text-amber-300', isCopy.value ? 'truncate' : '', props.buttonClass].filter(Boolean).join(' ')
-  )
-  const onCopyClick = () => {
-    if (resolvedDisabled.value || !props.uuid) return
-    copyFrom(props.uuid)
-    emit('click')
+const { localeCode } = useInterfacePreferences()
+const formatShortUuid = shortUuid
+const props = withDefaults(
+  defineProps<{
+    action: 'copy' | 'paste'
+    uuid?: string
+    compact?: boolean
+    disabled?: boolean
+    variant?: LabButtonVariant
+    size?: LabButtonSize
+    buttonClass?: string
+    label?: string
+    title?: string
+  }>(),
+  {
+    uuid: '',
+    compact: false,
+    disabled: false,
+    variant: 'ghost',
+    size: 'sm',
+    buttonClass: '',
+    label: '',
+    title: ''
   }
-  const onPasteClick = () => {
-    if (resolvedDisabled.value) return
-    emit('click')
-  }
+)
+const emit = defineEmits<{
+  (e: 'click'): void
+}>()
+const { copyFrom } = useClipboard()
+const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
+const isCopy = computed(() => props.action === 'copy')
+const resolvedDisabled = computed(() => props.disabled || (isCopy.value && !props.uuid))
+const iconName = computed(() => (isCopy.value ? 'ic:round-content-copy' : 'ic:round-content-paste'))
+const actionLabel = computed(
+  () => props.title || props.label || (isCopy.value ? copy.value.uuidButton.copyUuid : copy.value.uuidButton.pasteUuid)
+)
+const copyIdleLabel = computed(() => props.label || formatShortUuid(props.uuid, 5) || copy.value.uuidButton.emptyUuid)
+const sharedButtonClass = computed(() =>
+  ['text-zinc-200 hover:text-amber-300', isCopy.value ? 'truncate' : '', props.buttonClass].filter(Boolean).join(' ')
+)
+const onCopyClick = () => {
+  if (resolvedDisabled.value || !props.uuid) return
+  copyFrom(props.uuid)
+  emit('click')
+}
+const onPasteClick = () => {
+  if (resolvedDisabled.value) return
+  emit('click')
+}
 </script>
 <template>
   <LabCopyHover
@@ -56,7 +56,8 @@
     :hover="copy.uuidButton.copyHover"
     :done="copy.uuidButton.copied"
     :has-icon="true"
-    @click="onCopyClick">
+    @click="onCopyClick"
+  >
     <template #default="{ display, labelStyle }">
       <LabBaseButton
         :aria-label="compact ? actionLabel : display"
@@ -68,7 +69,8 @@
         label-class="truncate font-mono text-xs"
         :label-style="compact ? undefined : labelStyle"
         :size="size"
-        :variant="variant" />
+        :variant="variant"
+      />
     </template>
   </LabCopyHover>
   <LabBaseButton
@@ -81,5 +83,6 @@
     :label="compact ? '' : actionLabel"
     :size="size"
     :variant="variant"
-    @click="onPasteClick" />
+    @click="onPasteClick"
+  />
 </template>

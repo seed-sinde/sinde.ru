@@ -1,2 +1,4 @@
 <script setup lang="ts"></script>
-<template></template>
+<template>
+  <span class="hidden" aria-hidden="true" />
+</template>

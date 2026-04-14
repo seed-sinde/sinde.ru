@@ -73,7 +73,7 @@ export const useScrollableEdges = (
 
   watch(
     target,
-    element => {
+    (element) => {
       attach(element)
     },
     { flush: 'post' }

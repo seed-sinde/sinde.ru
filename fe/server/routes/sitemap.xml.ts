@@ -29,7 +29,7 @@ const staticEntries: SitemapEntry[] = [
   { path: '/experience', changefreq: 'monthly', priority: '0.3' },
   { path: '/perception', changefreq: 'monthly', priority: '0.3' },
   { path: '/careers', changefreq: 'monthly', priority: '0.3' },
-  { path: '/family', changefreq: 'monthly', priority: '0.3' },
+  { path: '/family', changefreq: 'monthly', priority: '0.3' }
 ]
 const eduSlugs = [
   'algebra',
@@ -44,7 +44,7 @@ const eduSlugs = [
   'design-standards',
   'electrical',
   'economics-quality',
-  'safety-ergonomics',
+  'safety-ergonomics'
 ] as const
 const impactSlugs = [
   'minimalism-lifestyle',
@@ -54,27 +54,27 @@ const impactSlugs = [
   'biodiversity-support',
   'urban-green-mobility',
   'community-initiatives',
-  'education-values',
+  'education-values'
 ] as const
-const updateEntries: Array<{ slug: string, lastmod: string }> = [
-  { slug: '2026-03-04-prerelease-functional-overview', lastmod: '2026-03-04' },
+const updateEntries: Array<{ slug: string; lastmod: string }> = [
+  { slug: '2026-03-04-prerelease-functional-overview', lastmod: '2026-03-04' }
 ]
 const dynamicEntries = (): SitemapEntry[] => {
   const updates = updateEntries.map((entry) => ({
     path: `/updates/${entry.slug}`,
     lastmod: entry.lastmod,
     changefreq: 'monthly' as const,
-    priority: '0.7',
+    priority: '0.7'
   }))
   const edu = eduSlugs.map((slug) => ({
     path: `/edu/${slug}`,
     changefreq: 'monthly' as const,
-    priority: '0.7',
+    priority: '0.7'
   }))
   const impact = impactSlugs.map((slug) => ({
     path: `/impact/${slug}`,
     changefreq: 'monthly' as const,
-    priority: '0.7',
+    priority: '0.7'
   }))
   return [...updates, ...edu, ...impact]
 }
@@ -103,7 +103,7 @@ export default defineEventHandler((event) => {
       return `  <url>\n    <loc>${loc}</loc>${lastmod}${changefreq}${priority}\n  </url>`
     }),
     '</urlset>',
-    '',
+    ''
   ].join('\n')
   setHeader(event, 'content-type', 'application/xml; charset=utf-8')
   setHeader(event, 'cache-control', 'public, max-age=3600')

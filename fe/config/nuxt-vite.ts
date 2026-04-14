@@ -7,12 +7,12 @@ const viteConfig = {
   build: {
     chunkSizeWarningLimit: 3500
   },
-  ...(isDev ?
-    {
-      optimizeDeps: {
-        include: ['tailwind-merge', 'cropperjs']
+  ...(isDev
+    ? {
+        optimizeDeps: {
+          include: ['tailwind-merge', 'cropperjs']
+        }
       }
-    }
-  : {})
+    : {})
 }
 export { viteConfig }

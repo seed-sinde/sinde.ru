@@ -1,4 +1,4 @@
-import { type InterfaceMessageKey } from '~/data/interfacePreferences'
+import type { InterfaceMessageKey } from '~/data/interfacePreferences'
 const SIDEBAR_TRANSLATION_KEYS = {
   '/lab': 'sidebar.lab',
   '/traits': 'sidebar.traits',
@@ -8,7 +8,7 @@ const SIDEBAR_TRANSLATION_KEYS = {
 export const useSidebarItems = () => {
   const { t } = useInterfacePreferences()
   return computed<MenuItem[]>(() =>
-    sidebarItems.map(item => ({
+    sidebarItems.map((item) => ({
       ...item,
       label: t(SIDEBAR_TRANSLATION_KEYS[item.to as keyof typeof SIDEBAR_TRANSLATION_KEYS] || 'sidebar.wiki')
     }))

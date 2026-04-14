@@ -10,13 +10,15 @@
           : 'border-zinc-700 ring-zinc-800 hover:border-zinc-500 hover:ring-zinc-600'
       ]"
       :aria-label="`Показать изображение ${index + 1}`"
-      @click="$emit('select', index)">
+      @click="$emit('select', index)"
+    >
       <img
         :src="item.thumbnailSrc || item.src"
         :alt="item.alt"
         class="h-full w-full object-cover"
         loading="lazy"
-        decoding="async" />
+        decoding="async"
+      >
       <span class="absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-center text-xs font-medium text-white">
         {{ index + 1 }}
       </span>
@@ -24,16 +26,16 @@
   </div>
 </template>
 <script setup lang="ts">
-  defineProps<{
-    items: Array<{
-      key: string
-      src: string
-      thumbnailSrc?: string | null
-      alt: string
-    }>
-    activeIndex: number
-  }>()
-  defineEmits<{
-    (e: 'select', index: number): void
-  }>()
+defineProps<{
+  items: Array<{
+    key: string
+    src: string
+    thumbnailSrc?: string | null
+    alt: string
+  }>
+  activeIndex: number
+}>()
+defineEmits<{
+  (e: 'select', index: number): void
+}>()
 </script>

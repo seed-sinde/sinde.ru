@@ -138,7 +138,7 @@ const createOrGetSet = (leftUuid: string, right: Pick<TraitInput, 't_key' | 't_v
     body: {
       s_childs: [leftUuid, toTraitPairPayload(right)]
     }
-  }).then(response => response?.data)
+  }).then((response) => response?.data)
 /**
  * Finds the set uuid that contains the provided trait uuid collection.
  */
@@ -146,7 +146,7 @@ const findSetByTraitUuids = (t_uuids: string[]) =>
   useApiJson<ApiResponseWithData<{ s_uuid: string }>>('/sets/find', {
     method: 'POST',
     body: t_uuids
-  }).then(response => response?.data)
+  }).then((response) => response?.data)
 /**
  * Fetches key meta by synonym.
  */

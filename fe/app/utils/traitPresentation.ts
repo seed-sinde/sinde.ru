@@ -1,5 +1,4 @@
-import type { TraitUnitCategory } from '../../shared/types/traits'
-import type { DataType } from '../../shared/types/traits'
+import type { TraitUnitCategory, DataType } from '../../shared/types/traits'
 import { COLOR_MODE_LABELS, DATA_TYPE_LABELS, UNIT_CATEGORY_LABELS, UNIT_LABELS, resolveColorMode } from './traitMeta'
 export const META_FIELD_LABELS: Record<string, string> = {
   dataType: 'тип данных',
@@ -146,7 +145,7 @@ export const formatMetaValue = (key: string, value: unknown, typeLabel: string):
   }
   if (Array.isArray(value)) {
     return value
-      .map(item => String(item).trim())
+      .map((item) => String(item).trim())
       .filter(Boolean)
       .join(', ')
   }

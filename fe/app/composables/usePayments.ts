@@ -86,11 +86,7 @@ export const usePayments = () => {
     return await paymentHistoryInFlight
   }
 
-  const createOrder = async (input: {
-    plan_code: 'pro' | 'donation'
-    amount?: number
-    return_to?: string
-  }) => {
+  const createOrder = async (input: { plan_code: 'pro' | 'donation'; amount?: number; return_to?: string }) => {
     return await useApiJson<PaymentsApiResult<PaymentCreateOrderResult>>('/payments/init', {
       method: 'POST',
       body: {
@@ -101,11 +97,7 @@ export const usePayments = () => {
     })
   }
 
-  const lookupPublicOrder = async (input: {
-    order_id: string
-    token: string
-    sync_state?: boolean
-  }) => {
+  const lookupPublicOrder = async (input: { order_id: string; token: string; sync_state?: boolean }) => {
     return await useApiJson<PaymentsApiResult<PaymentPublicLookupResult>>('/payments/lookup', {
       method: 'POST',
       auth: {
@@ -120,9 +112,12 @@ export const usePayments = () => {
   }
 
   const refundOrder = async (orderID: string) => {
-    return await useApiJson<PaymentsApiResult<PaymentRefundOrderResult>>(`/payments/${encodeURIComponent(orderID)}/refund`, {
-      method: 'POST'
-    })
+    return await useApiJson<PaymentsApiResult<PaymentRefundOrderResult>>(
+      `/payments/${encodeURIComponent(orderID)}/refund`,
+      {
+        method: 'POST'
+      }
+    )
   }
 
   const adminListOrders = async (params?: {
@@ -172,7 +167,7 @@ export const usePayments = () => {
 
   watch(
     isAuthenticated,
-    authed => {
+    (authed) => {
       if (!authed) {
         clearAccess()
         clearHistory()

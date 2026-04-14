@@ -8,9 +8,7 @@ let authSyncChannel: BroadcastChannel | null | undefined
 function getAuthSyncChannel() {
   if (!import.meta.client) return null
   if (authSyncChannel !== undefined) return authSyncChannel
-  authSyncChannel = typeof BroadcastChannel === 'function'
-    ? new BroadcastChannel(AUTH_SYNC_CHANNEL_NAME)
-    : null
+  authSyncChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel(AUTH_SYNC_CHANNEL_NAME) : null
   return authSyncChannel
 }
 export function emitAuthSyncEvent(type: AuthSyncEventType) {

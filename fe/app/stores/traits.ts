@@ -72,7 +72,7 @@ export const useTraitsStore = defineStore('traits', () => {
     traits.value = dedupeTraits([...traits.value, ...list])
   }
   const removeTrait = (t_uuid: string) => {
-    traits.value = traits.value.filter(t => t.t_uuid !== t_uuid)
+    traits.value = traits.value.filter((t) => t.t_uuid !== t_uuid)
   }
   const clear = () => {
     traits.value = []
@@ -83,7 +83,7 @@ export const useTraitsStore = defineStore('traits', () => {
     if (!Array.isArray(items)) return
     const nextMeta = { ...keyMetaById.value }
     const metaBySyn: Record<string, TraitKey> = {}
-    items.forEach(item => {
+    items.forEach((item) => {
       if (!item || typeof item.id !== 'number') return
       nextMeta[item.id] = item
       if (item.syn) metaBySyn[item.syn.toLowerCase()] = item

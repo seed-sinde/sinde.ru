@@ -4,11 +4,8 @@
   </p>
 </template>
 <script setup lang="ts">
-withDefaults(
-  defineProps<{ text?: string; hintClass?: string }>(),
-  {
-    text: '',
-    hintClass: ''
-  }
-)
+withDefaults(defineProps<{ text?: string; hintClass?: string }>(), {
+  text: '',
+  hintClass: ''
+})
 </script>

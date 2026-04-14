@@ -9,7 +9,9 @@ const fileExtFromMime = (mime: string) => {
   return 'jpg'
 }
 const chooseOutputMime = (raw: string) => {
-  const safe = String(raw || '').trim().toLowerCase()
+  const safe = String(raw || '')
+    .trim()
+    .toLowerCase()
   if (safe.startsWith('image/')) return 'image/webp'
   return 'image/webp'
 }
@@ -53,20 +55,10 @@ export const resizeImageToSquareFile = async (
   }
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
-  ctx.drawImage(
-    image,
-    sx,
-    sy,
-    sourceSize,
-    sourceSize,
-    0,
-    0,
-    safeSize,
-    safeSize
-  )
+  ctx.drawImage(image, sx, sy, sourceSize, sourceSize, 0, 0, safeSize, safeSize)
   const outputMime = chooseOutputMime(options?.outputMime || file.type)
   const quality = typeof options?.quality === 'number' ? options.quality : 0.92
-  const blob = await new Promise<Blob | null>(resolve => {
+  const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, outputMime, quality)
   })
   if (!blob) {
@@ -78,6 +70,6 @@ export const resizeImageToSquareFile = async (
   const filename = `${base}-${suffix}.${ext}`
   return new File([blob], filename, {
     type: outputMime,
-    lastModified: Date.now(),
+    lastModified: Date.now()
   })
 }

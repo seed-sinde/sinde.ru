@@ -1,16 +1,20 @@
 <script setup lang="ts">
-  usePageSeo({
-    title: 'главная',
-    description: 'Платформа прикладных инструментов и справочных знаний.'
-  })
-  const letters = ['S', 'I', 'N', 'D', 'E']
+const brand = 'SINDE'
+const title = 'главная'
+const letters = brand.split('')
+usePageSeo({ title, description: 'Платформа прикладных инструментов и справочных знаний.' })
 </script>
+
 <template>
-  <section class="bg-(--lab-bg-canvas)">
-    <div class="flex w-3/7 justify-between overflow-hidden line-none px-4 py-2">
-      <span v-for="char in letters" :key="char" class="inline-block text-2xl font-bold leading-none origin-center">
-        {{ char }}
+  <section class="relative flex min-h-[calc(100svh-48px)] items-center justify-center overflow-hidden">
+    <h1 class="flex gap-x-6 text-[clamp(2rem,6vw,4rem)] leading-none font-light tracking-[0.45em] select-none">
+      <span
+        v-for="letter in letters"
+        :key="letter"
+        class="bg-linear-to-b from-fuchsia-950 via-cyan-300 to-fuchsia-400 bg-clip-text text-transparent"
+      >
+        {{ letter }}
       </span>
-    </div>
+    </h1>
   </section>
 </template>

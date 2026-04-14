@@ -78,7 +78,7 @@ func TestAccessLogIncludesResponseMessageAndDetails(t *testing.T) {
 	}
 	resp.Body.Close()
 	line := buf.String()
-	if !strings.Contains(line, "403 - GET /err") {
+	if !strings.Contains(line, "403 GET /err") {
 		t.Fatalf("log line does not include status and route: %q", line)
 	}
 	if !strings.Contains(line, "Доступ запрещён.") {

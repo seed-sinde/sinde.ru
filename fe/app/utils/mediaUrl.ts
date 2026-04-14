@@ -1,5 +1,7 @@
 export const normalizeMediaKey = (value?: string) => {
-  const key = String(value || '').trim().replace(/^\/+/, '')
+  const key = String(value || '')
+    .trim()
+    .replace(/^\/+/, '')
   if (!key) return ''
   return key
 }
@@ -8,7 +10,7 @@ export const buildMediaFileUrl = (storageKey?: string) => {
   if (!key) return ''
   const encodedPath = key
     .split('/')
-    .map(segment => {
+    .map((segment) => {
       try {
         return encodeURIComponent(decodeURIComponent(segment))
       } catch {

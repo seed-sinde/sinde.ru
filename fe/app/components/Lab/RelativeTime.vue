@@ -1,31 +1,36 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{
-  datetime: number | string | Date | null | undefined
-  locale?: string
-  compact?: boolean
-  fallback?: string
-  relative?: boolean
-  showTime?: boolean
-  titleMode?: 'datetime' | 'date' | 'none'
-}>(), {
-  locale: 'ru-RU',
-  compact: false,
-  fallback: '—',
-  relative: true,
-  showTime: true,
-  titleMode: 'datetime',
-})
+const props = withDefaults(
+  defineProps<{
+    datetime: number | string | Date | null | undefined
+    locale?: string
+    compact?: boolean
+    fallback?: string
+    relative?: boolean
+    showTime?: boolean
+    titleMode?: 'datetime' | 'date' | 'none'
+  }>(),
+  {
+    locale: 'ru-RU',
+    compact: false,
+    fallback: '—',
+    relative: true,
+    showTime: true,
+    titleMode: 'datetime'
+  }
+)
 const { localeTag, t } = useInterfacePreferences()
 const { normalizeLocalizedDate, formatRelativeTime } = useLocalizedDateTime()
 const resolvedLocale = computed(() => props.locale || localeTag.value)
 const date = computed(() => normalizeLocalizedDate(props.datetime))
-const rootClass = computed(() => props.compact ? 'text-xs text-zinc-500' : 'text-sm text-zinc-400')
+const rootClass = computed(() => (props.compact ? 'text-xs text-zinc-500' : 'text-sm text-zinc-400'))
 const nowTs = ref(Date.now())
 const titleText = computed(() => {
   if (!date.value || props.titleMode === 'none') return undefined
-  return new Intl.DateTimeFormat(resolvedLocale.value, props.titleMode === 'date'
-    ? { day: '2-digit', month: '2-digit', year: 'numeric' }
-    : { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' },
+  return new Intl.DateTimeFormat(
+    resolvedLocale.value,
+    props.titleMode === 'date'
+      ? { day: '2-digit', month: '2-digit', year: 'numeric' }
+      : { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }
   ).format(date.value)
 })
 const absoluteDateProps = computed(() => {
@@ -62,11 +67,7 @@ const relativeText = computed(() => {
     <template v-if="relative">
       {{ relativeText || t('time.less_than_minute_ago') }}
     </template>
-    <NuxtTime
-      v-else
-      :datetime="date"
-      :locale="resolvedLocale"
-      v-bind="absoluteDateProps" />
+    <NuxtTime v-else :datetime="date" :locale="resolvedLocale" v-bind="absoluteDateProps" />
   </span>
   <span v-else :class="rootClass">{{ fallback }}</span>
 </template>

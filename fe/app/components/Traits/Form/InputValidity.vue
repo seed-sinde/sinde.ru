@@ -7,12 +7,12 @@
       >
         <input
           id="TraitValidityModePermanent"
+          v-model="mode"
           name="TraitValidity"
           type="radio"
           value="permanent"
-          v-model="mode"
           class="accent-amber-400"
-        />
+        >
         <span>Постоянно</span>
       </label>
       <label
@@ -21,12 +21,12 @@
       >
         <input
           id="TraitValidityModeTemporary"
+          v-model="mode"
           name="TraitValidity"
           type="radio"
           value="temporary"
-          v-model="mode"
           class="accent-amber-400"
-        />
+        >
         <span>Временно</span>
       </label>
     </div>
@@ -51,7 +51,10 @@
         />
       </LabField>
       <LabErrorMessage v-if="until && !untilValid" :text="`Неверный формат: ${placeholder}`" />
-      <LabErrorMessage v-else-if="until && !isUntilNotPast" text='Дата "Действует до" не может быть меньше текущего времени.' />
+      <LabErrorMessage
+        v-else-if="until && !isUntilNotPast"
+        text='Дата "Действует до" не может быть меньше текущего времени.'
+      />
     </div>
   </div>
 </template>
@@ -73,9 +76,8 @@ const isUntilNotPast = computed(() => {
   return cmp !== null && cmp >= 0
 })
 watchEffect(() => {
-  model.value = mode.value === 'permanent'
-    ? { mode: 'permanent', since: since.value }
-    : { mode: 'temporary', until: until.value }
+  model.value =
+    mode.value === 'permanent' ? { mode: 'permanent', since: since.value } : { mode: 'temporary', until: until.value }
 })
 watch(model, (next) => {
   mode.value = next.mode

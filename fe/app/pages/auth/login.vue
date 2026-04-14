@@ -1,324 +1,326 @@
 <script setup lang="ts">
-  import {
-    extractApiErrorMessage,
-    getTwoFactorErrorMessage,
-    isMfaTicketExpiredError,
-    MFA_TICKET_EXPIRED_MESSAGE
-  } from '~/utils/authErrors'
-  import { isValidEmail, normalizeEmail } from '~/utils/email'
-  import { normalizeAuthNextPath } from '~/utils/authNavigation'
-  definePageMeta({
-    middleware: 'guest-only',
-    title: 'вход',
-    description: 'Безопасный вход в аккаунт с поддержкой двухфакторной защиты.'
-  })
-  const router = useRouter()
-  const route = useRoute()
-  const { t } = useInterfacePreferences()
-  const { login, completeMfa, mfaTicket, mfaExpiresAt, requestEmailVerification, resetMfaTicket } = useAuth()
+import {
+  extractApiErrorMessage,
+  getTwoFactorErrorMessage,
+  isMfaTicketExpiredError,
+  MFA_TICKET_EXPIRED_MESSAGE
+} from '~/utils/authErrors'
+import { isValidEmail, normalizeEmail } from '~/utils/email'
+import { normalizeAuthNextPath } from '~/utils/authNavigation'
+definePageMeta({
+  middleware: 'guest-only'
+})
+const title = 'Вход'
+usePageSeo({
+  title,
+  description: 'Вход в аккаунт.'
+})
+const router = useRouter()
+const route = useRoute()
+const { t } = useInterfacePreferences()
+const { login, completeMfa, mfaTicket, mfaExpiresAt, requestEmailVerification, resetMfaTicket } = useAuth()
+resetMfaTicket()
+const email = ref('')
+const password = ref('')
+const mfaCode = ref('')
+const backupCode = ref('')
+const mfaMethodTab = ref<'totp' | 'backup'>('totp')
+const emailInputRef = ref<{ focus: () => void } | null>(null)
+const mfaCodeInputRef = ref<{ focus: () => void } | null>(null)
+const backupCodeInputRef = ref<{ focus: () => void } | null>(null)
+const lastSubmittedMfaCode = ref('')
+const lastSubmittedBackupCode = ref('')
+const pending = ref(false)
+const errorText = ref('')
+const resendPending = ref(false)
+const resendFeedback = ref('')
+const resendError = ref('')
+const verificationEmail = ref('')
+const resendCooldownUntil = ref(0)
+const currentTimestamp = ref(Date.now())
+const resendCooldownLeft = computed(() => {
+  const diff = resendCooldownUntil.value - Date.now()
+  return diff > 0 ? Math.ceil(diff / 1000) : 0
+})
+const canResendVerification = computed(() => {
+  return !pending.value && !resendPending.value && resendCooldownLeft.value === 0 && Boolean(verificationEmail.value)
+})
+const mfaExpiresAtTimestamp = computed(() => {
+  const parsed = Date.parse(String(mfaExpiresAt.value || ''))
+  return Number.isFinite(parsed) ? parsed : 0
+})
+const mfaCountdownLeft = computed(() => {
+  if (!mfaTicket.value || !mfaExpiresAtTimestamp.value) return 0
+  const diff = mfaExpiresAtTimestamp.value - currentTimestamp.value
+  return diff > 0 ? Math.ceil(diff / 1000) : 0
+})
+const mfaCountdownLabel = computed(() => {
+  const minutes = Math.floor(mfaCountdownLeft.value / 60)
+  const seconds = mfaCountdownLeft.value % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+})
+let resendCooldownTimer: ReturnType<typeof setInterval> | null = null
+let mfaCountdownTimer: ReturnType<typeof setInterval> | null = null
+const syncResendCooldown = () => {
+  if (resendCooldownLeft.value > 0) return
+  if (resendCooldownTimer) {
+    clearInterval(resendCooldownTimer)
+    resendCooldownTimer = null
+  }
+}
+const startResendCooldown = (seconds = 60) => {
+  if (!import.meta.client) return
+  resendCooldownUntil.value = Date.now() + seconds * 1000
+  if (resendCooldownTimer) return
+  resendCooldownTimer = setInterval(syncResendCooldown, 1000)
+}
+const clearVerificationState = () => {
+  if (verificationEmail.value && normalizeEmail(email.value) !== verificationEmail.value) {
+    verificationEmail.value = ''
+  }
+  resendFeedback.value = ''
+  resendError.value = ''
+}
+const stopMfaCountdown = () => {
+  if (!mfaCountdownTimer) return
+  clearInterval(mfaCountdownTimer)
+  mfaCountdownTimer = null
+}
+const syncMfaCountdown = () => {
+  currentTimestamp.value = Date.now()
+  if (mfaCountdownLeft.value > 0) return
+  stopMfaCountdown()
+}
+const startMfaCountdown = () => {
+  if (!import.meta.client) return
+  currentTimestamp.value = Date.now()
+  if (mfaCountdownTimer) return
+  mfaCountdownTimer = setInterval(syncMfaCountdown, 1000)
+}
+const clearMfaInputs = () => {
+  mfaCode.value = ''
+  backupCode.value = ''
+  lastSubmittedMfaCode.value = ''
+  lastSubmittedBackupCode.value = ''
+  mfaMethodTab.value = 'totp'
+}
+const resetExpiredMfaFlow = async () => {
+  pending.value = false
+  clearMfaInputs()
   resetMfaTicket()
-  const email = ref('')
-  const password = ref('')
-  const mfaCode = ref('')
-  const backupCode = ref('')
-  const mfaMethodTab = ref<'totp' | 'backup'>('totp')
-  const emailInputRef = ref<{ focus: () => void } | null>(null)
-  const mfaCodeInputRef = ref<{ focus: () => void } | null>(null)
-  const backupCodeInputRef = ref<{ focus: () => void } | null>(null)
-  const lastSubmittedMfaCode = ref('')
-  const lastSubmittedBackupCode = ref('')
-  const pending = ref(false)
-  const errorText = ref('')
-  const resendPending = ref(false)
-  const resendFeedback = ref('')
-  const resendError = ref('')
-  const verificationEmail = ref('')
-  const resendCooldownUntil = ref(0)
-  const currentTimestamp = ref(Date.now())
-  const resendCooldownLeft = computed(() => {
-    const diff = resendCooldownUntil.value - Date.now()
-    return diff > 0 ? Math.ceil(diff / 1000) : 0
-  })
-  const canResendVerification = computed(() => {
-    return !pending.value && !resendPending.value && resendCooldownLeft.value === 0 && Boolean(verificationEmail.value)
-  })
-  const mfaExpiresAtTimestamp = computed(() => {
-    const parsed = Date.parse(String(mfaExpiresAt.value || ''))
-    return Number.isFinite(parsed) ? parsed : 0
-  })
-  const mfaCountdownLeft = computed(() => {
-    if (!mfaTicket.value || !mfaExpiresAtTimestamp.value) return 0
-    const diff = mfaExpiresAtTimestamp.value - currentTimestamp.value
-    return diff > 0 ? Math.ceil(diff / 1000) : 0
-  })
-  const mfaCountdownLabel = computed(() => {
-    const minutes = Math.floor(mfaCountdownLeft.value / 60)
-    const seconds = mfaCountdownLeft.value % 60
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-  })
-  let resendCooldownTimer: ReturnType<typeof setInterval> | null = null
-  let mfaCountdownTimer: ReturnType<typeof setInterval> | null = null
-  const syncResendCooldown = () => {
-    if (resendCooldownLeft.value > 0) return
-    if (resendCooldownTimer) {
-      clearInterval(resendCooldownTimer)
-      resendCooldownTimer = null
-    }
+  errorText.value = MFA_TICKET_EXPIRED_MESSAGE
+  await nextTick()
+  emailInputRef.value?.focus()
+}
+const nextTarget = computed(() => {
+  const next = typeof route.query.next === 'string' ? route.query.next : ''
+  return normalizeAuthNextPath(next) || '/auth/account'
+})
+const mfaTabItems = computed<LabTabItem[]>(() => [
+  { value: 'totp', label: t('auth.login.mfa_totp') },
+  { value: 'backup', label: t('auth.login.mfa_backup') }
+])
+const submitPassword = async () => {
+  if (!isValidEmail(email.value)) {
+    errorText.value = 'Укажите корректный email.'
+    clearVerificationState()
+    await nextTick()
+    emailInputRef.value?.focus()
+    return
   }
-  const startResendCooldown = (seconds = 60) => {
-    if (!import.meta.client) return
-    resendCooldownUntil.value = Date.now() + seconds * 1000
-    if (resendCooldownTimer) return
-    resendCooldownTimer = setInterval(syncResendCooldown, 1000)
-  }
-  const clearVerificationState = () => {
-    if (verificationEmail.value && normalizeEmail(email.value) !== verificationEmail.value) {
+  pending.value = true
+  errorText.value = ''
+  clearVerificationState()
+  try {
+    const res = await login(email.value, password.value)
+    if (res.data.mfa_required) return
+    await router.push(nextTarget.value)
+  } catch (err: any) {
+    const message = extractApiErrorMessage(err, 'Не удалось войти.')
+    errorText.value = message
+    if (message === 'email is not verified') {
+      verificationEmail.value = normalizeEmail(email.value)
+      resendFeedback.value = ''
+    } else {
       verificationEmail.value = ''
     }
-    resendFeedback.value = ''
-    resendError.value = ''
-  }
-  const stopMfaCountdown = () => {
-    if (!mfaCountdownTimer) return
-    clearInterval(mfaCountdownTimer)
-    mfaCountdownTimer = null
-  }
-  const syncMfaCountdown = () => {
-    currentTimestamp.value = Date.now()
-    if (mfaCountdownLeft.value > 0) return
-    stopMfaCountdown()
-  }
-  const startMfaCountdown = () => {
-    if (!import.meta.client) return
-    currentTimestamp.value = Date.now()
-    if (mfaCountdownTimer) return
-    mfaCountdownTimer = setInterval(syncMfaCountdown, 1000)
-  }
-  const clearMfaInputs = () => {
-    mfaCode.value = ''
-    backupCode.value = ''
-    lastSubmittedMfaCode.value = ''
-    lastSubmittedBackupCode.value = ''
-    mfaMethodTab.value = 'totp'
-  }
-  const resetExpiredMfaFlow = async () => {
+  } finally {
     pending.value = false
-    clearMfaInputs()
-    resetMfaTicket()
-    errorText.value = MFA_TICKET_EXPIRED_MESSAGE
-    await nextTick()
-    emailInputRef.value?.focus()
   }
-  const nextTarget = computed(() => {
-    const next = typeof route.query.next === 'string' ? route.query.next : ''
-    return normalizeAuthNextPath(next) || '/auth/account'
-  })
-  const mfaTabItems = computed<LabTabItem[]>(() => [
-    { value: 'totp', label: t('auth.login.mfa_totp') },
-    { value: 'backup', label: t('auth.login.mfa_backup') }
-  ])
-  const submitPassword = async () => {
-    if (!isValidEmail(email.value)) {
-      errorText.value = 'Укажите корректный email.'
-      clearVerificationState()
-      await nextTick()
-      emailInputRef.value?.focus()
-      return
-    }
-    pending.value = true
-    errorText.value = ''
-    clearVerificationState()
-    try {
-      const res = await login(email.value, password.value)
-      if (res.data.mfa_required) return
-      await router.push(nextTarget.value)
-    } catch (err: any) {
-      const message = extractApiErrorMessage(err, 'Не удалось войти.')
-      errorText.value = message
-      if (message === 'email is not verified') {
-        verificationEmail.value = normalizeEmail(email.value)
-        resendFeedback.value = ''
-      } else {
-        verificationEmail.value = ''
-      }
-    } finally {
-      pending.value = false
-    }
+}
+const focusMfaCodeInput = () => {
+  mfaCodeInputRef.value?.focus()
+}
+const focusBackupCodeInput = () => {
+  backupCodeInputRef.value?.focus()
+}
+const focusActiveMfaInput = () => {
+  if (mfaMethodTab.value === 'backup') {
+    focusBackupCodeInput()
+    return
   }
-  const focusMfaCodeInput = () => {
-    mfaCodeInputRef.value?.focus()
+  focusMfaCodeInput()
+}
+const onMfaCodeInput = (nextValue: string) => {
+  mfaCode.value = nextValue
+  errorText.value = ''
+  if (nextValue !== lastSubmittedMfaCode.value) {
+    lastSubmittedMfaCode.value = ''
   }
-  const focusBackupCodeInput = () => {
-    backupCodeInputRef.value?.focus()
+}
+const onBackupCodeInput = (nextValue: string) => {
+  backupCode.value = nextValue
+  errorText.value = ''
+  if (nextValue !== lastSubmittedBackupCode.value) {
+    lastSubmittedBackupCode.value = ''
   }
-  const focusActiveMfaInput = () => {
-    if (mfaMethodTab.value === 'backup') {
-      focusBackupCodeInput()
-      return
-    }
-    focusMfaCodeInput()
-  }
-  const onMfaCodeInput = (nextValue: string) => {
-    mfaCode.value = nextValue
-    errorText.value = ''
-    if (nextValue !== lastSubmittedMfaCode.value) {
-      lastSubmittedMfaCode.value = ''
-    }
-  }
-  const onBackupCodeInput = (nextValue: string) => {
-    backupCode.value = nextValue
-    errorText.value = ''
-    if (nextValue !== lastSubmittedBackupCode.value) {
-      lastSubmittedBackupCode.value = ''
-    }
-  }
-  watch(mfaTicket, async ticket => {
-    clearMfaInputs()
-    if (!ticket) {
-      stopMfaCountdown()
-      await nextTick()
-      emailInputRef.value?.focus()
-      return
-    }
-    startMfaCountdown()
-    await nextTick()
-    focusActiveMfaInput()
-  })
-  watch([mfaTicket, mfaCountdownLeft], async ([ticket, secondsLeft], previous) => {
-    if (!ticket || secondsLeft > 0) return
-    if (previous?.[0] === ticket && previous[1] === 0) return
-    await resetExpiredMfaFlow()
-  })
-  watch(mfaMethodTab, async () => {
-    errorText.value = ''
-    await nextTick()
-    if (import.meta.client) {
-      requestAnimationFrame(() => {
-        focusActiveMfaInput()
-      })
-      return
-    }
-    focusActiveMfaInput()
-  })
-  const submitMfa = async () => {
-    if (mfaCountdownLeft.value === 0) {
-      await resetExpiredMfaFlow()
-      return
-    }
-    const normalizedCode = mfaCode.value.replace(/\D+/g, '').slice(0, 6)
-    mfaCode.value = normalizedCode
-    if (normalizedCode.length !== 6) {
-      errorText.value = 'Введите 6 цифр кода 2FA.'
-      return
-    }
-    pending.value = true
-    errorText.value = ''
-    try {
-      await completeMfa(normalizedCode)
-      await router.push(nextTarget.value)
-    } catch (err: any) {
-      if (isMfaTicketExpiredError(err)) {
-        await resetExpiredMfaFlow()
-        return
-      }
-      const message = String(err?.data?.message || err?.message || '')
-      const chunkLoadLikeError = /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(
-        message
-      )
-      if (chunkLoadLikeError && import.meta.client) {
-        window.location.assign(nextTarget.value)
-        return
-      }
-      errorText.value = getTwoFactorErrorMessage(err, 'totp', 'Неверный код из приложения. Попробуйте ещё раз.')
-      mfaCode.value = ''
-      lastSubmittedMfaCode.value = ''
-      await nextTick()
-      focusMfaCodeInput()
-    } finally {
-      pending.value = false
-    }
-  }
-  const submitBackupCode = async () => {
-    if (mfaCountdownLeft.value === 0) {
-      await resetExpiredMfaFlow()
-      return
-    }
-    const normalizedCode = backupCode.value
-      .toUpperCase()
-      .replace(/[^A-Z0-9]+/g, '')
-      .slice(0, 8)
-    backupCode.value = normalizedCode
-    if (normalizedCode.length !== 8) {
-      errorText.value = 'Введите 8 символов кода сброса.'
-      return
-    }
-    pending.value = true
-    errorText.value = ''
-    try {
-      await completeMfa(`${normalizedCode.slice(0, 4)}-${normalizedCode.slice(4)}`)
-      await router.push(nextTarget.value)
-    } catch (err: any) {
-      if (isMfaTicketExpiredError(err)) {
-        await resetExpiredMfaFlow()
-        return
-      }
-      const message = String(err?.data?.message || err?.message || '')
-      const chunkLoadLikeError = /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(
-        message
-      )
-      if (chunkLoadLikeError && import.meta.client) {
-        window.location.assign(nextTarget.value)
-        return
-      }
-      errorText.value = getTwoFactorErrorMessage(err, 'backup', 'Неверный код сброса. Попробуйте ещё раз.')
-      backupCode.value = ''
-      lastSubmittedBackupCode.value = ''
-      await nextTick()
-      focusBackupCodeInput()
-    } finally {
-      pending.value = false
-    }
-  }
-  const resendVerification = async () => {
-    if (!canResendVerification.value) return
-    resendPending.value = true
-    resendError.value = ''
-    resendFeedback.value = ''
-    try {
-      await requestEmailVerification(verificationEmail.value)
-      resendFeedback.value = `Письмо с подтверждением повторно отправлено на ${verificationEmail.value}.`
-      startResendCooldown(60)
-    } catch (err: any) {
-      const status = Number(err?.status || err?.statusCode || 0)
-      if (status === 429) {
-        resendError.value = 'Слишком много запросов. Подождите немного и попробуйте снова.'
-        startResendCooldown(60)
-      } else {
-        resendError.value = extractApiErrorMessage(err, 'Не удалось отправить письмо повторно.')
-      }
-    } finally {
-      resendPending.value = false
-    }
-  }
-  onBeforeUnmount(() => {
-    if (resendCooldownTimer) clearInterval(resendCooldownTimer)
+}
+watch(mfaTicket, async (ticket) => {
+  clearMfaInputs()
+  if (!ticket) {
     stopMfaCountdown()
-  })
-  onMounted(async () => {
     await nextTick()
-    if (mfaTicket.value) return
     emailInputRef.value?.focus()
-  })
+    return
+  }
+  startMfaCountdown()
+  await nextTick()
+  focusActiveMfaInput()
+})
+watch([mfaTicket, mfaCountdownLeft], async ([ticket, secondsLeft], previous) => {
+  if (!ticket || secondsLeft > 0) return
+  if (previous?.[0] === ticket && previous[1] === 0) return
+  await resetExpiredMfaFlow()
+})
+watch(mfaMethodTab, async () => {
+  errorText.value = ''
+  await nextTick()
+  if (import.meta.client) {
+    requestAnimationFrame(() => {
+      focusActiveMfaInput()
+    })
+    return
+  }
+  focusActiveMfaInput()
+})
+const submitMfa = async () => {
+  if (mfaCountdownLeft.value === 0) {
+    await resetExpiredMfaFlow()
+    return
+  }
+  const normalizedCode = mfaCode.value.replace(/\D+/g, '').slice(0, 6)
+  mfaCode.value = normalizedCode
+  if (normalizedCode.length !== 6) {
+    errorText.value = 'Введите 6 цифр кода 2FA.'
+    return
+  }
+  pending.value = true
+  errorText.value = ''
+  try {
+    await completeMfa(normalizedCode)
+    await router.push(nextTarget.value)
+  } catch (err: any) {
+    if (isMfaTicketExpiredError(err)) {
+      await resetExpiredMfaFlow()
+      return
+    }
+    const message = String(err?.data?.message || err?.message || '')
+    const chunkLoadLikeError = /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(
+      message
+    )
+    if (chunkLoadLikeError && import.meta.client) {
+      window.location.assign(nextTarget.value)
+      return
+    }
+    errorText.value = getTwoFactorErrorMessage(err, 'totp', 'Неверный код из приложения. Попробуйте ещё раз.')
+    mfaCode.value = ''
+    lastSubmittedMfaCode.value = ''
+    await nextTick()
+    focusMfaCodeInput()
+  } finally {
+    pending.value = false
+  }
+}
+const submitBackupCode = async () => {
+  if (mfaCountdownLeft.value === 0) {
+    await resetExpiredMfaFlow()
+    return
+  }
+  const normalizedCode = backupCode.value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '')
+    .slice(0, 8)
+  backupCode.value = normalizedCode
+  if (normalizedCode.length !== 8) {
+    errorText.value = 'Введите 8 символов кода сброса.'
+    return
+  }
+  pending.value = true
+  errorText.value = ''
+  try {
+    await completeMfa(`${normalizedCode.slice(0, 4)}-${normalizedCode.slice(4)}`)
+    await router.push(nextTarget.value)
+  } catch (err: any) {
+    if (isMfaTicketExpiredError(err)) {
+      await resetExpiredMfaFlow()
+      return
+    }
+    const message = String(err?.data?.message || err?.message || '')
+    const chunkLoadLikeError = /dynamically imported module|Importing a module script failed|Failed to fetch/i.test(
+      message
+    )
+    if (chunkLoadLikeError && import.meta.client) {
+      window.location.assign(nextTarget.value)
+      return
+    }
+    errorText.value = getTwoFactorErrorMessage(err, 'backup', 'Неверный код сброса. Попробуйте ещё раз.')
+    backupCode.value = ''
+    lastSubmittedBackupCode.value = ''
+    await nextTick()
+    focusBackupCodeInput()
+  } finally {
+    pending.value = false
+  }
+}
+const resendVerification = async () => {
+  if (!canResendVerification.value) return
+  resendPending.value = true
+  resendError.value = ''
+  resendFeedback.value = ''
+  try {
+    await requestEmailVerification(verificationEmail.value)
+    resendFeedback.value = `Письмо с подтверждением повторно отправлено на ${verificationEmail.value}.`
+    startResendCooldown(60)
+  } catch (err: any) {
+    const status = Number(err?.status || err?.statusCode || 0)
+    if (status === 429) {
+      resendError.value = 'Слишком много запросов. Подождите немного и попробуйте снова.'
+      startResendCooldown(60)
+    } else {
+      resendError.value = extractApiErrorMessage(err, 'Не удалось отправить письмо повторно.')
+    }
+  } finally {
+    resendPending.value = false
+  }
+}
+onBeforeUnmount(() => {
+  if (resendCooldownTimer) clearInterval(resendCooldownTimer)
+  stopMfaCountdown()
+})
+onMounted(async () => {
+  await nextTick()
+  if (mfaTicket.value) return
+  emailInputRef.value?.focus()
+})
 </script>
 <template>
-  <div class="px-3 py-6 md:px-5">
-    <section class="p-5 space-y-5 max-w-100">
-      <div class="space-y-2">
-        <h1 class="text-2xl font-semibold lab-text-primary">{{ t('auth.login.title') }}</h1>
-      </div>
+  <div>
+    <LabNavHeader :title />
+    <section class="w-full space-y-4 p-4 sm:max-w-sm">
+      <h1 class="lab-text-primary text-2xl font-semibold">{{ t('auth.login.title') }}</h1>
       <template v-if="!mfaTicket">
         <form class="space-y-4" @submit.prevent="submitPassword">
-          <LabField :label="t('auth.login.email')" forId="auth-email">
+          <LabField :label="t('auth.login.email')" for-id="auth-email">
             <LabBaseInput
               id="auth-email"
               ref="emailInputRef"
@@ -329,11 +331,12 @@
               autocapitalize="none"
               spellcheck="false"
               :invalid="Boolean(email.trim()) && !isValidEmail(email)"
-              @input="clearVerificationState"
               input-class="w-full"
-              placeholder="you@example.com" />
+              placeholder="you@example.com"
+              @input="clearVerificationState"
+            />
           </LabField>
-          <LabField :label="t('auth.login.password')" forId="auth-password">
+          <LabField :label="t('auth.login.password')" for-id="auth-password">
             <LabBaseInput
               id="auth-password"
               v-model="password"
@@ -341,19 +344,27 @@
               type="password"
               autocomplete="current-password"
               input-class="w-full"
-              placeholder="Минимум 12 символов" />
+              placeholder="Минимум 12 символов"
+            />
           </LabField>
-          <LabBaseButton type="submit" variant="primary" size="xl" :disabled="pending" :label="t('auth.login.submit')" />
+          <LabBaseButton
+            type="submit"
+            variant="primary"
+            size="xl"
+            :disabled="pending"
+            :label="t('auth.login.submit')"
+          />
         </form>
         <div
           v-if="verificationEmail"
-          class="space-y-4 border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))] p-4 text-(--lab-text-primary)">
+          class="space-y-4 border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))] p-4 text-(--lab-text-primary)"
+        >
           <div class="space-y-2">
-            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-(--lab-accent)">
+            <p class="text-xs font-semibold tracking-[0.14em] text-(--lab-accent) uppercase">
               {{ t('auth.verify.title') }}
             </p>
             <p class="text-sm">{{ t('auth.login.verify_email_description') }}</p>
-            <p class="break-all text-2xl font-semibold leading-tight md:text-3xl">{{ verificationEmail }}</p>
+            <p class="text-2xl leading-tight font-semibold break-all md:text-3xl">{{ verificationEmail }}</p>
           </div>
           <LabBaseButton variant="secondary" size="xl" :disabled="!canResendVerification" @click="resendVerification">
             <span v-if="resendPending">{{ t('auth.login.sending') }}</span>
@@ -368,7 +379,8 @@
       </template>
       <div v-else class="space-y-4">
         <div
-          class="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_8%,var(--lab-bg-surface))] p-3 text-sm text-(--lab-text-primary)">
+          class="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_8%,var(--lab-bg-surface))] p-3 text-sm text-(--lab-text-primary)"
+        >
           <p>{{ t('auth.login.mfa_description') }}</p>
         </div>
         <LabNavTabs
@@ -376,7 +388,8 @@
           :items="mfaTabItems"
           route-query-key="mfa"
           route-default-value="totp"
-          panel-class="space-y-4">
+          panel-class="space-y-4"
+        >
           <template #panel-totp>
             <AuthCodeInput
               id="auth-mfa-code"
@@ -387,7 +400,8 @@
               hint="Проверка начнётся автоматически после ввода 6 цифр."
               :invalid="Boolean(errorText)"
               @update:model-value="onMfaCodeInput"
-              @complete="submitMfa" />
+              @complete="submitMfa"
+            />
           </template>
           <template #panel-backup>
             <AuthRecoveryCodeInput
@@ -399,23 +413,23 @@
               hint="Введите 8 символов. Проверка начнётся автоматически."
               :invalid="Boolean(errorText)"
               @update:model-value="onBackupCodeInput"
-              @complete="submitBackupCode" />
+              @complete="submitBackupCode"
+            />
           </template>
         </LabNavTabs>
         <LabNotify
           :text="mfaTicket ? `до сброса авторизации: ${mfaCountdownLabel}` : ''"
           tone="warning"
-          class-name='border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))] px-3 py-2 font-mono text-(--lab-accent)' />
-        <p v-if="pending" class="text-sm lab-text-muted">Проверяем код…</p>
+          class-name="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))] px-3 py-2 font-mono text-(--lab-accent)"
+        />
+        <p v-if="pending" class="lab-text-muted text-sm">Проверяем код…</p>
       </div>
       <LabNotify :text="errorText" tone="error" />
-      <div class="flex flex-wrap gap-3 text-sm lab-text-muted">
+      <div class="lab-text-muted flex flex-wrap gap-3 text-sm">
         <NuxtLink to="/auth/register" class="text-(--lab-accent) transition hover:text-(--lab-accent-hover)">
           {{ t('auth.login.register') }}
         </NuxtLink>
-        <NuxtLink
-          to="/auth/forgot-password"
-          class="text-(--lab-text-muted) transition hover:text-(--lab-text-primary)">
+        <NuxtLink to="/auth/forgot-password" class="text-(--lab-text-muted) transition hover:text-(--lab-text-primary)">
           {{ t('auth.login.forgot') }}
         </NuxtLink>
       </div>

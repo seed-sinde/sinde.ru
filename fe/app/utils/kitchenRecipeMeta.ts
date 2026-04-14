@@ -14,26 +14,19 @@ export const kitchenRecipeTotalMinutes = (recipe: Pick<KitchenRecipe, 'prep_minu
 export const buildKitchenRecipeMetaItems = (
   recipe: KitchenRecipe,
   formatters: KitchenRecipeMetaFormatters,
-  options: { includeSteps?: boolean } = {},
+  options: { includeSteps?: boolean } = {}
 ): KitchenRecipeMetaItem[] => {
   const includeSteps = options.includeSteps !== false
   const entries: Array<KitchenRecipeMetaItem | null> = [
     { label: 'Тип', value: formatters.mealTypeLabel(recipe.meal_type) },
     { label: 'Питание', value: formatters.dietTypeLabel(recipe.diet_type) },
-    recipe.cooking_method
-      ? { label: 'Способ', value: formatters.cookingMethodLabel(recipe.cooking_method) }
-      : null,
+    recipe.cooking_method ? { label: 'Способ', value: formatters.cookingMethodLabel(recipe.cooking_method) } : null,
     { label: 'Время', value: `${kitchenRecipeTotalMinutes(recipe)} мин` },
     { label: 'Порций', value: recipe.servings },
     { label: 'Калорийность', value: `${recipe.kcal} ккал` },
-    recipe.cuisine
-      ? { label: 'Кухня', value: recipe.cuisine }
-      : null,
+    recipe.cuisine ? { label: 'Кухня', value: recipe.cuisine } : null,
     { label: 'Сложность', value: formatters.difficultyLabel(recipe.difficulty) },
-    includeSteps
-      ? { label: 'Шаги', value: formatters.stepsCountLabel(recipe.steps.length) }
-      : null,
+    includeSteps ? { label: 'Шаги', value: formatters.stepsCountLabel(recipe.steps.length) } : null
   ]
-  return entries
-    .filter((entry): entry is KitchenRecipeMetaItem => Boolean(entry && String(entry.value).trim()))
+  return entries.filter((entry): entry is KitchenRecipeMetaItem => Boolean(entry && String(entry.value).trim()))
 }

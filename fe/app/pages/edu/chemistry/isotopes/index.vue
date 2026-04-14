@@ -1,9 +1,9 @@
 <script setup lang="ts">
-  const title = 'Изотопы'
-  usePageSeo({
-    title,
-    description: 'Заготовка страницы для каталога изотопов.'
-  })
+const title = 'Изотопы'
+usePageSeo({
+  title,
+  description: 'Заготовка страницы для каталога изотопов.'
+})
 </script>
 <template>
   <div>
@@ -13,7 +13,8 @@
         { label: 'Вики', to: '/edu' },
         { label: 'Химия', to: '/edu/chemistry' },
         { label: title, current: true }
-      ]" />
-    <section></section>
+      ]"
+    />
+    <section />
   </div>
 </template>

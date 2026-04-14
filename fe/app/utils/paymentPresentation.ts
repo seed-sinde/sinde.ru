@@ -18,7 +18,9 @@ export const formatPaymentInputRubles = (amountKopecks: number, locale = 'ru-RU'
 }
 
 export const normalizePaymentRublesInput = (value?: string) => {
-  const raw = String(value || '').replace(/\s+/g, '').replace(/,/g, '.')
+  const raw = String(value || '')
+    .replace(/\s+/g, '')
+    .replace(/,/g, '.')
   if (!raw) return ''
   let out = ''
   let hasDot = false

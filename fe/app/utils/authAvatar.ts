@@ -59,7 +59,7 @@ export const getAuthAvatarGallery = (user?: AuthUser | null) => {
     }
   }
   const preferredId = toKey(avatar.primary_id)
-  const primaryId = items.some(item => item.id === preferredId) ? preferredId : items[0]?.id || ''
+  const primaryId = items.some((item) => item.id === preferredId) ? preferredId : items[0]?.id || ''
   return {
     items,
     primaryId
@@ -75,7 +75,7 @@ export const buildAuthAvatarPayload = (
     .map((item, index) => normalizeAvatarGalleryItem(item, `avatar-${index + 1}`))
     .filter((item): item is AuthAvatarGalleryItem => Boolean(item))
   if (!normalizedItems.length) return null
-  const primaryItem = normalizedItems.find(item => item.id === primaryId) || normalizedItems[0]
+  const primaryItem = normalizedItems.find((item) => item.id === primaryId) || normalizedItems[0]
   if (!primaryItem) return null
   return {
     primary_id: primaryItem.id,
@@ -89,11 +89,11 @@ export const buildAuthAvatarPayload = (
 }
 export const getAuthAvatarKeys = (user?: AuthUser | null): AuthAvatarKeys => {
   const gallery = getAuthAvatarGallery(user)
-  const avatar = gallery.items.find(item => item.id === gallery.primaryId) || gallery.items[0]
+  const avatar = gallery.items.find((item) => item.id === gallery.primaryId) || gallery.items[0]
   return {
     iconImageKey: toKey(avatar?.icon_image_key),
     profileImageKey: toKey(avatar?.profile_image_key),
-    originalImageKey: toKey(avatar?.original_image_key),
+    originalImageKey: toKey(avatar?.original_image_key)
   }
 }
 export const getAuthAvatarUrls = (user?: AuthUser | null) => {
@@ -102,6 +102,6 @@ export const getAuthAvatarUrls = (user?: AuthUser | null) => {
     ...keys,
     iconImageUrl: buildMediaFileUrl(keys.iconImageKey),
     profileImageUrl: buildMediaFileUrl(keys.profileImageKey || keys.iconImageKey),
-    originalImageUrl: buildMediaFileUrl(keys.originalImageKey || keys.profileImageKey || keys.iconImageKey),
+    originalImageUrl: buildMediaFileUrl(keys.originalImageKey || keys.profileImageKey || keys.iconImageKey)
   }
 }

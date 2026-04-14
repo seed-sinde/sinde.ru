@@ -88,7 +88,7 @@ func PdbGetOrCreateSet(ctx context.Context, children []uuid.UUID) (*models.Set, 
 	const query = `
 		INSERT INTO sets (s_uuid, s_childs)
 		VALUES ($1, ARRAY[$2::uuid, $3::uuid])
-		ON CONFLICT ON CONSTRAINT unique_s_childs DO NOTHING
+		ON CONFLICT (s_childs) DO NOTHING
 		RETURNING s_uuid, s_childs
 	`
 	var inserted models.Set

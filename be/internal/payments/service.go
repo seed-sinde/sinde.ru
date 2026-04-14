@@ -73,6 +73,43 @@ func normalizePlanCode(raw string) string {
 	}
 }
 
+func hasRole(roles []string, role string) bool {
+	needle := strings.ToLower(strings.TrimSpace(role))
+	if needle == "" {
+		return false
+	}
+	for _, item := range roles {
+		if strings.ToLower(strings.TrimSpace(item)) == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func resolveOrderAmounts(planCode string, requestedAmount int64, isAdmin bool) (string, int64, int64, int64, error) {
+	switch normalizePlanCode(planCode) {
+	case PlanDonation:
+		if requestedAmount < MinPaymentAmountKopecks {
+			return "", 0, 0, 0, ErrInvalidAmount
+		}
+		if requestedAmount < ProAmountKopecks {
+			if !isAdmin {
+				return "", 0, 0, 0, ErrInvalidAmount
+			}
+			return PlanPro, requestedAmount, requestedAmount, 0, nil
+		}
+		return PlanDonation, ProAmountKopecks, requestedAmount, requestedAmount - ProAmountKopecks, nil
+	default:
+		if isAdmin && requestedAmount > 0 && requestedAmount < ProAmountKopecks {
+			if requestedAmount < MinPaymentAmountKopecks {
+				return "", 0, 0, 0, ErrInvalidAmount
+			}
+			return PlanPro, requestedAmount, requestedAmount, 0, nil
+		}
+		return PlanPro, ProAmountKopecks, ProAmountKopecks, 0, nil
+	}
+}
+
 func normalizeReturnTo(raw string) string {
 	value := strings.TrimSpace(raw)
 	if value == "" {
@@ -416,20 +453,10 @@ func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, input Creat
 	if user.Email == "" || user.Status != "active" || user.EmailVerifiedAt == nil {
 		return nil, ErrUserUnavailable
 	}
-	planCode := normalizePlanCode(input.PlanCode)
-	amount := ProAmountKopecks
-	switch planCode {
-	case PlanPro:
-		amount = ProAmountKopecks
-	case PlanDonation:
-		amount = input.Amount
-		if amount < ProAmountKopecks {
-			return nil, ErrInvalidAmount
-		}
-	default:
-		return nil, ErrInvalidPlan
+	planCode, baseAmount, amount, tipAmount, err := resolveOrderAmounts(input.PlanCode, input.Amount, hasRole(user.Roles, "admin"))
+	if err != nil {
+		return nil, err
 	}
-	tipAmount := amount - ProAmountKopecks
 	now := s.now().UTC()
 	orderID := uuid.New()
 	publicToken, err := randomPublicToken()
@@ -451,7 +478,7 @@ func (s *Service) CreateOrder(ctx context.Context, userID uuid.UUID, input Creat
 		UserDisplayName:    user.DisplayName,
 		Provider:           ProviderTBank,
 		PlanCode:           planCode,
-		BaseAmount:         ProAmountKopecks,
+		BaseAmount:         baseAmount,
 		Amount:             amount,
 		TipAmount:          tipAmount,
 		Currency:           s.cfg.Currency,

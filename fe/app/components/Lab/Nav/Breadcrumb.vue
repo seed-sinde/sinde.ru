@@ -1,128 +1,128 @@
 <script setup lang="ts">
-  defineOptions({
-    inheritAttrs: false
-  })
+defineOptions({
+  inheritAttrs: false
+})
 
-  const route = useRoute()
-  const attrs = useAttrs()
-  const { t } = useInterfacePreferences()
-  const translatedSidebarItems = useSidebarItems()
-  const props = withDefaults(
-    defineProps<{
-      items: Array<{
-        label: string
-        to?: string | Record<string, any>
-        current?: boolean
-        badge?: string
-      }>
-      ariaLabel?: string
-      containerClass?: string
-      listClass?: string
-      separatorIcon?: string
-      separatorClass?: string
-      leadingIcon?: string
-      leadingIconClass?: string
-    }>(),
-    {
-      ariaLabel: '',
-      containerClass: '',
-      listClass: 'flex min-w-max items-center gap-x-2 gap-y-1 text-sm whitespace-nowrap',
-      separatorIcon: 'ic:round-chevron-right',
-      separatorClass: 'text-(--lab-text-soft) h-4 w-4 shrink-0',
-      leadingIcon: '',
-      leadingIconClass: 'text-(--lab-text-muted) h-4 w-4 shrink-0'
-    }
+const route = useRoute()
+const attrs = useAttrs()
+const { t } = useInterfacePreferences()
+const translatedSidebarItems = useSidebarItems()
+const props = withDefaults(
+  defineProps<{
+    items: Array<{
+      label: string
+      to?: string | Record<string, any>
+      current?: boolean
+      badge?: string
+    }>
+    ariaLabel?: string
+    containerClass?: string
+    listClass?: string
+    separatorIcon?: string
+    separatorClass?: string
+    leadingIcon?: string
+    leadingIconClass?: string
+  }>(),
+  {
+    ariaLabel: '',
+    containerClass: '',
+    listClass: 'flex min-w-max items-center gap-x-2 gap-y-1 text-sm whitespace-nowrap',
+    separatorIcon: 'ic:round-chevron-right',
+    separatorClass: 'text-(--lab-text-soft) h-4 w-4 shrink-0',
+    leadingIcon: '',
+    leadingIconClass: 'text-(--lab-text-muted) h-4 w-4 shrink-0'
+  }
+)
+const containerRef = ref<HTMLElement | null>(null)
+const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(containerRef, { axis: 'x' })
+const normalizedItems = computed(() => props.items || [])
+const ariaLabel = computed(() => props.ariaLabel || t('nav.breadcrumbs'))
+const rootClass = computed(() => [attrs.class, 'relative min-w-0'].filter(Boolean))
+const resolvedContainerClass = computed(() =>
+  [props.containerClass, 'lab-scroll-hidden min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain'].filter(
+    Boolean
   )
-  const containerRef = ref<HTMLElement | null>(null)
-  const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(containerRef, { axis: 'x' })
-  const normalizedItems = computed(() => props.items || [])
-  const ariaLabel = computed(() => props.ariaLabel || t('nav.breadcrumbs'))
-  const rootClass = computed(() => [attrs.class, 'relative min-w-0'].filter(Boolean))
-  const resolvedContainerClass = computed(() =>
-    [props.containerClass, 'lab-scroll-hidden min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain'].filter(
-      Boolean
-    )
+)
+const normalizeToPath = (to: unknown) => {
+  if (!to) return ''
+  if (typeof to === 'string') return to
+  if (typeof to === 'object' && to && 'path' in to) {
+    return String((to as { path?: string }).path || '')
+  }
+  return ''
+}
+const firstItemPath = computed(() => {
+  const first = normalizedItems.value[0]
+  return normalizeToPath(first?.to)
+})
+const routeSectionItem = computed(() => {
+  const path = String(route.path || '')
+  if (!path || path === '/') return null
+  return (
+    translatedSidebarItems.value
+      .filter((item) => path === item.to || path.startsWith(`${item.to}/`))
+      .sort((left, right) => right.to.length - left.to.length)[0] || null
   )
-  const normalizeToPath = (to: unknown) => {
-    if (!to) return ''
-    if (typeof to === 'string') return to
-    if (typeof to === 'object' && to && 'path' in to) {
-      return String((to as { path?: string }).path || '')
-    }
-    return ''
+})
+const matchedSidebarItem = computed(() => {
+  const firstPath = firstItemPath.value
+  if (!firstPath) return routeSectionItem.value || null
+  return translatedSidebarItems.value.find((item) => item.to === firstPath) || routeSectionItem.value || null
+})
+const leadingSectionTo = computed(() => matchedSidebarItem.value?.to || '')
+const canLinkToSection = computed(() => {
+  if (!leadingSectionTo.value) return false
+  return normalizedItems.value.length > 1 || route.path !== leadingSectionTo.value
+})
+const leadingSectionIcon = computed(() => {
+  if (props.leadingIcon) return props.leadingIcon
+  return matchedSidebarItem.value?.icon || 'ic:round-folder'
+})
+const leadingSectionIconClass = computed(() => {
+  if (props.leadingIconClass !== 'text-(--lab-text-muted) h-4 w-4 shrink-0') {
+    return props.leadingIconClass
   }
-  const firstItemPath = computed(() => {
-    const first = normalizedItems.value[0]
-    return normalizeToPath(first?.to)
-  })
-  const routeSectionItem = computed(() => {
-    const path = String(route.path || '')
-    if (!path || path === '/') return null
-    return (
-      translatedSidebarItems.value
-        .filter(item => path === item.to || path.startsWith(`${item.to}/`))
-        .sort((left, right) => right.to.length - left.to.length)[0] || null
-    )
-  })
-  const matchedSidebarItem = computed(() => {
-    const firstPath = firstItemPath.value
-    if (!firstPath) return routeSectionItem.value || null
-    return translatedSidebarItems.value.find(item => item.to === firstPath) || routeSectionItem.value || null
-  })
-  const leadingSectionTo = computed(() => matchedSidebarItem.value?.to || '')
-  const canLinkToSection = computed(() => {
-    if (!leadingSectionTo.value) return false
-    return normalizedItems.value.length > 1 || route.path !== leadingSectionTo.value
-  })
-  const leadingSectionIcon = computed(() => {
-    if (props.leadingIcon) return props.leadingIcon
-    return matchedSidebarItem.value?.icon || 'ic:round-folder'
-  })
-  const leadingSectionIconClass = computed(() => {
-    if (props.leadingIconClass !== 'text-(--lab-text-muted) h-4 w-4 shrink-0') {
-      return props.leadingIconClass
-    }
-    return ['h-4 w-4 shrink-0', matchedSidebarItem.value?.iconColor || 'text-(--lab-text-muted)']
-  })
-  const itemClasses = (isCurrent: boolean) => {
-    return [
-      'inline-flex shrink-0 items-center whitespace-nowrap',
-      isCurrent ? 'text-(--lab-text-primary)' : 'text-(--lab-text-muted) hover:text-(--lab-text-primary)'
-    ]
+  return ['h-4 w-4 shrink-0', matchedSidebarItem.value?.iconColor || 'text-(--lab-text-muted)']
+})
+const itemClasses = (isCurrent: boolean) => {
+  return [
+    'inline-flex shrink-0 items-center whitespace-nowrap',
+    isCurrent ? 'text-(--lab-text-primary)' : 'text-(--lab-text-muted) hover:text-(--lab-text-primary)'
+  ]
+}
+const syncScrollEdgesSoon = () => {
+  if (import.meta.client) {
+    requestAnimationFrame(syncScrollEdges)
+    return
   }
-  const syncScrollEdgesSoon = () => {
-    if (import.meta.client) {
-      requestAnimationFrame(syncScrollEdges)
-      return
-    }
-    syncScrollEdges()
-  }
-  const scrollCurrentItemIntoView = async () => {
-    await nextTick()
-    const container = containerRef.value
-    if (!container) return
-    const currentItem = container.querySelector('[aria-current="page"]')
-    if (currentItem instanceof HTMLElement) {
-      currentItem.scrollIntoView({
-        block: 'nearest',
-        inline: 'end'
-      })
-      syncScrollEdgesSoon()
-      return
-    }
-    container.scrollTo({
-      left: container.scrollWidth,
-      top: 0
+  syncScrollEdges()
+}
+const scrollCurrentItemIntoView = async () => {
+  await nextTick()
+  const container = containerRef.value
+  if (!container) return
+  const currentItem = container.querySelector('[aria-current="page"]')
+  if (currentItem instanceof HTMLElement) {
+    currentItem.scrollIntoView({
+      block: 'nearest',
+      inline: 'end'
     })
     syncScrollEdgesSoon()
+    return
   }
-  watch(
-    () => [route.fullPath, normalizedItems.value.length],
-    () => {
-      scrollCurrentItemIntoView()
-    },
-    { immediate: true }
-  )
+  container.scrollTo({
+    left: container.scrollWidth,
+    top: 0
+  })
+  syncScrollEdgesSoon()
+}
+watch(
+  () => [route.fullPath, normalizedItems.value.length],
+  () => {
+    scrollCurrentItemIntoView()
+  },
+  { immediate: true }
+)
 </script>
 <template>
   <div :class="rootClass">
@@ -131,20 +131,23 @@
         <li
           v-for="(item, index) in normalizedItems"
           :key="`${item.label}:${index}`"
-          class="inline-flex shrink-0 items-center gap-2">
+          class="inline-flex shrink-0 items-center gap-2"
+        >
           <template v-if="index === 0">
             <NuxtLink
               v-if="leadingSectionIcon && canLinkToSection"
               :to="leadingSectionTo"
               class="inline-flex shrink-0 items-center"
-              :aria-label="t('nav.open_section', { label: matchedSidebarItem?.label || item.label })">
+              :aria-label="t('nav.open_section', { label: matchedSidebarItem?.label || item.label })"
+            >
               <Icon :name="leadingSectionIcon" :class="leadingSectionIconClass" aria-hidden="true" />
             </NuxtLink>
             <Icon
               v-else-if="leadingSectionIcon"
               :name="leadingSectionIcon"
               :class="leadingSectionIconClass"
-              aria-hidden="true" />
+              aria-hidden="true"
+            />
           </template>
           <template v-else>
             <Icon :name="separatorIcon" :class="separatorClass" aria-hidden="true" />
@@ -162,16 +165,18 @@
             </span>
           </span>
         </li>
-        <slot name="append"></slot>
+        <slot name="append" />
       </ol>
     </nav>
     <div
       class="lab-scroll-fade lab-scroll-fade-x-left"
       :class="{ 'lab-scroll-fade-visible': scrollEdges.left }"
-      aria-hidden="true"></div>
+      aria-hidden="true"
+    />
     <div
       class="lab-scroll-fade lab-scroll-fade-x-right"
       :class="{ 'lab-scroll-fade-visible': scrollEdges.right }"
-      aria-hidden="true"></div>
+      aria-hidden="true"
+    />
   </div>
 </template>

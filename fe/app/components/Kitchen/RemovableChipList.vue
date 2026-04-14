@@ -11,48 +11,49 @@
       :title="resolveItemTitle(item)"
       :aria-label="resolveItemAriaLabel(item)"
       size="xs"
-      @click="$emit('remove', item)">
+      @click="$emit('remove', item)"
+    >
       <span class="group-hover:invisible">{{ item.label }}</span>
     </LabBaseButton>
     <span v-if="!items.length && emptyText" class="text-xs text-zinc-500">{{ emptyText }}</span>
   </div>
 </template>
 <script setup lang="ts">
-  import type { StyleValue } from 'vue'
-  export type KitchenRemovableChipItem = {
-    key: string | number
-    label: string
-    disabled?: boolean
-    payload?: unknown
+import type { StyleValue } from 'vue'
+export type KitchenRemovableChipItem = {
+  key: string | number
+  label: string
+  disabled?: boolean
+  payload?: unknown
+}
+const props = withDefaults(
+  defineProps<{
+    items?: KitchenRemovableChipItem[]
+    emptyText?: string
+    listClass?: string
+    itemStyle?: StyleValue | ((item: KitchenRemovableChipItem) => StyleValue)
+    itemTitle?: string | ((item: KitchenRemovableChipItem) => string)
+    itemAriaLabel?: string | ((item: KitchenRemovableChipItem) => string)
+  }>(),
+  {
+    items: () => [],
+    emptyText: '',
+    listClass: '',
+    itemStyle: undefined,
+    itemTitle: '',
+    itemAriaLabel: ''
   }
-  const props = withDefaults(
-    defineProps<{
-      items?: KitchenRemovableChipItem[]
-      emptyText?: string
-      listClass?: string
-      itemStyle?: StyleValue | ((item: KitchenRemovableChipItem) => StyleValue)
-      itemTitle?: string | ((item: KitchenRemovableChipItem) => string)
-      itemAriaLabel?: string | ((item: KitchenRemovableChipItem) => string)
-    }>(),
-    {
-      items: () => [],
-      emptyText: '',
-      listClass: '',
-      itemStyle: undefined,
-      itemTitle: '',
-      itemAriaLabel: ''
-    }
-  )
-  defineEmits<{
-    (e: 'remove', item: KitchenRemovableChipItem): void
-  }>()
-  /** Resolves an inline style or style factory for the chip. */
-  const resolveItemStyle = (item: KitchenRemovableChipItem) =>
-    typeof props.itemStyle === 'function' ? props.itemStyle(item) : props.itemStyle
-  /** Resolves the title text shown on chip hover. */
-  const resolveItemTitle = (item: KitchenRemovableChipItem) =>
-    typeof props.itemTitle === 'function' ? props.itemTitle(item) : props.itemTitle
-  /** Resolves the aria-label for the chip removal action. */
-  const resolveItemAriaLabel = (item: KitchenRemovableChipItem) =>
-    typeof props.itemAriaLabel === 'function' ? props.itemAriaLabel(item) : props.itemAriaLabel
+)
+defineEmits<{
+  (e: 'remove', item: KitchenRemovableChipItem): void
+}>()
+/** Resolves an inline style or style factory for the chip. */
+const resolveItemStyle = (item: KitchenRemovableChipItem) =>
+  typeof props.itemStyle === 'function' ? props.itemStyle(item) : props.itemStyle
+/** Resolves the title text shown on chip hover. */
+const resolveItemTitle = (item: KitchenRemovableChipItem) =>
+  typeof props.itemTitle === 'function' ? props.itemTitle(item) : props.itemTitle
+/** Resolves the aria-label for the chip removal action. */
+const resolveItemAriaLabel = (item: KitchenRemovableChipItem) =>
+  typeof props.itemAriaLabel === 'function' ? props.itemAriaLabel(item) : props.itemAriaLabel
 </script>

@@ -26,6 +26,6 @@ export const useInputRejectFeedback = <T extends string | number>() => {
     rejectedTarget,
     rejectedHint,
     markRejected,
-    clearRejectFeedback,
+    clearRejectFeedback
   }
 }

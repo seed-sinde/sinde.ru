@@ -79,7 +79,7 @@ export const hexToRgb = (hex: string): { r: number; g: number; b: number } | nul
     clean.length === 3
       ? clean
           .split('')
-          .map(char => char + char)
+          .map((char) => char + char)
           .join('')
       : clean
   const num = Number.parseInt(full, 16)
@@ -137,7 +137,7 @@ export const rgbToCss = (rgb: { r: number; g: number; b: number }) => `rgb(${rgb
 export const parseLabCsv = (value: string): { L: number; a: number; b: number } | null => {
   const parts = String(value || '')
     .split(',')
-    .map(part => Number(part.trim()))
+    .map((part) => Number(part.trim()))
   if (parts.length !== 3 || !parts.every(Number.isFinite)) return null
   return {
     L: parts[0] ?? 0,

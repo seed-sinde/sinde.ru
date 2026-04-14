@@ -15,6 +15,7 @@ const (
 	StatusFailed                  = "failed"
 	StatusRefunded                = "refunded"
 	StatusCanceled                = "canceled"
+	MinPaymentAmountKopecks int64 = 100
 	ProAmountKopecks        int64 = 39900
 )
 

@@ -20,14 +20,8 @@
         />
       </LabField>
     </div>
-    <LabErrorMessage
-      v-if="(start && !startValid) || (end && !endValid)"
-      :text="`Неверный формат: ${placeholder}`"
-    />
-    <LabErrorMessage
-      v-else-if="isRangeInvalid"
-      text="Начало не может быть позже конца."
-    />
+    <LabErrorMessage v-if="(start && !startValid) || (end && !endValid)" :text="`Неверный формат: ${placeholder}`" />
+    <LabErrorMessage v-else-if="isRangeInvalid" text="Начало не может быть позже конца." />
   </div>
 </template>
 <script setup lang="ts">
@@ -44,8 +38,8 @@ const props = withDefaults(
   }>(),
   {}
 )
-const startId = computed(() => props.id ? `${props.id}-start` : 'TraitInputDatetimeStart')
-const endId = computed(() => props.id ? `${props.id}-end` : 'TraitInputDatetimeEnd')
+const startId = computed(() => (props.id ? `${props.id}-start` : 'TraitInputDatetimeStart'))
+const endId = computed(() => (props.id ? `${props.id}-end` : 'TraitInputDatetimeEnd'))
 const startLabel = computed(() => props.labelStart || 'Начало')
 const endLabel = computed(() => props.labelEnd || 'Конец')
 const {

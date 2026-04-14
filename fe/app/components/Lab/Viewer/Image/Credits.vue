@@ -9,18 +9,20 @@
       <NuxtLink
         v-if="sourceUrl"
         :to="sourceUrl"
-        class="text-(--lab-accent) underline underline-offset-2 decoration-[color-mix(in_srgb,var(--lab-accent)_48%,transparent)] transition hover:text-(--lab-accent-hover) hover:decoration-[color-mix(in_srgb,var(--lab-accent-hover)_56%,transparent)]"
+        class="text-(--lab-accent) underline decoration-[color-mix(in_srgb,var(--lab-accent)_48%,transparent)] underline-offset-2 transition hover:text-(--lab-accent-hover) hover:decoration-[color-mix(in_srgb,var(--lab-accent-hover)_56%,transparent)]"
         target="_blank"
-        rel="noopener noreferrer">
+        rel="noopener noreferrer"
+      >
         источник
       </NuxtLink>
       <span v-if="license">
         <NuxtLink
           v-if="licenseUrl"
           :to="licenseUrl"
-          class="text-(--lab-accent) underline underline-offset-2 decoration-[color-mix(in_srgb,var(--lab-accent)_48%,transparent)] transition hover:text-(--lab-accent-hover) hover:decoration-[color-mix(in_srgb,var(--lab-accent-hover)_56%,transparent)]"
+          class="text-(--lab-accent) underline decoration-[color-mix(in_srgb,var(--lab-accent)_48%,transparent)] underline-offset-2 transition hover:text-(--lab-accent-hover) hover:decoration-[color-mix(in_srgb,var(--lab-accent-hover)_56%,transparent)]"
           target="_blank"
-          rel="noopener noreferrer">
+          rel="noopener noreferrer"
+        >
           {{ license }}
         </NuxtLink>
         <span v-else>{{ license }}</span>
@@ -29,15 +31,15 @@
   </div>
 </template>
 <script setup lang="ts">
-  const props = defineProps<{
-    title?: string | null
-    author?: string | null | undefined
-    attribution?: string | null | undefined
-    sourceUrl?: string | null | undefined
-    licenseUrl?: string | null | undefined
-    license?: string | null | undefined
-  }>()
-  const hasContent = computed(() =>
-    Boolean(props.title || props.author || props.attribution || props.sourceUrl || props.license)
-  )
+const props = defineProps<{
+  title?: string | null
+  author?: string | null | undefined
+  attribution?: string | null | undefined
+  sourceUrl?: string | null | undefined
+  licenseUrl?: string | null | undefined
+  license?: string | null | undefined
+}>()
+const hasContent = computed(() =>
+  Boolean(props.title || props.author || props.attribution || props.sourceUrl || props.license)
+)
 </script>

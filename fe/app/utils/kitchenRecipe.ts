@@ -19,9 +19,8 @@ export const kitchenStepWord = (count: number) => {
   return 'шагов'
 }
 export const kitchenStepsCountLabel = (count: number) => `${count} ${kitchenStepWord(count)}`
-export const slugifyKitchenRecipeTitle = (title: string) =>
-  slugifyLatin(title, { fallback: 'recipe' })
-export const kitchenRecipeSlug = (recipe: { id: string, title: string }) =>
+export const slugifyKitchenRecipeTitle = (title: string) => slugifyLatin(title, { fallback: 'recipe' })
+export const kitchenRecipeSlug = (recipe: { id: string; title: string }) =>
   `${slugifyKitchenRecipeTitle(recipe.title)}-${recipe.id}`
 export const kitchenRecipeModerationLabel = (status?: string) => {
   const key = String(status || '').trim()

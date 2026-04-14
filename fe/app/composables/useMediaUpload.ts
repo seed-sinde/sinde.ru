@@ -15,12 +15,13 @@ export const uploadMediaFile = async (file: File, target: MediaUploadTarget) => 
   formData.append('file', file)
   formData.append('section', target.section)
   formData.append('collection', target.collection)
-  const recipeId = target.section === 'kitchen' && target.collection === 'recipes' ? String(target.recipeId || '').trim() : ''
+  const recipeId =
+    target.section === 'kitchen' && target.collection === 'recipes' ? String(target.recipeId || '').trim() : ''
   if (recipeId) {
     formData.append('recipe_id', recipeId)
   }
   return await useApiJson<ApiResponseWithData<MediaUploadResult>>('/media/upload', {
     method: 'POST',
-    body: formData,
+    body: formData
   })
 }

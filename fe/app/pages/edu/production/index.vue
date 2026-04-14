@@ -1,9 +1,9 @@
 <script setup lang="ts">
-  const title = 'Производство'
-  usePageSeo({
-    title,
-    description: 'Заготовка страницы для производственных технологий.'
-  })
+const title = 'Производство'
+usePageSeo({
+  title,
+  description: 'Заготовка страницы для производственных технологий.'
+})
 </script>
 <template>
   <div>
@@ -12,7 +12,8 @@
       :breadcrumb-items="[
         { label: 'Вики', to: '/edu' },
         { label: title, current: true }
-      ]" />
-    <section></section>
+      ]"
+    />
+    <section />
   </div>
 </template>

@@ -1,4 +1,4 @@
-import type { CodeViewerTheme, InterfaceLocaleCode, ThemePreference } from './ui'
+import type { InterfaceLocaleCode, ThemePreference } from './ui'
 export type ElementCategory = {
   slug: string
   label: string
@@ -130,9 +130,6 @@ export type MineralsFiltersSnapshot = {
 export type UiPreferencesSnapshot = {
   interfaceLocale: InterfaceLocaleCode
   themePreference: ThemePreference
-  codeViewerSoftWrap: boolean
-  codeViewerTheme?: CodeViewerTheme
-  codeViewerThemeOverride: CodeViewerTheme | null
   mineralsFilters: MineralsFiltersSnapshot
 }
 export type PeriodicTableSampleFallbackType = 'synthetic' | 'unstable' | 'hypothetical' | 'not-isolated' | 'unknown'

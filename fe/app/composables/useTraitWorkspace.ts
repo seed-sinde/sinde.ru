@@ -1,6 +1,13 @@
 import { keyMetaEquals, normalizeMetaForEquality } from '../utils/traitMeta'
 import type { Ref } from 'vue'
-import type { Trait, TraitInput, KeyMeta, TraitKey, TraitResolveLockOwner, TraitResolveLockState } from '../../shared/types/traits'
+import type {
+  Trait,
+  TraitInput,
+  KeyMeta,
+  TraitKey,
+  TraitResolveLockOwner,
+  TraitResolveLockState
+} from '../../shared/types/traits'
 const SKIP_FETCH_UUID_STATE_KEY = 'skip-fetch-uuid'
 const TRAIT_RESOLVE_LOCK_STATE_KEY = 'traits-resolve-lock'
 const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>['json']>[1]>) =>
@@ -134,7 +141,7 @@ export const useTraitResolveLock = () => {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       const current = state.value
       if (!current.owner || current.uuid !== uuid) return
-      await new Promise<void>(resolve => setTimeout(resolve, 25))
+      await new Promise<void>((resolve) => setTimeout(resolve, 25))
     }
   }
   return { state, acquire, release, waitUntilFree }
@@ -246,7 +253,7 @@ export const useTraitStream = (uuid: Ref<string | undefined>, skipFetchUuid: Ref
     ctrl.value = controller
     let gotAny = false
     let lockAcquired = false
-    const seen = new Set<string>(store.traits.map(trait => trait.t_uuid))
+    const seen = new Set<string>(store.traits.map((trait) => trait.t_uuid))
     const buffer: Trait[] = []
     let flushTimer: ReturnType<typeof setTimeout> | null = null
     /**
@@ -280,7 +287,7 @@ export const useTraitStream = (uuid: Ref<string | undefined>, skipFetchUuid: Ref
           (line: Trait) => {
             if (ctrl.value !== controller) return
             if (seen.has(line.t_uuid)) return
-            if (store.traits.some(item => item.t_uuid === line.t_uuid)) {
+            if (store.traits.some((item) => item.t_uuid === line.t_uuid)) {
               seen.add(line.t_uuid)
               return
             }
@@ -323,7 +330,7 @@ export const useTraitStream = (uuid: Ref<string | undefined>, skipFetchUuid: Ref
   }
   watch(
     uuid,
-    value => {
+    (value) => {
       if (!import.meta.client) return
       if (!value) {
         stop()
@@ -356,7 +363,7 @@ export const useTraitStream = (uuid: Ref<string | undefined>, skipFetchUuid: Ref
   )
   watch(
     () => store.traits.length,
-    nextLength => {
+    (nextLength) => {
       const lastLength = prevTraitsLength.value
       prevTraitsLength.value = nextLength
       if (!import.meta.client) return
@@ -379,6 +386,37 @@ export const useTraitActions = () => {
   const { ensureLoaded, user, setPrimaryTraitUuid } = useAuth()
   const inProcess = ref(false)
   const error = ref<string | null>(null)
+  /**
+   * Finds cached key meta by synonym when the current trait record has no key id yet.
+   */
+  const findStoredKeyBySyn = (syn: string): TraitKey | null => {
+    const targetSyn = String(syn || '')
+      .trim()
+      .toLowerCase()
+    if (!targetSyn) return null
+    const entries = Object.values(store.keyMetaById || {}) as TraitKey[]
+    const found = entries.find(
+      (entry) =>
+        String(entry?.syn || '')
+          .trim()
+          .toLowerCase() === targetSyn
+    )
+    return found || null
+  }
+  /**
+   * Attaches a resolved key id to local traits that were just created in this session.
+   */
+  const attachLocalKeyId = (traitUuids: string[], keyId?: number | null) => {
+    const normalizedKeyId = Number(keyId || 0)
+    if (normalizedKeyId <= 0 || !traitUuids.length) return
+    const targets = new Set(traitUuids.map((value) => String(value || '').trim()).filter(Boolean))
+    if (!targets.size) return
+    store.setTraits(
+      store.traits.map((trait) =>
+        targets.has(String(trait.t_uuid || '').trim()) ? { ...trait, t_key_id: normalizedKeyId } : trait
+      )
+    )
+  }
   /**
    * Synchronizes the user's primary trait uuid after a local mutation changes the active target.
    */
@@ -409,6 +447,7 @@ export const useTraitActions = () => {
    * Updates the workspace route and marks the next uuid as a reusable local snapshot.
    */
   const applyNextUuid = async (previousUuid: string | null, nextUuid: string | null) => {
+    store.currentUuid = nextUuid
     skipFetchUuid.value = nextUuid
     await updateAddress(nextUuid)
     await syncPrimaryAfterMutation(previousUuid, nextUuid)
@@ -432,6 +471,8 @@ export const useTraitActions = () => {
       const entry = (store.keyMetaById as Record<number, TraitKey | undefined>)?.[trait.t_key_id]
       if (entry?.meta) return entry.meta as KeyMeta
     }
+    const bySyn = findStoredKeyBySyn(trait.t_key)
+    if (bySyn?.meta) return bySyn.meta as KeyMeta
     return fallbackMeta
   }
   /**
@@ -456,7 +497,7 @@ export const useTraitActions = () => {
       /**
        * Writes meta for brand-new keys after the trait itself is created.
        */
-      const applyMetaIfNewKey = async () => {
+      const applyMetaIfNewKey = async (traitUuids: string[] = []) => {
         if (keyAlreadyExists || !meta) return
         const freshMeta = await fetchKeyMetaSafe(key)
         keyId = freshMeta?.data?.id ?? keyId
@@ -465,11 +506,12 @@ export const useTraitActions = () => {
         if (updated?.data) {
           keyId = updated.data.id ?? keyId
           store.setKeyMetaBulk([updated.data])
+          attachLocalKeyId(traitUuids, keyId)
         }
       }
       const targetMeta = normalizeMetaForEquality(meta || existingMeta)
       const existingSameKey = store.traits.find(
-        trait =>
+        (trait) =>
           trait.t_key.trim().toLowerCase() === key.toLowerCase() &&
           keyMetaEquals(resolveExistingTraitMeta(trait, existingMeta), targetMeta)
       )
@@ -478,14 +520,16 @@ export const useTraitActions = () => {
         return
       }
       const duplicateValue = store.traits.some(
-        trait =>
+        (trait) =>
+          trait.t_uuid !== existingSameKey?.t_uuid &&
           trait.t_key.trim().toLowerCase() === key.toLowerCase() &&
+          keyMetaEquals(resolveExistingTraitMeta(trait, existingMeta), targetMeta) &&
           trait.t_value.trim().toLowerCase() === value.toLowerCase()
       )
       if (duplicateValue) throw new Error('Эта особенность уже есть в списке')
       if (existingSameKey) {
-        const replaceIndex = store.traits.findIndex(trait => trait.t_uuid === existingSameKey.t_uuid)
-        const baseTraits = store.traits.filter(trait => trait.t_uuid !== existingSameKey.t_uuid)
+        const replaceIndex = store.traits.findIndex((trait) => trait.t_uuid === existingSameKey.t_uuid)
+        const baseTraits = store.traits.filter((trait) => trait.t_uuid !== existingSameKey.t_uuid)
         const createdUuid = await createTrait(key, value)
         const createdTrait: Trait = { t_uuid: createdUuid, t_key: key, t_value: value }
         if (keyId) createdTrait.t_key_id = keyId
@@ -495,11 +539,11 @@ export const useTraitActions = () => {
         store.setTraits(nextTraits)
         let finalUuid: string | null = createdTrait.t_uuid
         if (nextTraits.length > 1) {
-          const resolvedSet = await findSetByTraitUuids(nextTraits.map(trait => trait.t_uuid))
+          const resolvedSet = await findSetByTraitUuids(nextTraits.map((trait) => trait.t_uuid))
           finalUuid = resolvedSet?.s_uuid || finalUuid
         }
+        await applyMetaIfNewKey([createdTrait.t_uuid])
         await applyNextUuid(previousUuid, finalUuid)
-        await applyMetaIfNewKey()
         return
       }
       if (!currentUuid.value || store.traits.length === 0) {
@@ -507,8 +551,8 @@ export const useTraitActions = () => {
         const createdTrait: Trait = { t_uuid: createdUuid, t_key: key, t_value: value }
         if (keyId) createdTrait.t_key_id = keyId
         store.setTraits([createdTrait])
+        await applyMetaIfNewKey([createdTrait.t_uuid])
         await applyNextUuid(previousUuid, createdUuid)
-        await applyMetaIfNewKey()
         return
       }
       const { s_uuid, t_uuid: createdUuid } = await createOrGetSet(currentUuid.value, { t_key: key, t_value: value })
@@ -516,9 +560,11 @@ export const useTraitActions = () => {
         const createdTrait: Trait = { t_uuid: createdUuid, t_key: key, t_value: value }
         if (keyId) createdTrait.t_key_id = keyId
         store.setTraits([...store.traits, createdTrait])
+        await applyMetaIfNewKey([createdTrait.t_uuid])
+      } else {
+        await applyMetaIfNewKey()
       }
       await applyNextUuid(previousUuid, s_uuid)
-      await applyMetaIfNewKey()
     } catch (mutationError) {
       error.value = resolveTraitErrorMessage(mutationError, 'Не удалось добавить особенность')
     } finally {
@@ -536,7 +582,7 @@ export const useTraitActions = () => {
         : []
     if (!ids.length) return
     const previousUuid = currentUuid.value ?? null
-    ids.forEach(id => store.removeTrait(id))
+    ids.forEach((id) => store.removeTrait(id))
     const remainingTraits = store.traits
     if (remainingTraits.length === 0) {
       await applyNextUuid(previousUuid, null)
@@ -546,7 +592,7 @@ export const useTraitActions = () => {
       await applyNextUuid(previousUuid, remainingTraits[0]?.t_uuid || null)
       return
     }
-    const resolvedSet = await findSetByTraitUuids(remainingTraits.map(trait => trait.t_uuid))
+    const resolvedSet = await findSetByTraitUuids(remainingTraits.map((trait) => trait.t_uuid))
     store.currentUuid = resolvedSet.s_uuid
     await applyNextUuid(previousUuid, resolvedSet.s_uuid)
   }
@@ -563,7 +609,7 @@ export const useTraitActions = () => {
       const nextValue = String(payload?.t_value || '').trim()
       if (!traitUuid) throw new Error('Особенность для редактирования не найдена')
       if (!nextValue) throw new Error('Укажите значение')
-      const replaceIndex = store.traits.findIndex(trait => trait.t_uuid === traitUuid)
+      const replaceIndex = store.traits.findIndex((trait) => trait.t_uuid === traitUuid)
       if (replaceIndex < 0) throw new Error('Выбранная особенность отсутствует в текущем наборе')
       const currentTrait = store.traits[replaceIndex]
       if (!currentTrait) throw new Error('Не удалось получить выбранную особенность')
@@ -581,7 +627,7 @@ export const useTraitActions = () => {
       store.setTraits(normalizedTraits)
       let finalUuid: string | null = replacedTrait.t_uuid
       if (normalizedTraits.length > 1) {
-        const resolvedSet = await findSetByTraitUuids(normalizedTraits.map(trait => trait.t_uuid))
+        const resolvedSet = await findSetByTraitUuids(normalizedTraits.map((trait) => trait.t_uuid))
         finalUuid = resolvedSet?.s_uuid || finalUuid
       }
       await applyNextUuid(previousUuid, finalUuid)
@@ -643,7 +689,7 @@ export const usePasteUuid = () => {
 export const useSelectionMap = <T extends { t_uuid: string }>(items: Ref<T[]>) => {
   const map = reactive<Record<string, boolean>>({})
   const hasSelected = computed(() => Object.values(map).some(Boolean))
-  const isAllSelected = computed(() => items.value.length > 0 && items.value.every(item => map[item.t_uuid]))
+  const isAllSelected = computed(() => items.value.length > 0 && items.value.every((item) => map[item.t_uuid]))
   /**
    * Toggles the whole current collection selection.
    */
@@ -651,18 +697,22 @@ export const useSelectionMap = <T extends { t_uuid: string }>(items: Ref<T[]>) =
     const nextValue = !isAllSelected.value
     const next: Record<string, boolean> = {}
     if (nextValue) {
-      items.value.forEach(item => {
+      items.value.forEach((item) => {
         next[item.t_uuid] = true
       })
     }
-    Object.keys(map).forEach(key => delete map[key])
+    Object.keys(map).forEach((key) => {
+      map[key] = false
+    })
     Object.assign(map, next)
   }
   /**
    * Clears all selected ids.
    */
   const clear = () => {
-    Object.keys(map).forEach(key => delete map[key])
+    Object.keys(map).forEach((key) => {
+      map[key] = false
+    })
   }
   const selectedIds = computed<string[]>(() =>
     Object.entries(map)
@@ -671,7 +721,7 @@ export const useSelectionMap = <T extends { t_uuid: string }>(items: Ref<T[]>) =
   )
   const selectedItems = computed<T[]>(() => {
     const set = new Set(selectedIds.value)
-    return items.value.filter(item => set.has(item.t_uuid))
+    return items.value.filter((item) => set.has(item.t_uuid))
   })
   return { selectedMap: map, hasSelected, isAllSelected, toggleSelectAll, clear, selectedIds, selectedItems }
 }
