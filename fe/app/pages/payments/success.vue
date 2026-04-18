@@ -1,10 +1,13 @@
 <script setup lang="ts">
-const { t, localeTag } = useInterfacePreferences()
-const title = t('payments.success.seo_title')
+const { localeTag } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('payments')
+await useAsyncData(key.value, load, { watch: [locale] })
+const title = computed(() => t('success.seo_title'))
+const description = computed(() => t('success.seo_description'))
 
 usePageSeo({
   title,
-  description: t('payments.success.seo_description')
+  description
 })
 
 const route = useRoute()
@@ -26,17 +29,17 @@ const nextPath = computed(() => normalizeInternalPath(String(route.query.next ||
 const statusTitle = computed(() => {
   switch (order.value?.status) {
     case 'success':
-      return t('payments.lookup.status.success')
+      return t('lookup.status.success')
     case 'pending':
-      return t('payments.lookup.status.pending')
+      return t('lookup.status.pending')
     case 'failed':
-      return t('payments.lookup.status.failed')
+      return t('lookup.status.failed')
     case 'canceled':
-      return t('payments.lookup.status.canceled')
+      return t('lookup.status.canceled')
     case 'refunded':
-      return t('payments.lookup.status.refunded')
+      return t('lookup.status.refunded')
     default:
-      return t('payments.lookup.status.unknown')
+      return t('lookup.status.unknown')
   }
 })
 
@@ -44,47 +47,47 @@ const statusDescription = computed(() => {
   switch (order.value?.status) {
     case 'success':
       return order.value?.access_until
-        ? t('payments.lookup.success.active_until', { date: formatAbsoluteDateTime(order.value.access_until) })
-        : t('payments.lookup.success.default')
+        ? t('lookup.success.active_until', { date: formatAbsoluteDateTime(order.value.access_until) })
+        : t('lookup.success.default')
     case 'pending':
-      return t('payments.lookup.pending.description')
+      return t('lookup.pending.description')
     case 'failed':
-      return t('payments.lookup.failed.description')
+      return t('lookup.failed.description')
     case 'canceled':
-      return t('payments.lookup.canceled.description')
+      return t('lookup.canceled.description')
     case 'refunded':
-      return t('payments.lookup.refunded.description')
+      return t('lookup.refunded.description')
     default:
-      return t('payments.lookup.unknown_status')
+      return t('lookup.unknown_status')
   }
 })
 
 const amountText = computed(() => formatPaymentAmount(order.value?.amount || 0, localeTag.value))
 const createdAtText = computed(() => {
-  if (!order.value?.created_at) return t('payments.status.unknown')
+  if (!order.value?.created_at) return t('status.unknown')
   return formatAbsoluteDateTime(order.value.created_at)
 })
 const paidAtText = computed(() => {
-  if (!order.value?.paid_at) return t('payments.status.unknown')
+  if (!order.value?.paid_at) return t('status.unknown')
   return formatAbsoluteDateTime(order.value.paid_at)
 })
 const planLabel = computed(() =>
-  order.value?.plan_code === 'donation' ? t('payments.plan.donation') : t('payments.plan.pro')
+  order.value?.plan_code === 'donation' ? t('plan.donation') : t('plan.pro')
 )
 const orderStatusLabel = computed(() => {
   switch (order.value?.status) {
     case 'success':
-      return t('payments.status.success')
+      return t('status.success')
     case 'pending':
-      return t('payments.status.pending')
+      return t('status.pending')
     case 'failed':
-      return t('payments.status.failed')
+      return t('status.failed')
     case 'canceled':
-      return t('payments.status.canceled')
+      return t('status.canceled')
     case 'refunded':
-      return t('payments.status.refunded')
+      return t('status.refunded')
     default:
-      return t('payments.status.unknown')
+      return t('status.unknown')
   }
 })
 
@@ -96,7 +99,7 @@ function normalizeInternalPath(value: string) {
 
 async function loadOrder(syncState = true) {
   if (!orderId.value || !token.value) {
-    errorMessage.value = t('payments.lookup.missing_data')
+    errorMessage.value = t('lookup.missing_data')
     loading.value = false
     return
   }
@@ -119,7 +122,7 @@ async function loadOrder(syncState = true) {
     order.value = res?.data?.order || null
   } catch (error: any) {
     errorMessage.value =
-      String(error?.data?.message || error?.message || '').trim() || t('payments.lookup.error_generic')
+      String(error?.data?.message || error?.message || '').trim() || t('lookup.error_generic')
   } finally {
     loading.value = false
     syncing.value = false
@@ -131,15 +134,15 @@ await loadOrder(true)
 
 <template>
   <div class="space-y-6">
-    <LabNavHeader :title="t('payments.success.title')" />
+    <LabNavHeader :title="t('success.title')" />
 
     <LabBaseSection v-if="loading" variant="plain" :section-class="sectionClass">
-      <p class="text-sm text-(--lab-text-secondary)">{{ t('payments.lookup.retrying') }}</p>
+      <p class="text-sm text-(--lab-text-secondary)">{{ t('lookup.retrying') }}</p>
     </LabBaseSection>
 
     <LabBaseSection
       v-else-if="errorMessage"
-      :title="t('payments.lookup.error_title')"
+      :title="t('lookup.error_title')"
       variant="plain"
       section-class="bg-(--lab-danger)/10 p-5 sm:p-6"
       content-class="space-y-4"
@@ -152,7 +155,7 @@ await loadOrder(true)
         <LabBaseButton
           variant="secondary"
           size="lg"
-          :label="t('payments.lookup.retry')"
+          :label="t('lookup.retry')"
           :button-style="{ borderWidth: '0px' }"
           button-class=""
           @click="loadOrder(true)"
@@ -160,7 +163,7 @@ await loadOrder(true)
         <LabBaseButton
           variant="plain"
           size="lg"
-          :label="t('payments.lookup.back')"
+          :label="t('lookup.back')"
           :button-style="{ borderWidth: '0px' }"
           button-class=""
           @click="navigateTo('/payments')"
@@ -171,14 +174,14 @@ await loadOrder(true)
     <template v-else-if="order">
       <LabBaseSection variant="plain" :section-class="sectionClass" content-class="space-y-4">
         <div class="space-y-3">
-          <p class="text-xs tracking-[0.22em] text-(--lab-success) uppercase">{{ t('payments.success.title') }}</p>
+          <p class="text-xs tracking-[0.22em] text-(--lab-success) uppercase">{{ t('success.title') }}</p>
           <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ statusTitle }}</h1>
           <p class="max-w-2xl text-sm leading-6 text-(--lab-text-secondary)">{{ statusDescription }}</p>
         </div>
 
         <div class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
-            <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('payments.lookup.status') }}</p>
+            <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.status') }}</p>
             <p class="mt-2 text-sm font-medium text-(--lab-text-primary)">{{ orderStatusLabel }}</p>
           </div>
 
@@ -187,7 +190,7 @@ await loadOrder(true)
               v-if="order.status === 'success' && nextPath"
               variant="primary"
               size="lg"
-              :label="t('payments.lookup.continue')"
+              :label="t('lookup.continue')"
               :button-style="{ borderWidth: '0px' }"
               button-class=""
               @click="navigateTo(nextPath)"
@@ -197,7 +200,7 @@ await loadOrder(true)
               v-else-if="order.status === 'success'"
               variant="primary"
               size="lg"
-              :label="t('payments.lookup.account')"
+              :label="t('lookup.account')"
               :button-style="{ borderWidth: '0px' }"
               button-class=""
               @click="navigateTo('/account')"
@@ -208,8 +211,8 @@ await loadOrder(true)
               variant="secondary"
               size="lg"
               :loading="syncing"
-              :loading-label="t('payments.lookup.retrying')"
-              :label="t('payments.lookup.retry_short')"
+              :loading-label="t('lookup.retrying')"
+              :label="t('lookup.retry_short')"
               :button-style="{ borderWidth: '0px' }"
               button-class=""
               @click="loadOrder(true)"
@@ -218,7 +221,7 @@ await loadOrder(true)
             <LabBaseButton
               variant="plain"
               size="lg"
-              :label="t('payments.lookup.back')"
+              :label="t('lookup.back')"
               :button-style="{ borderWidth: '0px' }"
               button-class=""
               @click="navigateTo('/payments')"
@@ -228,38 +231,38 @@ await loadOrder(true)
       </LabBaseSection>
 
       <LabBaseSection
-        :title="t('payments.index.latest_order_title')"
+        :title="t('index.latest_order_title')"
         variant="plain"
         :section-class="sectionClass"
         content-class="grid gap-x-8 gap-y-5 sm:grid-cols-2 xl:grid-cols-3"
       >
         <div>
-          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('payments.lookup.order') }}</p>
+          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.order') }}</p>
           <p class="mt-2 text-sm wrap-break-word text-(--lab-text-primary)">{{ order.order_id }}</p>
         </div>
 
         <div>
-          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('payments.lookup.status') }}</p>
+          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.status') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ orderStatusLabel }}</p>
         </div>
 
         <div>
-          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('payments.lookup.amount') }}</p>
+          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.amount') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ amountText }}</p>
         </div>
 
         <div>
-          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('payments.lookup.plan') }}</p>
+          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.plan') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ planLabel }}</p>
         </div>
 
         <div>
-          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('payments.lookup.created') }}</p>
+          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.created') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ createdAtText }}</p>
         </div>
 
         <div>
-          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('payments.lookup.paid') }}</p>
+          <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.paid') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ paidAtText }}</p>
         </div>
       </LabBaseSection>

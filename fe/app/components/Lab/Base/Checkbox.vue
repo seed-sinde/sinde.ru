@@ -9,7 +9,7 @@
     :class="checkboxClassList"
     v-bind="checkboxAttrs"
     @change="onChange"
-  >
+  />
   <label v-else :for="id" :class="['lab-text-secondary inline-flex items-center gap-2 text-sm', wrapperClass]">
     <input
       :id="id"
@@ -20,10 +20,10 @@
       :class="checkboxClassList"
       v-bind="checkboxAttrs"
       @change="onChange"
-    >
-    <span
-      ><slot>{{ label }}</slot></span
-    >
+    />
+    <span>
+      <slot>{{ label }}</slot>
+    </span>
   </label>
 </template>
 <script setup lang="ts">

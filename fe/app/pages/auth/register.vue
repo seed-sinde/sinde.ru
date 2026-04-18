@@ -9,7 +9,9 @@ usePageSeo({
 })
 const router = useRouter()
 const runtimeConfig = useRuntimeConfig()
-const { t, localeTag } = useInterfacePreferences()
+const { localeTag } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('auth')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { register } = useAuth()
 const passwordMinLength = Math.max(1, Number(runtimeConfig.public.authPasswordMinLength || 12))
 const form = reactive({
@@ -25,17 +27,17 @@ const successText = ref('')
 const hasInvalidEmail = computed(() => Boolean(String(form.email || '').trim()) && !isValidEmail(form.email))
 const passwordPolicyRules = computed(() => getPasswordPolicyRules(form.password, form.email, passwordMinLength))
 const passwordPolicyItems = computed(() =>
-  passwordPolicyRules.value.map((item) => ({
+  passwordPolicyRules.value.map(item => ({
     ...item,
     label:
       item.key === 'length'
-        ? t('auth.register.password_length', { min: passwordMinLength })
+        ? t('register.password_length', { min: passwordMinLength })
         : item.key === 'email'
-          ? t('auth.register.password_email')
-          : t('auth.register.password_common')
+          ? t('register.password_email')
+          : t('register.password_common')
   }))
 )
-const canSubmit = computed(() => isValidEmail(form.email) && passwordPolicyRules.value.every((item) => item.passed))
+const canSubmit = computed(() => isValidEmail(form.email) && passwordPolicyRules.value.every(item => item.passed))
 const submit = async () => {
   if (!isValidEmail(form.email)) {
     errorText.value = 'Укажите корректный email.'
@@ -60,7 +62,7 @@ const submit = async () => {
     pending.value = false
   }
 }
-watch(localeTag, (nextLocale) => {
+watch(localeTag, nextLocale => {
   form.locale = nextLocale
 })
 </script>
@@ -69,11 +71,11 @@ watch(localeTag, (nextLocale) => {
     <LabNavHeader :title />
     <section class="w-full space-y-4 p-4 sm:max-w-sm">
       <div class="space-y-2">
-        <h1 class="lab-text-primary text-2xl font-semibold">{{ t('auth.register.title') }}</h1>
-        <p class="lab-text-muted text-sm">{{ t('auth.register.description') }}</p>
+        <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ t('register.title') }}</h1>
+        <p class="text-sm text-(--lab-text-muted)">{{ t('register.description') }}</p>
       </div>
       <form class="space-y-2" @submit.prevent="submit">
-        <LabField :label="t('auth.register.name')" for-id="register-name">
+        <LabField :label="t('register.name')" for-id="register-name">
           <LabBaseInput
             id="register-name"
             v-model="form.display_name"
@@ -82,7 +84,7 @@ watch(localeTag, (nextLocale) => {
             input-class="w-full"
           />
         </LabField>
-        <LabField :label="t('auth.register.email')" for-id="register-email">
+        <LabField :label="t('register.email')" for-id="register-email">
           <LabBaseInput
             id="register-email"
             v-model="form.email"
@@ -93,7 +95,7 @@ watch(localeTag, (nextLocale) => {
             input-class="w-full"
           />
         </LabField>
-        <LabField :label="t('auth.register.password')" for-id="register-password">
+        <LabField :label="t('register.password')" for-id="register-password">
           <LabBaseInput
             id="register-password"
             v-model="form.password"
@@ -103,8 +105,8 @@ watch(localeTag, (nextLocale) => {
             input-class="w-full"
             :placeholder="`Минимум ${passwordMinLength} символов`"
           />
-          <div class="lab-surface lab-surface-subtle p-3">
-            <p class="lab-text-muted text-xs">{{ t('auth.register.password_rules') }}</p>
+          <div class="p-3">
+            <p class="text-xs text-(--lab-text-muted)">{{ t('register.password_rules') }}</p>
             <ul class="mt-2 space-y-1">
               <li
                 v-for="item in passwordPolicyItems"
@@ -140,13 +142,13 @@ watch(localeTag, (nextLocale) => {
           :disabled="pending || !canSubmit"
           button-class="text-sm font-medium"
         >
-          {{ t('auth.register.submit') }}
+          {{ t('register.submit') }}
         </LabBaseButton>
       </form>
       <LabNotify :text="errorText" tone="error" />
       <LabNotify :text="successText" tone="success" />
       <NuxtLink to="/auth/login" class="text-sm text-(--lab-accent) transition hover:text-(--lab-accent-hover)">
-        {{ t('auth.register.has_account') }}
+        {{ t('register.has_account') }}
       </NuxtLink>
     </section>
   </div>

@@ -1,10 +1,17 @@
 {
   "semi": false,
-  "singleQuote": true,
+  "singleQuote": false,
   "printWidth": 120,
   "tabWidth": 2,
   "trailingComma": "none",
   "vueIndentScriptAndStyle": false,
   "plugins": ["prettier-plugin-tailwindcss"],
-  "tailwindStylesheet": "./app/assets/css/main.css"
+  "tailwindStylesheet": "./app/assets/css/main.css",
+  "tailwindPreserveWhitespace": true,
+  "bracketSpacing": false,
+  "arrowParens": "avoid",
+  "proseWrap": "never",
+  "htmlWhitespaceSensitivity": "ignore",
+  "singleAttributePerLine": false,
+  "embeddedLanguageFormatting": "off"
 }

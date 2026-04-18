@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('auth')
+await useAsyncData(key.value, load, { watch: [locale] })
 defineProps<{
   message: string
 }>()
@@ -17,8 +18,8 @@ const goToRegister = () => navigateTo(registerTo.value)
   <div class="space-y-3 p-4 text-sm">
     <p class="text-(--lab-text-muted)">{{ message }}</p>
     <div class="flex flex-wrap items-center gap-3">
-      <LabBaseButton :label="t('auth.login.submit')" variant="primary" @click="goToLogin" />
-      <LabBaseButton :label="t('auth.login.register')" variant="secondary" @click="goToRegister" />
+      <LabBaseButton :label="t('login.submit')" variant="primary" @click="goToLogin" />
+      <LabBaseButton :label="t('login.register')" variant="secondary" @click="goToRegister" />
     </div>
   </div>
 </template>

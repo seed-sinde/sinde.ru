@@ -1,4 +1,4 @@
-export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
+export const useKitchenCatalogStore = defineStore("kitchenCatalog", () => {
   const categories = ref<KitchenCategory[]>([])
   const ingredients = ref<KitchenCatalogIngredient[]>([])
   const filterOptions = ref<KitchenFilterOption[]>([])
@@ -6,9 +6,9 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   let loadPromise: Promise<void> | null = null
-  const categoryLabels = computed(() => categories.value.map((item) => item.label))
+  const categoryLabels = computed(() => categories.value.map(item => item.label))
   const ingredientItems = computed(() =>
-    ingredients.value.map((item) => ({
+    ingredients.value.map(item => ({
       id: `catalog:${item.ingredient_id}`,
       ingredient_id: item.ingredient_id,
       name: item.name,
@@ -23,29 +23,29 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
   const filterOptionsByKind = computed<Record<string, KitchenFilterOption[]>>(() => {
     const grouped: Record<string, KitchenFilterOption[]> = {}
     for (const item of filterOptions.value) {
-      const kind = String(item.kind || '').trim()
+      const kind = String(item.kind || "").trim()
       if (!kind) continue
       if (!grouped[kind]) grouped[kind] = []
       grouped[kind].push(item)
     }
     return grouped
   })
-  const getOptions = (kind: string) => filterOptionsByKind.value[String(kind || '').trim()] || []
+  const getOptions = (kind: string) => filterOptionsByKind.value[String(kind || "").trim()] || []
   const labelFor = (kind: string, value?: string | null) => {
-    const raw = String(value || '').trim()
-    if (!raw) return ''
+    const raw = String(value || "").trim()
+    if (!raw) return ""
     const normalized = raw.toLowerCase()
     const match = getOptions(kind).find(
-      (option) => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
+      option => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
     )
     return match?.label || raw
   }
   const normalizeOptionValue = (kind: string, value?: string | null) => {
-    const raw = String(value || '').trim()
-    if (!raw) return ''
+    const raw = String(value || "").trim()
+    if (!raw) return ""
     const normalized = raw.toLowerCase()
     const match = getOptions(kind).find(
-      (option) => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
+      option => option.code.toLowerCase() === normalized || option.label.toLowerCase() === normalized
     )
     return match?.code || raw
   }
@@ -65,7 +65,7 @@ export const useKitchenCatalogStore = defineStore('kitchenCatalog', () => {
         filterOptions.value = res.data.filter_options || []
         loaded.value = true
       } catch (err: any) {
-        error.value = err?.data?.message || err?.message || 'Не удалось загрузить каталог кухни.'
+        error.value = err?.data?.message || err?.message || "Не удалось загрузить каталог кухни."
         if (!loaded.value) {
           categories.value = []
           ingredients.value = []

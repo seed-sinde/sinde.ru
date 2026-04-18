@@ -1,4 +1,4 @@
-import type { InterfaceLocaleCode, ThemePreference } from './ui'
+import type {InterfaceLocaleCode, ThemePreference} from "./ui"
 export type ElementCategory = {
   slug: string
   label: string
@@ -35,15 +35,15 @@ export type Mineral = {
   images?: MineralImage[]
 }
 export type MineralCrystalSystem =
-  | 'cubic'
-  | 'hexagonal'
-  | 'monoclinic'
-  | 'orthorhombic'
-  | 'tetragonal'
-  | 'triclinic'
-  | 'unknown'
-export type MineralCrystalSystemMode = 'any' | 'all'
-export type MineralListItem = Pick<Mineral, 'database_id' | 'mineral_name' | 'crystal_systems'>
+  | "cubic"
+  | "hexagonal"
+  | "monoclinic"
+  | "orthorhombic"
+  | "tetragonal"
+  | "triclinic"
+  | "unknown"
+export type MineralCrystalSystemMode = "any" | "all"
+export type MineralListItem = Pick<Mineral, "database_id" | "mineral_name" | "crystal_systems">
 export type MineralsListMeta = {
   limit: number
   offset: number
@@ -113,8 +113,8 @@ export type PeriodicTableSample = {
   licenseUrl: string | null
   license: string | null
 }
-type MineralSortOption = 'name_asc' | 'name_desc'
-export type MineralImageFilter = 'without' | 'any' | 'with'
+type MineralSortOption = "name_asc" | "name_desc"
+export type MineralImageFilter = "without" | "any" | "with"
 export type MineralsFiltersSnapshot = {
   q: string
   sort: MineralSortOption
@@ -132,7 +132,7 @@ export type UiPreferencesSnapshot = {
   themePreference: ThemePreference
   mineralsFilters: MineralsFiltersSnapshot
 }
-export type PeriodicTableSampleFallbackType = 'synthetic' | 'unstable' | 'hypothetical' | 'not-isolated' | 'unknown'
+export type PeriodicTableSampleFallbackType = "synthetic" | "unstable" | "hypothetical" | "not-isolated" | "unknown"
 export type PeriodicTableSampleFallback = {
   type: PeriodicTableSampleFallbackType
   label: string
@@ -184,7 +184,7 @@ export type PeriodicTableElement = {
   primarySample: PeriodicTableSample | null
   sampleFallback: PeriodicTableSampleFallback | null
 }
-export type ViewerImageKind = 'spectral' | 'bohr' | 'sample'
+export type ViewerImageKind = "spectral" | "bohr" | "sample"
 export type ViewerImageItem = {
   key: string
   kind: ViewerImageKind
@@ -210,7 +210,7 @@ export type DetailSection = {
   title: string
   items: DetailItem[]
 }
-export type ChemistryBucket = 'all' | 'any' | 'none'
+export type ChemistryBucket = "all" | "any" | "none"
 export type MineralsRouteState = {
   q: string
   sort: MineralSortOption

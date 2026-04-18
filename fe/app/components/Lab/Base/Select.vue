@@ -17,7 +17,7 @@
         <span
           v-if="selectedOption?.swatchColor"
           aria-hidden="true"
-          class="h-2.5 w-2.5 shrink-0 rounded-full border border-white/20"
+          class="h-2.5 w-2.5 shrink-0 rounded-full border border-(--lab-border)"
           :style="getSwatchStyle(selectedOption.swatchColor)"
         />
         <span class="block min-w-0 truncate">
@@ -26,16 +26,16 @@
       </span>
       <Icon
         name="ic:round-expand-more"
-        class="lab-text-soft pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-base transition-transform duration-200"
+        class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-base text-(--lab-text-soft) transition-transform duration-200"
         :class="isOpen ? 'rotate-180' : 'rotate-0'"
       />
     </button>
-    <input v-if="name" type="hidden" :name="name" :value="resolvedValue" >
+    <input v-if="name" type="hidden" :name="name" :value="resolvedValue" />
     <Teleport to="body">
       <div
         v-show="isOpen"
         ref="dropdownRef"
-        class="fixed z-10000 overflow-hidden border"
+        class="fixed z-10000 overflow-hidden border border-(--lab-border)"
         :style="resolvedDropdownStyle"
       >
         <div
@@ -44,6 +44,7 @@
           class="max-h-72 overflow-auto"
           role="listbox"
           :aria-labelledby="id"
+          @scroll.passive="updateScrollIndicators"
         >
           <button
             v-for="(option, index) in normalizedOptions"
@@ -53,16 +54,15 @@
             class="block w-full px-3.5 py-2.5 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
             :class="
               index === highlightedIndex
-                ? 'lab-surface-subtle lab-text-primary'
+                ? 'text-(--lab-text-primary)'
                 : option.value === resolvedValue
-                  ? 'lab-text-accent'
-                  : 'lab-text-secondary hover:bg-zinc-800/10 hover:text-zinc-100'
+                  ? 'text-(--lab-text-accent)'
+                  : 'text-(--lab-text-secondary) hover:bg-zinc-800/10 hover:text-zinc-100'
             "
             :disabled="option.disabled"
             role="option"
             :aria-selected="option.value === resolvedValue ? 'true' : 'false'"
             @click="selectOption(option.value)"
-            @mouseenter="setHighlightedIndex(index)"
           >
             <span class="flex min-w-0 items-center gap-2">
               <span
@@ -75,7 +75,15 @@
             </span>
           </button>
         </div>
-        <div v-else class="lab-text-soft px-3.5 py-2.5 text-sm">{{ emptyText }}</div>
+        <div
+          v-if="isOpen && canScrollDown"
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-x-0 bottom-1 flex justify-center"
+        >
+          <span class="inline-flex items-center text-xs text-(--lab-text-soft)">
+            <Icon name="ic:round-keyboard-arrow-down" class="text-base" />
+          </span>
+        </div>
       </div>
     </Teleport>
   </div>
@@ -95,7 +103,6 @@ const props = withDefaults(
     invalid?: boolean
     selectClass?: string
     placeholder?: string
-    emptyText?: string
     matchTriggerWidth?: boolean
     offset?: number
     crossAxisOffset?: number
@@ -110,8 +117,7 @@ const props = withDefaults(
     invalid: false,
     selectClass: '',
     placeholder: 'Выберите значение',
-    emptyText: 'Нет доступных вариантов',
-    matchTriggerWidth: true,
+    matchTriggerWidth: false,
     offset: 0,
     crossAxisOffset: 0
   }
@@ -128,6 +134,7 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const listboxRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
 const highlightedIndex = ref(-1)
+const canScrollDown = ref(false)
 const optionRefs = ref<Array<HTMLElement | null>>([])
 const { panelStyle, schedulePositionUpdate, cancelScheduledUpdate, resetPosition } = useFloatingPanelPosition({
   triggerRef,
@@ -144,7 +151,7 @@ const resolvedValue = computed(() => {
   return String(props.modelValue)
 })
 const normalizedOptions = computed<NormalizedSelectOption[]>(() =>
-  (props.options || []).map((option) => {
+  (props.options || []).map(option => {
     const normalizedValue = option.value === null || option.value === undefined ? '' : String(option.value)
     const normalizedOption: NormalizedSelectOption = {
       key: normalizedValue || option.label,
@@ -158,10 +165,10 @@ const normalizedOptions = computed<NormalizedSelectOption[]>(() =>
     return normalizedOption
   })
 )
-const enabledOptions = computed(() => normalizedOptions.value.filter((option) => !option.disabled))
+const enabledOptions = computed(() => normalizedOptions.value.filter(option => !option.disabled))
 const selectedOption = computed(() => {
   const value = resolvedValue.value
-  return normalizedOptions.value.find((option) => option.value === value) || null
+  return normalizedOptions.value.find(option => option.value === value) || null
 })
 const selectedLabel = computed(() => selectedOption.value?.label || props.placeholder)
 const highlightedOption = computed(() => {
@@ -184,6 +191,8 @@ const selectClassList = computed(() => {
 })
 const resolvedDropdownStyle = computed(() => ({
   ...panelStyle.value,
+  minWidth: `${Math.round(triggerRef.value?.getBoundingClientRect().width || 0)}px`,
+  width: props.matchTriggerWidth ? panelStyle.value.width : 'max-content',
   background: 'var(--lab-bg-canvas)',
   color: 'var(--lab-text-primary)'
 }))
@@ -193,45 +202,26 @@ const setOptionRef = (index: number, el: Element | ComponentPublicInstance | nul
 }
 const getOptionRef =
   (index: number): VNodeRef =>
-  (el) => {
+  el => {
     setOptionRef(index, el)
   }
-const setHighlightedIndex = (index: number) => {
-  if (!normalizedOptions.value[index] || normalizedOptions.value[index].disabled) return
-  highlightedIndex.value = index
-}
 const scrollHighlightedOptionIntoView = () => {
   if (!import.meta.client || !isOpen.value) return
   const listboxEl = listboxRef.value
   const optionEl = optionRefs.value[highlightedIndex.value]
   if (!listboxEl || !optionEl) return
-  const bufferItems = 2
-  const optionHeight = optionEl.offsetHeight || 0
-  const buffer = optionHeight * bufferItems
-  const optionTop = optionEl.offsetTop
-  const optionBottom = optionTop + optionEl.offsetHeight
-  const viewportTop = listboxEl.scrollTop
-  const viewportBottom = viewportTop + listboxEl.clientHeight
-  const nextTop = Math.max(0, optionTop - buffer)
-  const maxTop = Math.max(0, listboxEl.scrollHeight - listboxEl.clientHeight)
-  const nextBottom = Math.min(maxTop, optionBottom + buffer - listboxEl.clientHeight)
-  if (optionTop < viewportTop + buffer) {
-    listboxEl.scrollTo({ top: nextTop })
-    return
-  }
-  if (optionBottom > viewportBottom - buffer) {
-    listboxEl.scrollTo({ top: nextBottom })
-  }
+  optionEl.scrollIntoView({ block: 'nearest' })
+  updateScrollIndicators()
 }
 const syncHighlightWithValue = () => {
   const selectedIndex = normalizedOptions.value.findIndex(
-    (option) => option.value === resolvedValue.value && !option.disabled
+    option => option.value === resolvedValue.value && !option.disabled
   )
   if (selectedIndex >= 0) {
     highlightedIndex.value = selectedIndex
     return
   }
-  const firstEnabledIndex = normalizedOptions.value.findIndex((option) => !option.disabled)
+  const firstEnabledIndex = normalizedOptions.value.findIndex(option => !option.disabled)
   highlightedIndex.value = firstEnabledIndex
 }
 const openMenu = () => {
@@ -263,22 +253,41 @@ const selectOption = (value: string) => {
   emit('change', new Event('change'))
   closeMenu()
 }
-const moveHighlight = (direction: 1 | -1) => {
+const findSelectableIndex = (startIndex: number, direction: 1 | -1) => {
   const options = normalizedOptions.value
-  if (!options.length) return
-  let nextIndex = highlightedIndex.value
-  if (nextIndex < 0) {
-    nextIndex = direction === 1 ? 0 : options.length - 1
-  } else {
-    nextIndex += direction
-  }
+  let nextIndex = startIndex
   while (nextIndex >= 0 && nextIndex < options.length) {
     const option = options[nextIndex]
-    if (option && !option.disabled) {
-      highlightedIndex.value = nextIndex
-      return
-    }
+    if (option && !option.disabled) return nextIndex
     nextIndex += direction
+  }
+  return -1
+}
+const selectAdjacentOption = (direction: 1 | -1) => {
+  const selectedIndex = normalizedOptions.value.findIndex(
+    option => option.value === resolvedValue.value && !option.disabled
+  )
+  const fallbackIndex = direction === 1 ? 0 : normalizedOptions.value.length - 1
+  const nextIndex = findSelectableIndex(selectedIndex >= 0 ? selectedIndex + direction : fallbackIndex, direction)
+  if (nextIndex < 0) return false
+  highlightedIndex.value = nextIndex
+  const nextOption = normalizedOptions.value[nextIndex]
+  if (!nextOption) return false
+  if (nextOption.value !== resolvedValue.value) {
+    emit('update:modelValue', nextOption.value)
+    emit('change', new Event('change'))
+  }
+  return true
+}
+const moveHighlight = (direction: 1 | -1) => {
+  if (!normalizedOptions.value.length) return
+  const fallbackIndex = direction === 1 ? 0 : normalizedOptions.value.length - 1
+  const nextIndex = findSelectableIndex(
+    highlightedIndex.value < 0 ? fallbackIndex : highlightedIndex.value + direction,
+    direction
+  )
+  if (nextIndex >= 0) {
+    highlightedIndex.value = nextIndex
   }
 }
 const selectHighlightedOption = () => {
@@ -292,7 +301,7 @@ const onTriggerKeydown = (event: KeyboardEvent) => {
     case 'ArrowDown':
       event.preventDefault()
       if (!isOpen.value) {
-        openMenu()
+        selectAdjacentOption(1)
         return
       }
       moveHighlight(1)
@@ -300,7 +309,7 @@ const onTriggerKeydown = (event: KeyboardEvent) => {
     case 'ArrowUp':
       event.preventDefault()
       if (!isOpen.value) {
-        openMenu()
+        selectAdjacentOption(-1)
         return
       }
       moveHighlight(-1)
@@ -327,6 +336,16 @@ const onTriggerKeydown = (event: KeyboardEvent) => {
 const onViewportChange = () => {
   if (!isOpen.value) return
   schedulePositionUpdate()
+  updateScrollIndicators()
+}
+const updateScrollIndicators = () => {
+  const listboxEl = listboxRef.value
+  if (!listboxEl) {
+    canScrollDown.value = false
+    return
+  }
+  const maxScrollTop = Math.max(0, listboxEl.scrollHeight - listboxEl.clientHeight)
+  canScrollDown.value = listboxEl.scrollTop < maxScrollTop - 1
 }
 const onDocumentPointerDown = (event: MouseEvent | PointerEvent) => {
   const target = event.target as Node | null
@@ -348,7 +367,7 @@ onBeforeUnmount(() => {
 })
 watch(
   () => props.disabled,
-  (next) => {
+  next => {
     if (next) closeMenu()
   }
 )
@@ -373,13 +392,18 @@ watch(
     syncHighlightWithValue()
   }
 )
-watch(isOpen, (next) => {
+watch(isOpen, next => {
   if (!next) {
     optionRefs.value = []
+    canScrollDown.value = false
     return
   }
   if (!import.meta.client) return
   schedulePositionUpdate()
+  requestAnimationFrame(() => {
+    scrollHighlightedOptionIntoView()
+    updateScrollIndicators()
+  })
 })
 watch(highlightedIndex, () => {
   if (!import.meta.client || !isOpen.value) return

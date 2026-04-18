@@ -2,17 +2,18 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v3"
-	"sinde.ru/internal/http/handlers"
+	h "sinde.ru/internal/http/handlers"
 	authhandlers "sinde.ru/internal/http/handlers/auth"
 	paymenthandlers "sinde.ru/internal/http/handlers/payments"
 	"sinde.ru/internal/http/middleware"
+	"sinde.ru/internal/store"
 )
 
-func SetupRoutes(app *fiber.App, authHandler *authhandlers.Handler, paymentHandler *paymenthandlers.Handler) {
-	registerAPIRoutes(app.Group("/api/v1"), authHandler, paymentHandler)
+func SetupRoutes(app *fiber.App, authHandler *authhandlers.Handler, paymentHandler *paymenthandlers.Handler, i18nStore *store.I18nStore) {
+	registerAPIRoutes(app.Group("/api/v1"), authHandler, paymentHandler, i18nStore)
 }
 
-func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler, paymentHandler *paymenthandlers.Handler) {
+func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler, paymentHandler *paymenthandlers.Handler, i18nStore *store.I18nStore) {
 	// Auth: публичные маршруты.
 	api.Post("/auth/register", authHandler.Register())
 	api.Post("/auth/verify-email/request", authHandler.RequestEmailVerification())
@@ -23,7 +24,8 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler, paym
 	api.Post("/auth/logout", middleware.RequireCSRFCookie(authHandler.Service()), authHandler.Logout())
 	api.Post("/auth/password/forgot", authHandler.ForgotPassword())
 	api.Post("/auth/password/reset", authHandler.ResetPassword())
-	api.Get("/users/:id", authHandler.PublicUserProfile()) // Публичный профиль пользователя.
+	api.Get("/users/:id", authHandler.PublicUserProfile())           // Публичный профиль пользователя.
+	api.Get("/i18n/:locale/:namespace", h.GetI18nHandler(i18nStore)) // Переводы интерфейса
 
 	// Auth: маршруты авторизованного пользователя.
 	authenticated := api.Group("/auth", middleware.RequireAuth(authHandler.Service()))
@@ -88,64 +90,62 @@ func registerAPIRoutes(api fiber.Router, authHandler *authhandlers.Handler, paym
 	admin.Get("/users/:id/orders", paymentHandler.AdminUserOrders())
 
 	// Media.
-	api.Get("/media/files/*", handlers.MediaGetFileHandler()) // Получить медиафайл по ключу хранения.
+	api.Get("/media/files/*", h.MediaGetFileHandler()) // Получить медиафайл по ключу хранения.
 
 	mediaAuth := api.Group("/media", middleware.RequireAuth(authHandler.Service()))
-	mediaAuth.Post("/upload", handlers.MediaUploadHandler())
+	mediaAuth.Post("/upload", h.MediaUploadHandler())
 
 	// Kitchen: публичные маршруты.
-	api.Get("/kitchen/catalog", handlers.KitchenCatalogHandler())               // Каталог, фильтры и ингредиенты.
-	api.Get("/kitchen/ingredients", handlers.KitchenIngredientsHandler())       // Категории ингредиентов.
-	api.Get("/kitchen/recipes/latest", handlers.KitchenLatestRecipesHandler())  // Последние рецепты.
-	api.Post("/kitchen/recipes/search", handlers.KitchenSearchRecipesHandler()) // Поиск рецептов.
-	api.Get("/kitchen/recipes/:id", handlers.KitchenGetRecipeHandler())         // Рецепт по ID.
-
+	api.Get("/kitchen/catalog", h.KitchenCatalogHandler())               // Каталог, фильтры и ингредиенты.
+	api.Get("/kitchen/ingredients", h.KitchenIngredientsHandler())       // Категории ингредиентов.
+	api.Get("/kitchen/recipes/latest", h.KitchenLatestRecipesHandler())  // Последние рецепты.
+	api.Post("/kitchen/recipes/search", h.KitchenSearchRecipesHandler()) // Поиск рецептов.
 	// Kitchen: маршруты авторизованного пользователя.
 	kitchenAuth := api.Group("/kitchen", middleware.RequireAuth(authHandler.Service()))
-	kitchenAuth.Get("/ingredients/account", handlers.KitchenAccountIngredientsHandler())
-	kitchenAuth.Post("/ingredients/custom", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenCreateCustomIngredientHandler())
-	kitchenAuth.Delete("/ingredients/custom/:id", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenDeleteCustomIngredientHandler())
-	kitchenAuth.Post("/ingredients/favorites", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenFavoriteIngredientHandler())
-	kitchenAuth.Delete("/ingredients/favorites/:id", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenUnfavoriteIngredientHandler())
+	kitchenAuth.Get("/ingredients/account", h.KitchenAccountIngredientsHandler())
+	kitchenAuth.Post("/ingredients/custom", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenCreateCustomIngredientHandler())
+	kitchenAuth.Delete("/ingredients/custom/:id", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenDeleteCustomIngredientHandler())
+	kitchenAuth.Post("/ingredients/favorites", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenFavoriteIngredientHandler())
+	kitchenAuth.Delete("/ingredients/favorites/:id", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenUnfavoriteIngredientHandler())
 
-	kitchenAuth.Get("/recipes/:id/favorite", handlers.KitchenRecipeFavoriteStatusHandler())
-	kitchenAuth.Post("/recipes/:id/favorite", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenFavoriteRecipeHandler())
-	kitchenAuth.Delete("/recipes/:id/favorite", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenUnfavoriteRecipeHandler())
+	kitchenAuth.Get("/recipes/:id/favorite", h.KitchenRecipeFavoriteStatusHandler())
+	kitchenAuth.Post("/recipes/:id/favorite", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenFavoriteRecipeHandler())
+	kitchenAuth.Delete("/recipes/:id/favorite", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenUnfavoriteRecipeHandler())
 
-	kitchenAuth.Post("/recipes", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenCreateRecipeHandler())
-	kitchenAuth.Get("/recipes/mine", handlers.KitchenMyRecipesHandler())
-	kitchenAuth.Get("/recipes/manage/:id", handlers.KitchenGetManageRecipeHandler())
-	kitchenAuth.Patch("/recipes/:id", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenUpdateRecipeHandler())
-	kitchenAuth.Delete("/recipes/:id", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenDeleteRecipeHandler())
+	kitchenAuth.Post("/recipes", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenCreateRecipeHandler())
+	kitchenAuth.Get("/recipes/mine", h.KitchenMyRecipesHandler())
+	kitchenAuth.Get("/recipes/manage/:id", h.KitchenGetManageRecipeHandler())
+	kitchenAuth.Patch("/recipes/:id", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenUpdateRecipeHandler())
+	kitchenAuth.Delete("/recipes/:id", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenDeleteRecipeHandler())
+
+	api.Get("/kitchen/recipes/:id", h.KitchenGetRecipeHandler()) // Рецепт по ID.
 
 	// Kitchen: административные маршруты.
-	kitchenAuth.Get("/admin/recipes/moderation", handlers.KitchenAdminModerationRecipesHandler())
-	kitchenAuth.Post("/admin/recipes/:id/moderate", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenAdminModerateRecipeHandler())
-	kitchenAuth.Post("/admin/recipes/:id/owner", middleware.RequireCSRFCookie(authHandler.Service()), handlers.KitchenAdminChangeRecipeOwnerHandler())
+	kitchenAuth.Get("/admin/recipes/moderation", h.KitchenAdminModerationRecipesHandler())
+	kitchenAuth.Post("/admin/recipes/:id/moderate", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenAdminModerateRecipeHandler())
+	kitchenAuth.Post("/admin/recipes/:id/owner", middleware.RequireCSRFCookie(authHandler.Service()), h.KitchenAdminChangeRecipeOwnerHandler())
 
 	// Chemistry.
-	api.Get("/chemistry/elements", handlers.ChemistryElementsListHandler()) // Список химических элементов.
+	api.Get("/chemistry/elements", h.ChemistryElementsListHandler()) // Список химических элементов.
 
 	// Minerals.
-	api.Get("/minerals", handlers.MineralsListHandler())                        // Список минералов, поиск и фильтры.
-	api.Get("/minerals/:database_id", handlers.MineralGetByDatabaseIDHandler()) // Карточка минерала.
+	api.Get("/minerals", h.MineralsListHandler())                        // Список минералов, поиск и фильтры.
+	api.Get("/minerals/:database_id", h.MineralGetByDatabaseIDHandler()) // Карточка минерала.
 
 	// Traits / Sets / Keys: публичные маршруты.
-	api.Get("/traits/:uuid", handlers.MemoryTraitHandler())               // Получить особенность.
-	api.Post("/traits", handlers.MemoryAddTraitHandler())                 // Создать особенность.
-	api.Get("/traits/resolve/:uuid", handlers.MemoryResolveUUIDHandler()) // Разрешить UUID в особенность или набор.
+	api.Get("/traits/:uuid", h.MemoryTraitHandler())               // Получить особенность.
+	api.Post("/traits", h.MemoryAddTraitHandler())                 // Создать особенность.
+	api.Get("/traits/resolve/:uuid", h.MemoryResolveUUIDHandler()) // Разрешить UUID в особенность или набор.
 
-	api.Get("/sets/:uuid", handlers.StoreSetHandler())              // Получить набор по UUID.
-	api.Get("/sets/:uuid/stream", handlers.StoreSetStreamHandler()) // Потоковая выдача набора по UUID.
-	api.Post("/sets", handlers.CreateSetHandler())                  // Создать набор.
-	api.Post("/sets/find", handlers.FindOrBuildSetHandler())        // Найти или создать набор по списку особенностей.
+	api.Get("/sets/:uuid", h.StoreSetHandler())              // Получить набор по UUID.
+	api.Get("/sets/:uuid/stream", h.StoreSetStreamHandler()) // Потоковая выдача набора по UUID.
+	api.Post("/sets", h.CreateSetHandler())                  // Создать набор.
+	api.Post("/sets/find", h.FindOrBuildSetHandler())        // Найти или создать набор по списку особенностей.
 
-	api.Post("/keys/meta", handlers.KeyMetaHandler())                // Meta по одному syn.
-	api.Post("/keys/meta/all", handlers.KeyMetaAllHandler())         // Все meta по списку syn.
-	api.Post("/keys/meta/bulk", handlers.KeyMetaBulkHandler())       // Meta по списку ID.
-	api.Post("/keys/enum/options", handlers.KeyEnumOptionsHandler()) // Enum-опции по syn.
-	api.Post("/keys/meta/update", handlers.KeyMetaUpdateHandler())   // Обновить meta по ID.
-
-	// Traits / Sets / Keys: публичные маршруты. v2
-
+	api.Post("/keys/meta", h.KeyMetaHandler())                // Meta по одному syn.
+	api.Post("/keys/meta/all", h.KeyMetaAllHandler())         // Все meta по списку syn.
+	api.Post("/keys/meta/bulk", h.KeyMetaBulkHandler())       // Meta по списку ID.
+	api.Post("/keys/enum/options", h.KeyEnumOptionsHandler()) // Enum-опции по syn.
+	api.Post("/keys/meta/update", h.KeyMetaUpdateHandler())   // Обновить meta по ID.
+	admin.Get("/ip", h.GetIPInfo())
 }

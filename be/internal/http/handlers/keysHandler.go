@@ -11,7 +11,8 @@ import (
 )
 
 type KeyMetaRequest struct {
-	Syn string `json:"syn"`
+	Syn  string         `json:"syn"`
+	Meta map[string]any `json:"meta,omitempty"`
 }
 
 // KeyMetaHandler возвращает метаданные ключа по `syn`.
@@ -36,8 +37,30 @@ func KeyMetaHandler() fiber.Handler {
 		if req.Syn == "" {
 			return responses.Error(c, fiber.StatusBadRequest, "ключ не указан", nil)
 		}
+		var keyID int64
+		if req.Meta != nil {
+			metaBytes, err := json.Marshal(req.Meta)
+			if err != nil {
+				return responses.Error(c, fiber.StatusBadRequest, "некорректная meta", err.Error())
+			}
+			key, err := services.PdbGetKeyBySynMeta(c, req.Syn, string(metaBytes))
+			if err != nil {
+				return responses.Error(c, fiber.StatusInternalServerError, "ключ не найден", err.Error())
+			}
+			if key == nil {
+				return responses.Error(c, fiber.StatusNotFound, "ключ не найден", nil)
+			}
+			store.SyncKey(key)
+			keyID = key.ID
+		}
 		key, ok := store.GetKeyBySyn(req.Syn)
-		if !ok {
+		if keyID > 0 {
+			keys, found := store.GetKeys(keyID)
+			if found && len(keys) > 0 {
+				key, ok = keys[0], true
+			}
+		}
+		if !ok || key == nil {
 			return responses.Error(c, fiber.StatusNotFound, "ключ не найден", nil)
 		}
 		var meta any = map[string]any{}

@@ -6,16 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
-	"net/url"
 	"sinde.ru/internal/auth"
 	"sinde.ru/internal/http/middleware"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/models"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type Handler struct {

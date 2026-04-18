@@ -1,7 +1,6 @@
-import tailwindcss from '@tailwindcss/vite'
-import { isDev } from './nuxt-env'
+import tailwindcss from "@tailwindcss/vite"
+import {isDev} from "./nuxt-env"
 const viteConfig = {
-  logLevel: 'error' as const,
   clearScreen: false,
   plugins: [tailwindcss() as any],
   build: {
@@ -10,9 +9,9 @@ const viteConfig = {
   ...(isDev
     ? {
         optimizeDeps: {
-          include: ['tailwind-merge', 'cropperjs']
+          include: ["tailwind-merge", "cropperjs"]
         }
       }
     : {})
 }
-export { viteConfig }
+export {viteConfig}

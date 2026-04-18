@@ -95,13 +95,13 @@ const handlePanelClick = () => {
 }
 watch(
   () => props.modelValue,
-  (value) => {
+  value => {
     if (!isControlled.value) return
     localOpen.value = Boolean(value)
   },
   { immediate: true }
 )
-watch(isOpen, async (value) => {
+watch(isOpen, async value => {
   if (!import.meta.client) return
   if (value) {
     document.addEventListener('pointerdown', onDocumentPointerDown, true)

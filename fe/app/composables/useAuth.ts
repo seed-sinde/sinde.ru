@@ -1,6 +1,6 @@
-import { isMfaTicketExpiredError, MFA_TICKET_EXPIRED_MESSAGE } from '~/utils/authErrors'
-import { hasAuthSessionHint, syncAuthSessionHint } from '~/utils/authSessionHint'
-import { emitAuthSyncEvent, subscribeAuthSyncEvents } from '~/utils/authSyncBus'
+import {isMfaTicketExpiredError, MFA_TICKET_EXPIRED_MESSAGE} from "~/utils/authErrors"
+import {hasAuthSessionHint, syncAuthSessionHint} from "~/utils/authSessionHint"
+import {emitAuthSyncEvent, subscribeAuthSyncEvents} from "~/utils/authSyncBus"
 type AuthApiResult<T> = ApiResponseWithData<T>
 let authSummaryRuntimeInitialized = false
 let authSummaryUserStream: EventSource | null = null
@@ -27,32 +27,32 @@ function toSharedAdminSummary(summary: UserSummary | null, current: AdminSummary
     notifications_since_at: summary?.notifications_since_at ?? current?.notifications_since_at ?? null,
     has_unread:
       Number(admin.new_users_since_last_login || 0) > 0 || Number(admin.new_pending_recipes_since_last_login || 0) > 0,
-    checked_at: summary?.checked_at || current?.checked_at || ''
+    checked_at: summary?.checked_at || current?.checked_at || ""
   }
 }
 export const useAuth = () => {
-  const { json: useApiJson } = useAPI()
+  const {json: useApiJson} = useAPI()
   const nuxtApp = useNuxtApp()
-  const user = useState<AuthUser | null>('auth-user', () => null)
-  const loaded = useState<boolean>('auth-loaded', () => false)
-  const sessionRestoreHint = useState<boolean>('auth-session-restore-hint', () => {
+  const user = useState<AuthUser | null>("auth-user", () => null)
+  const loaded = useState<boolean>("auth-loaded", () => false)
+  const sessionRestoreHint = useState<boolean>("auth-session-restore-hint", () => {
     if (import.meta.server) {
-      const cookieHeader = useRequestHeaders(['cookie'])?.cookie
+      const cookieHeader = useRequestHeaders(["cookie"])?.cookie
       return hasAuthSessionHint(cookieHeader)
     }
     return hasAuthSessionHint()
   })
-  const mfaTicket = useState<string | null>('auth-mfa-ticket', () => null)
-  const mfaExpiresAt = useState<string | null>('auth-mfa-expires-at', () => null)
-  const sharedUserSummary = useState<UserSummary | null>('auth-user-summary', () => null)
-  const sharedUserSummaryLoading = useState<boolean>('auth-user-summary-loading', () => false)
-  const sharedAdminSummary = useState<AdminSummary | null>('auth-admin-summary', () => null)
-  const sharedAdminSummaryLoading = useState<boolean>('auth-admin-summary-loading', () => false)
+  const mfaTicket = useState<string | null>("auth-mfa-ticket", () => null)
+  const mfaExpiresAt = useState<string | null>("auth-mfa-expires-at", () => null)
+  const sharedUserSummary = useState<UserSummary | null>("auth-user-summary", () => null)
+  const sharedUserSummaryLoading = useState<boolean>("auth-user-summary-loading", () => false)
+  const sharedAdminSummary = useState<AdminSummary | null>("auth-admin-summary", () => null)
+  const sharedAdminSummaryLoading = useState<boolean>("auth-admin-summary-loading", () => false)
   const isAuthenticated = computed(() => Boolean(user.value))
-  const isAdmin = computed(() => Boolean(user.value?.roles?.includes('admin')))
+  const isAdmin = computed(() => Boolean(user.value?.roles?.includes("admin")))
   const canAttemptSessionRestore = computed(() => {
     if (import.meta.server) {
-      const cookieHeader = useRequestHeaders(['cookie'])?.cookie
+      const cookieHeader = useRequestHeaders(["cookie"])?.cookie
       return hasAuthSessionHint(cookieHeader)
     }
     return sessionRestoreHint.value || hasAuthSessionHint()
@@ -85,7 +85,7 @@ export const useAuth = () => {
     syncAuthSessionHint(enabled)
   }
   const isMfaTicketExpired = () => {
-    const expiresAt = Date.parse(String(mfaExpiresAt.value || ''))
+    const expiresAt = Date.parse(String(mfaExpiresAt.value || ""))
     if (!Number.isFinite(expiresAt)) return true
     return Date.now() >= expiresAt
   }
@@ -110,7 +110,7 @@ export const useAuth = () => {
         return setAnonymousState()
       }
       try {
-        const res = await useApiJson<AuthApiResult<{ user: AuthUser }>>('/auth/me', {
+        const res = await useApiJson<AuthApiResult<{user: AuthUser}>>("/auth/me", {
           auth: {
             requiresSession: true,
             allowAutoRefresh: false
@@ -129,8 +129,8 @@ export const useAuth = () => {
                 user: AuthUser
                 csrf_token?: string
               }>
-            >('/auth/refresh', {
-              method: 'POST',
+            >("/auth/refresh", {
+              method: "POST",
               auth: {
                 requiresSession: true,
                 allowAutoRefresh: false
@@ -174,29 +174,29 @@ export const useAuth = () => {
         user: AuthUser
         verification_ttl: string
       }>
-    >('/auth/register', {
-      method: 'POST',
+    >("/auth/register", {
+      method: "POST",
       body: input
     })
   }
   const requestEmailVerification = async (email: string) => {
-    return await useApiJson<AuthApiResult<{ queued: boolean }>>('/auth/verify-email/request', {
-      method: 'POST',
-      body: { email }
+    return await useApiJson<AuthApiResult<{queued: boolean}>>("/auth/verify-email/request", {
+      method: "POST",
+      body: {email}
     })
   }
   const requestEmailChange = async (email: string) => {
-    return await useApiJson<AuthApiResult<{ queued: boolean }>>('/auth/email/change/request', {
-      method: 'POST',
-      body: { email }
+    return await useApiJson<AuthApiResult<{queued: boolean}>>("/auth/email/change/request", {
+      method: "POST",
+      body: {email}
     })
   }
   const verifyEmail = async (token: string) => {
     return await useApiJson<
-      AuthApiResult<{ verified: boolean; action?: string; email?: string; session_hints?: boolean }>
-    >('/auth/verify-email/confirm', {
-      method: 'POST',
-      body: { token }
+      AuthApiResult<{verified: boolean; action?: string; email?: string; session_hints?: boolean}>
+    >("/auth/verify-email/confirm", {
+      method: "POST",
+      body: {token}
     })
   }
   const login = async (email: string, password: string) => {
@@ -210,25 +210,25 @@ export const useAuth = () => {
         mfa_expires_at?: string
         mfa_methods?: string[]
       }>
-    >('/auth/login', {
-      method: 'POST',
-      body: { email, password }
+    >("/auth/login", {
+      method: "POST",
+      body: {email, password}
     })
     loaded.value = true
     if (res.data.mfa_required) {
-      mfaTicket.value = String(res.data.mfa_ticket || '').trim() || null
-      mfaExpiresAt.value = String(res.data.mfa_expires_at || '').trim() || null
+      mfaTicket.value = String(res.data.mfa_ticket || "").trim() || null
+      mfaExpiresAt.value = String(res.data.mfa_expires_at || "").trim() || null
     } else {
       syncSessionRestoreHint(true)
       clearMfaState()
     }
     if (res.data.user) user.value = res.data.user
-    emitAuthSyncEvent('summary-refresh')
+    emitAuthSyncEvent("summary-refresh")
     return res
   }
   const completeMfa = async (code: string) => {
-    const ticket = String(mfaTicket.value || '').trim()
-    if (!ticket) throw new Error('Сессия 2FA не найдена.')
+    const ticket = String(mfaTicket.value || "").trim()
+    if (!ticket) throw new Error("Сессия 2FA не найдена.")
     if (isMfaTicketExpired()) {
       clearMfaState()
       throw new Error(MFA_TICKET_EXPIRED_MESSAGE)
@@ -239,15 +239,15 @@ export const useAuth = () => {
           user: AuthUser
           csrf_token?: string
         }>
-      >('/auth/login/2fa', {
-        method: 'POST',
-        body: { ticket, code }
+      >("/auth/login/2fa", {
+        method: "POST",
+        body: {ticket, code}
       })
       user.value = res.data.user
       loaded.value = true
       syncSessionRestoreHint(true)
       clearMfaState()
-      emitAuthSyncEvent('summary-refresh')
+      emitAuthSyncEvent("summary-refresh")
       return res
     } catch (err) {
       if (isMfaTicketExpiredError(err)) {
@@ -265,8 +265,8 @@ export const useAuth = () => {
         user: AuthUser
         csrf_token?: string
       }>
-    >('/auth/refresh', {
-      method: 'POST',
+    >("/auth/refresh", {
+      method: "POST",
       auth: {
         requiresSession: true,
         allowAutoRefresh: false
@@ -275,58 +275,58 @@ export const useAuth = () => {
     user.value = res.data.user
     loaded.value = true
     syncSessionRestoreHint(true)
-    emitAuthSyncEvent('summary-refresh')
+    emitAuthSyncEvent("summary-refresh")
     return res
   }
   const logout = async () => {
     try {
-      await useApiJson<AuthApiResult<{ logged_out: boolean }>>('/auth/logout', {
-        method: 'POST'
+      await useApiJson<AuthApiResult<{logged_out: boolean}>>("/auth/logout", {
+        method: "POST"
       })
     } finally {
       setAnonymousState()
-      emitAuthSyncEvent('summary-refresh')
+      emitAuthSyncEvent("summary-refresh")
     }
   }
   const logoutAll = async () => {
     try {
-      await useApiJson<AuthApiResult<{ logged_out: boolean; all_devices: boolean }>>('/auth/logout-all', {
-        method: 'POST'
+      await useApiJson<AuthApiResult<{logged_out: boolean; all_devices: boolean}>>("/auth/logout-all", {
+        method: "POST"
       })
     } finally {
       setAnonymousState()
-      emitAuthSyncEvent('summary-refresh')
+      emitAuthSyncEvent("summary-refresh")
     }
   }
   const listSessions = async () => {
-    return await useApiJson<AuthApiResult<{ items: AuthSessionView[] }>>('/auth/sessions', {
-      method: 'GET'
+    return await useApiJson<AuthApiResult<{items: AuthSessionView[]}>>("/auth/sessions", {
+      method: "GET"
     })
   }
   const listLoginAttempts = async () => {
-    return await useApiJson<AuthApiResult<{ items: AuthLoginAttemptView[] }>>('/auth/login-attempts', {
-      method: 'GET'
+    return await useApiJson<AuthApiResult<{items: AuthLoginAttemptView[]}>>("/auth/login-attempts", {
+      method: "GET"
     })
   }
   const listSecurityEvents = async () => {
-    return await useApiJson<AuthApiResult<{ items: AuthSecurityEventView[] }>>('/auth/security-events', {
-      method: 'GET'
+    return await useApiJson<AuthApiResult<{items: AuthSecurityEventView[]}>>("/auth/security-events", {
+      method: "GET"
     })
   }
   const revokeSession = async (sessionId: string) => {
-    return await useApiJson<AuthApiResult<{ revoked: boolean }>>(`/auth/sessions/${sessionId}`, {
-      method: 'DELETE'
+    return await useApiJson<AuthApiResult<{revoked: boolean}>>(`/auth/sessions/${sessionId}`, {
+      method: "DELETE"
     })
   }
   const forgotPassword = async (email: string) => {
-    return await useApiJson<AuthApiResult<{ queued: boolean }>>('/auth/password/forgot', {
-      method: 'POST',
-      body: { email }
+    return await useApiJson<AuthApiResult<{queued: boolean}>>("/auth/password/forgot", {
+      method: "POST",
+      body: {email}
     })
   }
   const resetPassword = async (token: string, newPassword: string) => {
-    return await useApiJson<AuthApiResult<{ password_reset: boolean }>>('/auth/password/reset', {
-      method: 'POST',
+    return await useApiJson<AuthApiResult<{password_reset: boolean}>>("/auth/password/reset", {
+      method: "POST",
       body: {
         token,
         new_password: newPassword
@@ -334,8 +334,8 @@ export const useAuth = () => {
     })
   }
   const changePassword = async (currentPassword: string, newPassword: string) => {
-    return await useApiJson<AuthApiResult<{ password_changed: boolean }>>('/auth/password/change', {
-      method: 'POST',
+    return await useApiJson<AuthApiResult<{password_changed: boolean}>>("/auth/password/change", {
+      method: "POST",
       body: {
         current_password: currentPassword,
         new_password: newPassword
@@ -349,8 +349,8 @@ export const useAuth = () => {
     profile?: Record<string, any>
     settings?: Record<string, any>
   }) => {
-    const res = await useApiJson<AuthApiResult<{ changes: AuthUserPatch }>>('/auth/me', {
-      method: 'PATCH',
+    const res = await useApiJson<AuthApiResult<{changes: AuthUserPatch}>>("/auth/me", {
+      method: "PATCH",
       body: input
     })
     if (user.value) {
@@ -364,8 +364,8 @@ export const useAuth = () => {
         primary_trait_uuid?: string | null
         items: SavedTraitSetView[]
       }>
-    >('/auth/traits/sets', {
-      method: 'GET'
+    >("/auth/traits/sets", {
+      method: "GET"
     })
     if (user.value) {
       user.value = {
@@ -375,9 +375,9 @@ export const useAuth = () => {
     }
     return res
   }
-  const saveTraitSet = async (input: { set_uuid: string; name: string; description: string }) => {
-    return await useApiJson<AuthApiResult<SavedTraitSetView>>('/auth/traits/sets', {
-      method: 'POST',
+  const saveTraitSet = async (input: {set_uuid: string; name: string; description: string}) => {
+    return await useApiJson<AuthApiResult<SavedTraitSetView>>("/auth/traits/sets", {
+      method: "POST",
       body: input
     })
   }
@@ -389,21 +389,23 @@ export const useAuth = () => {
     }
   ) => {
     return await useApiJson<AuthApiResult<SavedTraitSetView>>(`/auth/traits/sets/${savedSetId}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: input
     })
   }
   const deleteTraitSet = async (savedSetId: string) => {
-    return await useApiJson<AuthApiResult<{ deleted: boolean }>>(`/auth/traits/sets/${savedSetId}`, {
-      method: 'DELETE'
+    return await useApiJson<AuthApiResult<{deleted: boolean}>>(`/auth/traits/sets/${savedSetId}`, {
+      method: "DELETE"
     })
   }
   const setPrimaryTraitUuid = async (setUuid: string | null) => {
-    const res = await useApiJson<AuthApiResult<{ user: AuthUser }>>('/auth/traits/primary', {
-      method: 'POST',
-      body: { set_uuid: setUuid || '' }
+    const res = await useApiJson<AuthApiResult<{changes: AuthUserPatch}>>("/auth/traits/primary", {
+      method: "POST",
+      body: {set_uuid: setUuid || ""}
     })
-    user.value = res.data.user
+    if (user.value) {
+      user.value = applyAuthUserPatch(user.value, res.data.changes)
+    }
     return res
   }
   const setupTwoFactor = async () => {
@@ -414,8 +416,8 @@ export const useAuth = () => {
         qr_data_url: string
         backup_codes?: string[]
       }>
-    >('/auth/2fa/setup', {
-      method: 'POST'
+    >("/auth/2fa/setup", {
+      method: "POST"
     })
   }
   const enableTwoFactor = async (code: string) => {
@@ -424,17 +426,17 @@ export const useAuth = () => {
         enabled: boolean
         backup_codes: string[]
       }>
-    >('/auth/2fa/enable', {
-      method: 'POST',
-      body: { code }
+    >("/auth/2fa/enable", {
+      method: "POST",
+      body: {code}
     })
     await loadMe()
     return res
   }
   const disableTwoFactor = async (password: string, code: string) => {
-    const res = await useApiJson<AuthApiResult<{ disabled: boolean }>>('/auth/2fa/disable', {
-      method: 'POST',
-      body: { password, code }
+    const res = await useApiJson<AuthApiResult<{disabled: boolean}>>("/auth/2fa/disable", {
+      method: "POST",
+      body: {password, code}
     })
     await loadMe()
     return res
@@ -447,20 +449,20 @@ export const useAuth = () => {
     offset?: number
   }) => {
     const query = new URLSearchParams()
-    if (params?.q) query.set('q', String(params.q))
-    if (params?.status) query.set('status', String(params.status))
-    if (params?.role) query.set('role', String(params.role))
-    if (typeof params?.limit === 'number') query.set('limit', String(params.limit))
-    if (typeof params?.offset === 'number') query.set('offset', String(params.offset))
+    if (params?.q) query.set("q", String(params.q))
+    if (params?.status) query.set("status", String(params.status))
+    if (params?.role) query.set("role", String(params.role))
+    if (typeof params?.limit === "number") query.set("limit", String(params.limit))
+    if (typeof params?.offset === "number") query.set("offset", String(params.offset))
     const suffix = query.toString()
-    return await useApiJson<AuthApiResult<{ items: AdminUserView[]; total: number; limit: number; offset: number }>>(
-      `/auth/admin/users${suffix ? `?${suffix}` : ''}`,
-      { method: 'GET' }
+    return await useApiJson<AuthApiResult<{items: AdminUserView[]; total: number; limit: number; offset: number}>>(
+      `/auth/admin/users${suffix ? `?${suffix}` : ""}`,
+      {method: "GET"}
     )
   }
   const publicUserProfile = async (userId: string) => {
     return await useApiJson<AuthApiResult<PublicUserProfileView>>(`/users/${userId}`, {
-      method: 'GET',
+      method: "GET",
       auth: {
         allowAutoRefresh: true,
         requiresSession: false
@@ -469,74 +471,74 @@ export const useAuth = () => {
   }
   const adminUserDetail = async (userId: string) => {
     return await useApiJson<AuthApiResult<AdminUserDetailView>>(`/auth/admin/users/${userId}`, {
-      method: 'GET'
+      method: "GET"
     })
   }
   const userSummary = async () => {
-    return await useApiJson<AuthApiResult<UserSummary>>('/auth/summary', {
-      method: 'GET'
+    return await useApiJson<AuthApiResult<UserSummary>>("/auth/summary", {
+      method: "GET"
     })
   }
   const markUserSummaryRead = async () => {
-    const res = await useApiJson<AuthApiResult<{ read: boolean }>>('/auth/summary/read', {
-      method: 'POST'
+    const res = await useApiJson<AuthApiResult<{read: boolean}>>("/auth/summary/read", {
+      method: "POST"
     })
     await loadSharedUserSummary()
-    emitAuthSyncEvent('summary-refresh')
+    emitAuthSyncEvent("summary-refresh")
     return res
   }
   const adminSummary = async () => {
-    return await useApiJson<AuthApiResult<AdminSummary>>('/auth/admin/summary', {
-      method: 'GET'
+    return await useApiJson<AuthApiResult<AdminSummary>>("/auth/admin/summary", {
+      method: "GET"
     })
   }
   const adminMarkSummaryRead = async () => {
-    const res = await useApiJson<AuthApiResult<{ read: boolean }>>('/auth/admin/summary/read', {
-      method: 'POST'
+    const res = await useApiJson<AuthApiResult<{read: boolean}>>("/auth/admin/summary/read", {
+      method: "POST"
     })
     await loadSharedAdminSummary()
-    emitAuthSyncEvent('summary-refresh')
+    emitAuthSyncEvent("summary-refresh")
     return res
   }
-  const adminSetUserRole = async (userId: string, role: 'admin' | 'user') => {
-    return await useApiJson<AuthApiResult<{ user: AuthUser }>>(`/auth/admin/users/${userId}/role`, {
-      method: 'PATCH',
-      body: { role }
+  const adminSetUserRole = async (userId: string, role: "admin" | "user") => {
+    return await useApiJson<AuthApiResult<{user: AuthUser}>>(`/auth/admin/users/${userId}/role`, {
+      method: "PATCH",
+      body: {role}
     })
   }
-  const adminBlockUser = async (userId: string, reason = '') => {
-    return await useApiJson<AuthApiResult<{ blocked: boolean }>>(`/auth/admin/users/${userId}/block`, {
-      method: 'POST',
-      body: { reason }
+  const adminBlockUser = async (userId: string, reason = "") => {
+    return await useApiJson<AuthApiResult<{blocked: boolean}>>(`/auth/admin/users/${userId}/block`, {
+      method: "POST",
+      body: {reason}
     })
   }
   const adminUnblockUser = async (userId: string) => {
-    return await useApiJson<AuthApiResult<{ unblocked: boolean }>>(`/auth/admin/users/${userId}/unblock`, {
-      method: 'POST'
+    return await useApiJson<AuthApiResult<{unblocked: boolean}>>(`/auth/admin/users/${userId}/unblock`, {
+      method: "POST"
     })
   }
   const adminForceLogoutUser = async (userId: string) => {
-    return await useApiJson<AuthApiResult<{ forced_logout: boolean }>>(`/auth/admin/users/${userId}/force-logout`, {
-      method: 'POST'
+    return await useApiJson<AuthApiResult<{forced_logout: boolean}>>(`/auth/admin/users/${userId}/force-logout`, {
+      method: "POST"
     })
   }
   const adminDeleteUser = async (userId: string) => {
-    return await useApiJson<AuthApiResult<{ deleted: boolean }>>(`/auth/admin/users/${userId}`, {
-      method: 'DELETE'
+    return await useApiJson<AuthApiResult<{deleted: boolean}>>(`/auth/admin/users/${userId}`, {
+      method: "DELETE"
     })
   }
   const adminSearchKeys = async (q: string, limit = 30) => {
     const query = new URLSearchParams()
-    if (q) query.set('q', q)
-    query.set('limit', String(limit))
-    return await useApiJson<AuthApiResult<{ items: AdminTraitKeySearchItem[]; query: string; limit: number }>>(
+    if (q) query.set("q", q)
+    query.set("limit", String(limit))
+    return await useApiJson<AuthApiResult<{items: AdminTraitKeySearchItem[]; query: string; limit: number}>>(
       `/auth/admin/keys/search?${query.toString()}`,
-      { method: 'GET' }
+      {method: "GET"}
     )
   }
   const adminTraitsSetsAnalysis = async () => {
-    return await useApiJson<AuthApiResult<AdminTraitsSetsAnalysis>>('/auth/admin/analysis/traits-sets', {
-      method: 'GET'
+    return await useApiJson<AuthApiResult<AdminTraitsSetsAnalysis>>("/auth/admin/analysis/traits-sets", {
+      method: "GET"
     })
   }
   const loadSharedUserSummary = async () => {
@@ -589,11 +591,11 @@ export const useAuth = () => {
     if (!import.meta.client || authSummaryRuntimeInitialized) return
     authSummaryRuntimeInitialized = true
     const openSummaryStream = <T>(path: string, apply: (payload: T | null) => void) => {
-      const stream = new EventSource(`/api/proxy${path}`, { withCredentials: true })
-      stream.addEventListener('summary', (event) => {
+      const stream = new EventSource(`/api/proxy${path}`, {withCredentials: true})
+      stream.addEventListener("summary", event => {
         const message = event as MessageEvent<string>
         try {
-          const payload = JSON.parse(String(message.data || 'null')) as T | null
+          const payload = JSON.parse(String(message.data || "null")) as T | null
           apply(payload)
         } catch {
           // Ignore malformed SSE payloads and keep the last good snapshot.
@@ -606,19 +608,19 @@ export const useAuth = () => {
     }
     const ensureUserSummaryStream = () => {
       if (authSummaryUserStream) return
-      authSummaryUserStream = openSummaryStream<UserSummary>('/auth/summary/stream', (payload) => {
+      authSummaryUserStream = openSummaryStream<UserSummary>("/auth/summary/stream", payload => {
         applyUserSummary(payload)
       })
     }
     const ensureAdminSummaryStream = () => {
       if (!isAdmin.value || authSummaryAdminStream) return
-      authSummaryAdminStream = openSummaryStream<AdminSummary>('/auth/admin/summary/stream', (payload) => {
+      authSummaryAdminStream = openSummaryStream<AdminSummary>("/auth/admin/summary/stream", payload => {
         applyAdminSummary(payload)
       })
     }
     authSummarySyncCleanup?.()
-    authSummarySyncCleanup = subscribeAuthSyncEvents((event) => {
-      if (event.type !== 'summary-refresh') return
+    authSummarySyncCleanup = subscribeAuthSyncEvents(event => {
+      if (event.type !== "summary-refresh") return
       void nuxtApp.runWithContext(async () => {
         await refreshSharedSummaries()
       })
@@ -651,7 +653,7 @@ export const useAuth = () => {
         }
         ensureAdminSummaryStream()
       },
-      { immediate: true }
+      {immediate: true}
     )
   }
   ensureSummaryRealtime()
@@ -707,6 +709,9 @@ export const useAuth = () => {
     adminDeleteUser,
     adminSearchKeys,
     adminTraitsSetsAnalysis,
+    adminListKitchenModerationRecipes,
+    adminModerateKitchenRecipe,
+    adminChangeKitchenRecipeOwner,
     sharedUserSummary,
     sharedAdminSummary,
     loadSharedUserSummary,

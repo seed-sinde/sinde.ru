@@ -3,7 +3,7 @@ const normalizeLocalizedDate = (value: number | string | Date | null | undefined
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value
   }
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     if (!Number.isFinite(value)) return null
     const ms = value > 1e11 ? value : value * 1000
     const result = new Date(ms)
@@ -23,36 +23,39 @@ const normalizeLocalizedDate = (value: number | string | Date | null | undefined
 }
 
 export const useLocalizedDateTime = () => {
-  const { localeTag, t } = useInterfacePreferences()
+  const {localeTag} = useInterfacePreferences()
+  const {load, t} = useI18nSection("ui")
+  onServerPrefetch(load)
+  if (import.meta.client) void load()
   const formatAbsoluteDateTime = (
     value: number | string | Date | null | undefined,
     options?: Intl.DateTimeFormatOptions,
-    fallback = '—'
+    fallback = "—"
   ) => {
     const date = normalizeLocalizedDate(value)
     if (!date) return fallback
-    return new Intl.DateTimeFormat(localeTag.value, options || { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+    return new Intl.DateTimeFormat(localeTag.value, options || {dateStyle: "medium", timeStyle: "short"}).format(date)
   }
   const formatRelativeTime = (
     value: number | string | Date | null | undefined,
-    fallback = '—',
-    numeric: Intl.RelativeTimeFormatNumeric = 'always'
+    fallback = "—",
+    numeric: Intl.RelativeTimeFormatNumeric = "always"
   ) => {
     const date = normalizeLocalizedDate(value)
     if (!date) return fallback
     const diffMs = date.getTime() - Date.now()
     const absMs = Math.abs(diffMs)
     if (absMs < 60_000) {
-      return diffMs <= 0 ? t('time.less_than_minute_ago') : t('time.in_less_than_minute')
+      return diffMs <= 0 ? t("time.less_than_minute_ago") : t("time.in_less_than_minute")
     }
-    const rtf = new Intl.RelativeTimeFormat(localeTag.value, { numeric, style: 'long' })
+    const rtf = new Intl.RelativeTimeFormat(localeTag.value, {numeric, style: "long"})
     const units: ReadonlyArray<[Intl.RelativeTimeFormatUnit, number]> = [
-      ['year', 1000 * 60 * 60 * 24 * 365],
-      ['month', 1000 * 60 * 60 * 24 * 30],
-      ['week', 1000 * 60 * 60 * 24 * 7],
-      ['day', 1000 * 60 * 60 * 24],
-      ['hour', 1000 * 60 * 60],
-      ['minute', 1000 * 60]
+      ["year", 1000 * 60 * 60 * 24 * 365],
+      ["month", 1000 * 60 * 60 * 24 * 30],
+      ["week", 1000 * 60 * 60 * 24 * 7],
+      ["day", 1000 * 60 * 60 * 24],
+      ["hour", 1000 * 60 * 60],
+      ["minute", 1000 * 60]
     ]
     for (const [unit, size] of units) {
       if (absMs >= size) {

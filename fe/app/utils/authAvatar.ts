@@ -1,5 +1,5 @@
-import { buildMediaFileUrl } from '~/utils/mediaUrl'
-import type { AuthAvatarGalleryItem, AuthAvatarPayload } from '../../shared/types/authAvatar'
+import {buildMediaFileUrl} from "~/utils/mediaUrl"
+import type {AuthAvatarGalleryItem, AuthAvatarPayload} from "../../shared/types/authAvatar"
 export const AVATAR_ICON_SIZE = 64
 export const AVATAR_ICON_DISPLAY_SIZE = 32
 export type AuthAvatarKeys = {
@@ -8,8 +8,8 @@ export type AuthAvatarKeys = {
   originalImageKey: string
 }
 const isRecord = (value: unknown): value is Record<string, any> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-const toKey = (value: unknown) => String(value || '').trim()
+  Boolean(value) && typeof value === "object" && !Array.isArray(value)
+const toKey = (value: unknown) => String(value || "").trim()
 /** Reads raw avatar data from user profile settings with profile priority. */
 export const readAuthAvatarPayload = (user?: AuthUser | null): AuthAvatarPayload => {
   if (!user) return {}
@@ -45,21 +45,21 @@ export const getAuthAvatarGallery = (user?: AuthUser | null) => {
   if (items.length === 0) {
     const legacyItem = normalizeAvatarGalleryItem(
       {
-        id: toKey(avatar.primary_id) || 'avatar-primary',
+        id: toKey(avatar.primary_id) || "avatar-primary",
         icon_image_key: avatar.icon_image_key,
         profile_image_key: avatar.profile_image_key,
         original_image_key: avatar.original_image_key,
         icon_size: avatar.icon_size,
         updated_at: avatar.updated_at
       },
-      'avatar-primary'
+      "avatar-primary"
     )
     if (legacyItem) {
       items.push(legacyItem)
     }
   }
   const preferredId = toKey(avatar.primary_id)
-  const primaryId = items.some((item) => item.id === preferredId) ? preferredId : items[0]?.id || ''
+  const primaryId = items.some(item => item.id === preferredId) ? preferredId : items[0]?.id || ""
   return {
     items,
     primaryId
@@ -75,7 +75,7 @@ export const buildAuthAvatarPayload = (
     .map((item, index) => normalizeAvatarGalleryItem(item, `avatar-${index + 1}`))
     .filter((item): item is AuthAvatarGalleryItem => Boolean(item))
   if (!normalizedItems.length) return null
-  const primaryItem = normalizedItems.find((item) => item.id === primaryId) || normalizedItems[0]
+  const primaryItem = normalizedItems.find(item => item.id === primaryId) || normalizedItems[0]
   if (!primaryItem) return null
   return {
     primary_id: primaryItem.id,
@@ -89,7 +89,7 @@ export const buildAuthAvatarPayload = (
 }
 export const getAuthAvatarKeys = (user?: AuthUser | null): AuthAvatarKeys => {
   const gallery = getAuthAvatarGallery(user)
-  const avatar = gallery.items.find((item) => item.id === gallery.primaryId) || gallery.items[0]
+  const avatar = gallery.items.find(item => item.id === gallery.primaryId) || gallery.items[0]
   return {
     iconImageKey: toKey(avatar?.icon_image_key),
     profileImageKey: toKey(avatar?.profile_image_key),

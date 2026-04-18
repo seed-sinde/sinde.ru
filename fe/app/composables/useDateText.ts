@@ -1,6 +1,6 @@
-export type DateTextMode = 'date' | 'time' | 'datetime'
-type Parsed = { canonical: string; ts: number }
-const pad = (n: number, len = 2) => String(n).padStart(len, '0')
+export type DateTextMode = "date" | "time" | "datetime"
+type Parsed = {canonical: string; ts: number}
+const pad = (n: number, len = 2) => String(n).padStart(len, "0")
 const digitsLimitByMode: Record<DateTextMode, number> = {
   date: 8,
   time: 4,
@@ -11,8 +11,8 @@ const textLengthLimitByMode: Record<DateTextMode, number> = {
   time: 5,
   datetime: 16
 }
-const parseDateRu = (value: string): { year: number; month: number; day: number; ts: number } | null => {
-  const m = String(value || '')
+const parseDateRu = (value: string): {year: number; month: number; day: number; ts: number} | null => {
+  const m = String(value || "")
     .trim()
     .match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
   if (!m) return null
@@ -25,43 +25,43 @@ const parseDateRu = (value: string): { year: number; month: number; day: number;
   const dt = new Date(Date.UTC(2000, month - 1, day))
   dt.setUTCFullYear(year)
   if (dt.getUTCFullYear() !== year || dt.getUTCMonth() !== month - 1 || dt.getUTCDate() !== day) return null
-  return { year, month, day, ts: dt.getTime() }
+  return {year, month, day, ts: dt.getTime()}
 }
-const parseTime = (value: string): { hour: number; minute: number; ts: number } | null => {
-  const m = String(value || '')
+const parseTime = (value: string): {hour: number; minute: number; ts: number} | null => {
+  const m = String(value || "")
     .trim()
     .match(/^(\d{2}):(\d{2})$/)
   if (!m) return null
   const hour = Number(m[1])
   const minute = Number(m[2])
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null
-  return { hour, minute, ts: hour * 60 + minute }
+  return {hour, minute, ts: hour * 60 + minute}
 }
 const parseDateTimeRu = (value: string): Parsed | null => {
-  const m = String(value || '')
+  const m = String(value || "")
     .trim()
     .match(/^(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})$/)
   if (!m) return null
-  const datePart = m[1] || ''
-  const timePart = m[2] || ''
+  const datePart = m[1] || ""
+  const timePart = m[2] || ""
   const d = parseDateRu(datePart)
   const t = parseTime(timePart)
   if (!d || !t) return null
   const ts = Date.UTC(d.year, d.month - 1, d.day, t.hour, t.minute, 0, 0)
-  return { canonical: `${pad(d.year, 4)}-${pad(d.month)}-${pad(d.day)}T${pad(t.hour)}:${pad(t.minute)}`, ts }
+  return {canonical: `${pad(d.year, 4)}-${pad(d.month)}-${pad(d.day)}T${pad(t.hour)}:${pad(t.minute)}`, ts}
 }
 export const maskDateText = (raw: string, mode: DateTextMode): string => {
-  const digits = String(raw || '')
-    .replace(/\D/g, '')
+  const digits = String(raw || "")
+    .replace(/\D/g, "")
     .slice(0, digitsLimitByMode[mode])
-  if (mode === 'time') {
+  if (mode === "time") {
     const d = digits
     const hh = d.slice(0, 2)
     const mm = d.slice(2, 4)
     if (d.length <= 2) return hh
     return `${hh}:${mm}`
   }
-  if (mode === 'date') {
+  if (mode === "date") {
     const d = digits
     const dd = d.slice(0, 2)
     const mm = d.slice(2, 4)
@@ -83,15 +83,15 @@ export const maskDateText = (raw: string, mode: DateTextMode): string => {
   return `${dd}.${mm}.${yyyy} ${hh}:${mi}`
 }
 export const parseDateText = (value: string, mode: DateTextMode): Parsed | null => {
-  if (mode === 'time') {
+  if (mode === "time") {
     const t = parseTime(value)
     if (!t) return null
-    return { canonical: `${pad(t.hour)}:${pad(t.minute)}`, ts: t.ts }
+    return {canonical: `${pad(t.hour)}:${pad(t.minute)}`, ts: t.ts}
   }
-  if (mode === 'date') {
+  if (mode === "date") {
     const d = parseDateRu(value)
     if (!d) return null
-    return { canonical: `${pad(d.year, 4)}-${pad(d.month)}-${pad(d.day)}`, ts: d.ts }
+    return {canonical: `${pad(d.year, 4)}-${pad(d.month)}-${pad(d.day)}`, ts: d.ts}
   }
   return parseDateTimeRu(value)
 }
@@ -105,12 +105,12 @@ export const compareDateText = (a: string, b: string, mode: DateTextMode): numbe
   return pa.ts - pb.ts
 }
 export const canonicalDateText = (value: string, mode: DateTextMode): string => {
-  return parseDateText(value, mode)?.canonical || String(value || '').trim()
+  return parseDateText(value, mode)?.canonical || String(value || "").trim()
 }
 export const datePlaceholder = (mode: DateTextMode): string => {
-  if (mode === 'time') return 'чч:мм'
-  if (mode === 'date') return 'дд.мм.гггг'
-  return 'дд.мм.гггг чч:мм'
+  if (mode === "time") return "чч:мм"
+  if (mode === "date") return "дд.мм.гггг"
+  return "дд.мм.гггг чч:мм"
 }
 export const dateTextMaxLength = (mode: DateTextMode): number => {
   return textLengthLimitByMode[mode]
@@ -122,10 +122,10 @@ export const currentDateText = (mode: DateTextMode): string => {
   const day = now.getDate()
   const hour = now.getHours()
   const minute = now.getMinutes()
-  if (mode === 'time') return `${pad(hour)}:${pad(minute)}`
-  if (mode === 'date') return `${pad(day)}.${pad(month)}.${pad(year, 4)}`
+  if (mode === "time") return `${pad(hour)}:${pad(minute)}`
+  if (mode === "date") return `${pad(day)}.${pad(month)}.${pad(year, 4)}`
   return `${pad(day)}.${pad(month)}.${pad(year, 4)} ${pad(hour)}:${pad(minute)}`
 }
 export const detectDateMode = (_format?: string): DateTextMode => {
-  return 'datetime'
+  return "datetime"
 }

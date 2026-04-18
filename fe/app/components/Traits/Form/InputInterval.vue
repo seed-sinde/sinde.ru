@@ -53,7 +53,7 @@ const intervalUnits: Array<{ value: TraitIntervalUnit; label: string; ms: number
   { value: 'days', label: 'Дни', ms: 86_400_000, short: 'дн' },
   { value: 'years', label: 'Годы', ms: 31_536_000_000, short: 'г' }
 ]
-const intervalUnitOptions = intervalUnits.map((unit) => ({ value: unit.value, label: unit.label }))
+const intervalUnitOptions = intervalUnits.map(unit => ({ value: unit.value, label: unit.label }))
 const startId = computed(() => (props.id ? `${props.id}-start` : 'TraitIntervalStart'))
 const endId = computed(() => (props.id ? `${props.id}-end` : 'TraitIntervalEnd'))
 const unitId = computed(() => (props.id ? `${props.id}-unit` : 'TraitIntervalUnit'))
@@ -64,7 +64,7 @@ const dateTimePlaceholder = computed(() => datePlaceholder('datetime'))
 const start = ref(String(model.value?.start ?? ''))
 const end = ref(String(model.value?.end ?? ''))
 const unit = ref<TraitIntervalUnit>(
-  intervalUnits.some((opt) => opt.value === model.value?.unit) ? (model.value.unit as TraitIntervalUnit) : 'minutes'
+  intervalUnits.some(opt => opt.value === model.value?.unit) ? (model.value.unit as TraitIntervalUnit) : 'minutes'
 )
 const startValid = computed(() => !start.value || isValidDateText(start.value, 'datetime'))
 const endValid = computed(() => !end.value || isValidDateText(end.value, 'datetime'))
@@ -82,7 +82,7 @@ const durationPreview = computed(() => {
   const startParsed = parseDateText(start.value, 'datetime')
   const endParsed = parseDateText(end.value, 'datetime')
   if (!startParsed || !endParsed) return ''
-  const selectedUnit = intervalUnits.find((opt) => opt.value === unit.value)
+  const selectedUnit = intervalUnits.find(opt => opt.value === unit.value)
   if (!selectedUnit) return ''
   const durationRaw = (endParsed.ts - startParsed.ts) / selectedUnit.ms
   return `Интервал: ${formatDurationValue(durationRaw)} ${selectedUnit.short}`
@@ -106,7 +106,7 @@ watch(
   (): [string, string, TraitIntervalUnit] => [
     String(model.value?.start ?? ''),
     String(model.value?.end ?? ''),
-    intervalUnits.some((opt) => opt.value === model.value?.unit) ? (model.value.unit as TraitIntervalUnit) : 'minutes'
+    intervalUnits.some(opt => opt.value === model.value?.unit) ? (model.value.unit as TraitIntervalUnit) : 'minutes'
   ],
   ([nextStart, nextEnd, nextUnit]) => {
     if (start.value !== nextStart) start.value = nextStart

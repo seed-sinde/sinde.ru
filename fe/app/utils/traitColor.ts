@@ -1,86 +1,120 @@
-import type { DataType, KeyMeta, TraitColorPreviewInfo } from '../../shared/types/traits'
+import type {DataType, KeyMeta, TraitColorPreviewInfo} from "../../shared/types/traits"
 export const VALUE_COMPONENTS = {
-  string: 'TraitsFormInputString',
-  number: 'TraitsFormInputNumber',
-  boolean: 'TraitsFormInputBoolean',
-  datetime: 'TraitsFormInputDatetime',
-  'datetime-range': 'TraitsFormInputDateRange',
-  interval: 'TraitsFormInputInterval',
-  schedule: 'TraitsFormInputSchedule',
-  'geo-point': 'TraitsFormInputGeoPoint',
-  enum: 'TraitsFormInputEnum',
-  validity: 'TraitsFormInputValidity',
-  color: 'TraitsFormInputColor'
+  string: "TraitsFormInputString",
+  number: "TraitsFormInputNumber",
+  list: "TraitsFormInputList",
+  boolean: "TraitsFormInputBoolean",
+  datetime: "TraitsFormInputDatetime",
+  range: "TraitsFormInputRange",
+  geo: "TraitsFormInputGeo",
+  "datetime-range": "TraitsFormInputDateRange",
+  interval: "TraitsFormInputInterval",
+  schedule: "TraitsFormInputSchedule",
+  "geo-point": "TraitsFormInputGeoPoint",
+  surface: "TraitsFormInputSurface",
+  enum: "TraitsFormInputEnum",
+  validity: "TraitsFormInputValidity",
+  color: "TraitsFormInputColor"
 } as const satisfies Record<DataType, string>
 export const COLOR_SPECTRUM_OPTIONS = [
-  'red',
-  'orange',
-  'yellow',
-  'green',
-  'cyan',
-  'blue',
-  'purple',
-  'pink',
-  'brown',
-  'gray',
-  'black',
-  'white'
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "cyan",
+  "blue",
+  "purple",
+  "pink",
+  "brown",
+  "gray",
+  "black",
+  "white"
 ] as const
 export const COLOR_SPECTRUM_LABELS: Record<(typeof COLOR_SPECTRUM_OPTIONS)[number], string> = {
-  red: 'красный',
-  orange: 'оранжевый',
-  yellow: 'желтый',
-  green: 'зеленый',
-  cyan: 'голубой',
-  blue: 'синий',
-  purple: 'фиолетовый',
-  pink: 'розовый',
-  brown: 'коричневый',
-  gray: 'серый',
-  black: 'черный',
-  white: 'белый'
+  red: "красный",
+  orange: "оранжевый",
+  yellow: "желтый",
+  green: "зеленый",
+  cyan: "голубой",
+  blue: "синий",
+  purple: "фиолетовый",
+  pink: "розовый",
+  brown: "коричневый",
+  gray: "серый",
+  black: "черный",
+  white: "белый"
 }
 export const COLOR_SPECTRUM_MAP: Record<string, string> = {
-  red: '#ef4444',
-  orange: '#f97316',
-  yellow: '#eab308',
-  green: '#22c55e',
-  cyan: '#06b6d4',
-  blue: '#3b82f6',
+  red: "#ef4444",
+  orange: "#f97316",
+  yellow: "#eab308",
+  green: "#22c55e",
+  cyan: "#06b6d4",
+  blue: "#3b82f6",
   // purple: '#8b5cf6',
-  purple: '#663399',
-  pink: '#ec4899',
-  brown: '#92400e',
-  gray: '#6b7280',
-  black: '#0f172a',
-  white: '#e5e7eb'
+  purple: "#663399",
+  pink: "#ec4899",
+  brown: "#92400e",
+  gray: "#6b7280",
+  black: "#0f172a",
+  white: "#e5e7eb"
 }
 /**
  * Returns true when the string is a 6-digit hexadecimal color.
  */
-export const isHexColor = (value: string): boolean => /^#?[0-9a-fA-F]{6}$/.test(String(value || '').trim())
+export const isHexColor = (value: string): boolean => /^#?[0-9a-fA-F]{6}$/.test(String(value || "").trim())
 /**
  * Ensures that a hexadecimal color value starts with `#`.
  */
 export const ensureHexHash = (value: string): string => {
-  const raw = String(value || '').trim()
-  if (!raw) return ''
-  return raw.startsWith('#') ? raw : `#${raw}`
+  const raw = String(value || "").trim()
+  if (!raw) return ""
+  return raw.startsWith("#") ? raw : `#${raw}`
+}
+/**
+ * Преобразует HEX в RGBA строку.
+ * Поддерживает 3 и 6 символов, корректно работает с прозрачностью.
+ */
+export const colorToRgba = (hex: string, alpha: number = 1): string => {
+  const clean = String(hex || "")
+    .trim()
+    .replace("#", "")
+
+  // Регулярка для проверки 3 или 6 символов
+  if (!/^(?:[0-9a-fA-F]{3}){1,2}$/.test(clean)) {
+    // Вместо серого лучше возвращать прозрачный или кидать ворнинг в dev
+    return `rgba(0, 0, 0, ${alpha})`
+  }
+
+  const full =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map(c => c + c)
+          .join("")
+      : clean
+
+  const num = parseInt(full, 16)
+  const r = (num >> 16) & 255
+  const g = (num >> 8) & 255
+  const b = num & 255
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 /**
  * Converts a hexadecimal color string into an RGB tuple.
  */
-export const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-  const clean = String(hex || '')
+export const hexToRgb = (hex: string): {r: number; g: number; b: number} | null => {
+  const clean = String(hex || "")
     .trim()
-    .replace('#', '')
+    .replace("#", "")
   if (![3, 6].includes(clean.length)) return null
   const full =
     clean.length === 3
       ? clean
-          .split('')
-          .map((char) => char + char)
-          .join('')
+          .split("")
+          .map(char => char + char)
+          .join("")
       : clean
   const num = Number.parseInt(full, 16)
   if (Number.isNaN(num)) return null
@@ -130,14 +164,14 @@ export const labToRgb = (L: number, a: number, b: number) => {
 /**
  * Converts an RGB tuple into a CSS `rgb(...)` string.
  */
-export const rgbToCss = (rgb: { r: number; g: number; b: number }) => `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`
+export const rgbToCss = (rgb: {r: number; g: number; b: number}) => `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`
 /**
  * Parses a `L,a,b` string into numeric LAB coordinates.
  */
-export const parseLabCsv = (value: string): { L: number; a: number; b: number } | null => {
-  const parts = String(value || '')
-    .split(',')
-    .map((part) => Number(part.trim()))
+export const parseLabCsv = (value: string): {L: number; a: number; b: number} | null => {
+  const parts = String(value || "")
+    .split(",")
+    .map(part => Number(part.trim()))
   if (parts.length !== 3 || !parts.every(Number.isFinite)) return null
   return {
     L: parts[0] ?? 0,
@@ -150,8 +184,8 @@ export const parseLabCsv = (value: string): { L: number; a: number; b: number } 
  */
 const spectrumInfo = (name: string): TraitColorPreviewInfo => {
   return {
-    css: COLOR_SPECTRUM_MAP[name] || '#6b7280',
-    mode: 'spectrum',
+    css: COLOR_SPECTRUM_MAP[name] || "#6b7280",
+    mode: "spectrum",
     text: name
   }
 }
@@ -162,7 +196,7 @@ const labInfo = (L: number, a: number, b: number): TraitColorPreviewInfo => {
   const rgb = labToRgb(L, a, b)
   return {
     css: rgbToCss(rgb),
-    mode: 'lab',
+    mode: "lab",
     text: `L${Math.round(L)} a${Math.round(a)} b${Math.round(b)}`
   }
 }
@@ -171,10 +205,10 @@ const labInfo = (L: number, a: number, b: number): TraitColorPreviewInfo => {
  */
 const hexInfo = (value: string): TraitColorPreviewInfo => {
   const hex = ensureHexHash(value)
-  const rgb = hexToRgb(hex) || { r: 0, g: 0, b: 0 }
+  const rgb = hexToRgb(hex) || {r: 0, g: 0, b: 0}
   return {
     css: hex,
-    mode: 'hex',
+    mode: "hex",
     text: `${hex.toUpperCase()} (${rgb.r},${rgb.g},${rgb.b})`
   }
 }
@@ -185,7 +219,7 @@ export const resolveColorPreviewInfo = (
   rawValue: string,
   meta?: Partial<KeyMeta> | Record<string, unknown> | null
 ): TraitColorPreviewInfo | null => {
-  const raw = String(rawValue || '').trim()
+  const raw = String(rawValue || "").trim()
   if (!raw) return null
   const configuredMode = resolveColorMode(meta)
   const parsed = (() => {
@@ -195,25 +229,25 @@ export const resolveColorPreviewInfo = (
       return null
     }
   })()
-  if (parsed && typeof parsed === 'object' && 'mode' in parsed) {
-    const mode = String((parsed as any).mode || '')
+  if (parsed && typeof parsed === "object" && "mode" in parsed) {
+    const mode = String((parsed as any).mode || "")
       .trim()
       .toLowerCase()
-    if (mode === 'hex' && typeof (parsed as any).hex === 'string') {
+    if (mode === "hex" && typeof (parsed as any).hex === "string") {
       return hexInfo((parsed as any).hex)
     }
-    if (mode === 'lab' && (parsed as any).lab) {
+    if (mode === "lab" && (parsed as any).lab) {
       const lab = (parsed as any).lab
       return labInfo(Number(lab.L || 0), Number(lab.a || 0), Number(lab.b || 0))
     }
-    if (mode === 'spectrum' && typeof (parsed as any).spectrum === 'string') {
+    if (mode === "spectrum" && typeof (parsed as any).spectrum === "string") {
       return spectrumInfo((parsed as any).spectrum)
     }
   }
-  if (configuredMode === 'spectrum' && /^[a-z]+$/i.test(raw)) {
+  if (configuredMode === "spectrum" && /^[a-z]+$/i.test(raw)) {
     return spectrumInfo(raw)
   }
-  if (configuredMode === 'lab') {
+  if (configuredMode === "lab") {
     const lab = parseLabCsv(raw)
     if (lab) return labInfo(lab.L, lab.a, lab.b)
   }

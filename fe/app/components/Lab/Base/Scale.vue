@@ -46,7 +46,7 @@ const normalizedOptions = computed(() =>
     .filter((option): option is { value: string; label: string; activeColor: string } => Boolean(option))
 )
 const selectedIndex = computed(() =>
-  normalizedOptions.value.findIndex((option) => option.value === normalizedValue.value)
+  normalizedOptions.value.findIndex(option => option.value === normalizedValue.value)
 )
 const isSelected = (value: string) => value === normalizedValue.value
 const isActive = (index: number) => selectedIndex.value >= 0 && index <= selectedIndex.value
@@ -140,6 +140,6 @@ const onKeydown = (event: KeyboardEvent) => {
         <span class="block truncate">{{ option.label }}</span>
       </div>
     </div>
-    <input v-if="name" type="hidden" :name="name" :value="normalizedValue" >
+    <input v-if="name" type="hidden" :name="name" :value="normalizedValue" />
   </LabField>
 </template>

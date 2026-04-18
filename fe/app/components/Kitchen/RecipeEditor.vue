@@ -99,28 +99,20 @@ const onCancel = () => {
 }
 </script>
 <template>
-  <div class="space-y-4">
-    <div
-      v-if="hasRejectedModerationNote"
-      class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100"
-    >
+  <div class="max-w-xl space-y-4">
+    <div v-if="hasRejectedModerationNote" class="border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
       <p class="font-medium">Причина отклонения</p>
       <p class="mt-1 text-amber-50/90">{{ editingRecipeModerationNote }}</p>
     </div>
-    <label class="block w-full max-w-150 text-xs text-zinc-400">
-      <span class="inline-flex items-center gap-1">
-        <span>Название блюда</span>
-        <span class="text-rose-400">*</span>
-      </span>
+    <LabField for-id="recipe-title" label="Название блюда">
       <LabBaseInput
         id="recipe-title"
         v-model="form.title"
         name="recipe_title"
         type="text"
         placeholder="например: Куриная грудка с томатами в духовке."
-        class="mt-1 w-full"
       />
-    </label>
+    </LabField>
     <label class="block text-xs text-zinc-400">
       <span class="inline-flex items-center gap-1">
         <span>Описание</span>
@@ -132,10 +124,9 @@ const onCancel = () => {
         name="recipe_description"
         rows="3"
         placeholder="Кратко опишите вкус, текстуру и идею блюда: для кого подходит, с чем подать и чем оно отличается от других."
-        class="mt-1 w-full"
       />
     </label>
-    <LabSpoiler label="Детали" :inline-toggle="true">
+    <LabSpoiler label="Детали">
       <div class="flex flex-wrap items-end gap-2">
         <label class="w-full text-xs text-zinc-400 sm:w-[calc(50%-0.25rem)] xl:w-52">
           Тип блюда
@@ -418,7 +409,7 @@ const onCancel = () => {
         <li
           v-for="(step, idx) in formSteps"
           :key="`step:${idx}`"
-          :ref="(el) => setStepItemRef(idx, el)"
+          :ref="el => setStepItemRef(idx, el)"
           class="rounded-xl border border-zinc-800 bg-zinc-900/55 p-3"
           :class="
             draggingStepIndex === idx ? 'border-cyan-500/60 bg-cyan-500/5 opacity-35 ring-1 ring-cyan-500/50' : ''
@@ -434,9 +425,11 @@ const onCancel = () => {
                 :title="`Перетащить шаг ${idx + 1}`"
                 @pointerdown="startStepReorderDrag(idx, $event)"
               />
-              <div class="lab-text-soft inline-flex items-center gap-2 text-[10px] tracking-[0.06em] uppercase">
+              <div
+                class="inline-flex items-center gap-2 text-[10px] tracking-[0.06em] text-(--lab-text-soft) uppercase"
+              >
                 <span
-                  class="lab-text-primary inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-transparent text-[10px] font-semibold"
+                  class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-transparent text-[10px] font-semibold text-(--lab-text-primary)"
                 >
                   {{ idx + 1 }}
                 </span>
@@ -528,7 +521,7 @@ const onCancel = () => {
                 :src="stepDragPreview.imageUrl"
                 alt=""
                 class="block h-auto max-h-28 w-auto max-w-full rounded object-contain"
-              >
+              />
             </div>
           </div>
         </div>

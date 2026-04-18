@@ -129,7 +129,7 @@ const amountUnitText = (ingredient: KitchenIngredient) => {
 const noteText = (ingredient: KitchenIngredient) => String(ingredient.note || '').trim()
 const ingredientLine = (ingredient: KitchenIngredient) =>
   [ingredient.name, amountUnitText(ingredient), noteText(ingredient)]
-    .map((value) => String(value || '').trim())
+    .map(value => String(value || '').trim())
     .filter(Boolean)
     .join(' ')
 </script>

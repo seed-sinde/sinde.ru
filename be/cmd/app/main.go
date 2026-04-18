@@ -21,6 +21,7 @@ import (
 	paymenthandlers "sinde.ru/internal/http/handlers/payments"
 	"sinde.ru/internal/http/middleware"
 	paymentsvc "sinde.ru/internal/payments"
+	"sinde.ru/internal/store"
 	"sinde.ru/utils"
 )
 
@@ -64,6 +65,7 @@ func runServer() error {
 	}
 	paymentService := paymentsvc.NewService(paymentsvc.NewRepository(db.PDB), paymentConfig, paymentsvc.Dependencies{})
 	paymentHandler := paymenthandlers.New(paymentService)
+	i18nStore := store.NewI18nStore()
 	app := fiber.New(fiber.Config{
 		CaseSensitive:      true,
 		StrictRouting:      false,
@@ -99,7 +101,7 @@ func runServer() error {
 		ExposeHeaders:    []string{"Content-Length", "Content-Type", "Etag", "Vary", "Date", "Set-Cookie"},
 		AllowCredentials: true,
 	}))
-	routes.SetupRoutes(app, authHandler, paymentHandler)
+	routes.SetupRoutes(app, authHandler, paymentHandler, i18nStore)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	go func() {

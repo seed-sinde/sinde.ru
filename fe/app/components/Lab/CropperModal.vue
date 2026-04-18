@@ -260,7 +260,7 @@ const applyCrop = async () => {
   }
   const mime = chooseOutputMime(props.file.type)
   const quality = mime === 'image/jpeg' || mime === 'image/webp' ? 0.92 : undefined
-  const blob = await new Promise<Blob | null>((resolve) => {
+  const blob = await new Promise<Blob | null>(resolve => {
     canvas.toBlob(resolve, mime, quality)
   })
   if (!blob) {
@@ -290,7 +290,7 @@ const onEscKeydown = (event: KeyboardEvent) => {
 }
 watch(
   () => props.file,
-  async (file) => {
+  async file => {
     destroyCropper()
     revokeObjectUrl()
     cropError.value = null
@@ -314,7 +314,7 @@ watch([localAspectPreset, customAspectWidth, customAspectHeight], () => {
 })
 watch(
   () => props.aspectPreset,
-  (nextPreset) => {
+  nextPreset => {
     if (!props.file) return
     localAspectPreset.value = nextPreset
     applyAspectRatio()
@@ -390,7 +390,7 @@ onBeforeUnmount(() => {
             :src="objectUrl"
             alt="Изображение для кадрирования"
             class="block h-full max-h-full w-full max-w-full object-contain"
-          >
+          />
         </div>
       </div>
       <div class="border-t bg-(--lab-bg-canvas) px-3 py-3 backdrop-blur-sm sm:px-4" @click.stop>
@@ -463,7 +463,7 @@ onBeforeUnmount(() => {
                     step="0.01"
                     class="w-28 border-0 bg-transparent accent-(--lab-info)"
                     @input="onZoomSliderInput"
-                  >
+                  />
                 </div>
                 <LabBaseButton
                   icon="ic:round-refresh"

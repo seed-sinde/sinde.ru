@@ -12,9 +12,9 @@
     :class="inputClassList"
     v-bind="inputAttrs"
     @input="onInput"
-    @blur="(event) => emit('blur', event)"
-    @focus="(event) => emit('focus', event)"
-  >
+    @blur="event => emit('blur', event)"
+    @focus="event => emit('focus', event)"
+  />
 </template>
 <script setup lang="ts">
 import { twMerge } from 'tailwind-merge'
@@ -25,7 +25,7 @@ const normalizeClassValue = (value: unknown): string => {
   if (typeof value === 'string') return value.trim()
   if (Array.isArray(value)) {
     return value
-      .map((item) => normalizeClassValue(item))
+      .map(item => normalizeClassValue(item))
       .filter(Boolean)
       .join(' ')
       .trim()

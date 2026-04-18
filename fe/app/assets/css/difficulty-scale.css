@@ -1,0 +1,50 @@
+@layer components {
+  .lab-difficulty-scale {
+    display: grid;
+    width: 100%;
+    height: 2.25rem;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    overflow: hidden;
+    border: 1px solid var(--lab-border);
+    background: var(--lab-bg-surface);
+  }
+  @media (min-width: 768px) {
+    .lab-difficulty-scale {
+      height: 2rem;
+    }
+  }
+  .lab-difficulty-scale--disabled {
+    opacity: 0.6;
+  }
+  .lab-difficulty-scale__segment {
+    height: 100%;
+    min-width: 0;
+    border: 1px solid var(--lab-border);
+    background: var(--lab-bg);
+    outline: none;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      opacity 0.15s ease;
+  }
+  .lab-difficulty-scale__segment:hover:not(:disabled) {
+    background: var(--lab-bg-surface-hover);
+  }
+  .lab-difficulty-scale__segment:focus-visible {
+    border-color: var(--lab-text-primary);
+  }
+  .lab-difficulty-scale__segment--active {
+    border-color: var(--difficulty-segment-color);
+    background: color-mix(in srgb, var(--difficulty-segment-color) 22%, var(--lab-bg));
+  }
+  .lab-difficulty-scale__segment--active:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--difficulty-segment-color) 28%, var(--lab-bg));
+  }
+  .lab-difficulty-scale__segment--selected {
+    border-color: color-mix(in srgb, var(--difficulty-segment-color) 72%, var(--lab-text-primary));
+  }
+  .lab-difficulty-scale__segment:disabled {
+    cursor: default;
+  }
+}

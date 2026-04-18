@@ -227,7 +227,7 @@ onUnmounted(() => {
 })
 watch(
   () => armed.value,
-  (isArmed) => {
+  isArmed => {
     if (!import.meta.client || !isArmed || !props.tooltip) return
     nextTick(() => {
       updateTooltipPosition()

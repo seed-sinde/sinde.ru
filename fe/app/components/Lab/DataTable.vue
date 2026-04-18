@@ -1,9 +1,10 @@
 <template>
   <div class="relative min-w-0">
-    <div ref="scrollerRef" class="lab-scroll-hidden overflow-auto" :class="[maxHeightClass, containerClass]">
-      <table :class="tableClassList">
-        <thead :class="theadClassList">
-          <tr class="border-b bg-(--lab-bg-canvas)">
+    <h1 v-if="title">{{ title }}</h1>
+    <div ref="scrRef" class="lab-scroll-hidden max-h-136 overflow-auto">
+      <table class="min-w-full text-xs">
+        <thead class="sticky top-0 z-10">
+          <tr class="border-b border-(--lab-border) bg-(--lab-bg-canvas)">
             <th class="w-7 py-2 pr-2 text-left font-medium">
               <slot name="loading" :loading="loading">
                 <div class="flex h-4 items-center">
@@ -17,29 +18,25 @@
                 </div>
               </slot>
             </th>
-            <th v-for="column in columns" :key="column.key" :class="headerClass(column)">
-              <slot :name="`header-${column.key}`" :column="column">
-                {{ column.label }}
+            <th v-for="col in cols" :key="col.key" :class="hdCls(col)">
+              <slot :name="`header-${col.key}`" :column="col">
+                {{ col.label }}
               </slot>
             </th>
           </tr>
         </thead>
-        <tbody :class="tbodyClass">
-          <tr v-if="normalizedRows.length === 0" class="border-b">
-            <td :colspan="Math.max(columns.length + 1, 1)" class="py-3 pr-3">
+        <tbody>
+          <tr v-if="!rowsSafe.length" class="border-b border-(--lab-border)">
+            <td :colspan="colsLen + 1" class="py-3 pr-3">
               <slot name="empty">{{ emptyText }}</slot>
             </td>
           </tr>
-          <tr v-for="(row, index) in normalizedRows" :key="resolveRowKey(row, index)" :class="rowClass">
+          <tr v-for="(row,i) in rowsSafe" :key="rk(row, i)" class="border-b border-(--lab-border) align-top">
             <td class="w-7 py-2 pr-2" />
-            <td
-              v-for="column in columns"
-              :key="`${String(resolveRowKey(row, index))}:${column.key}`"
-              :class="cellClass(column)"
-            >
-              <slot :name="`cell-${column.key}`" :row="row" :column="column" :value="row?.[column.key]" :index="index">
-                <slot name="cell" :row="row" :column="column" :value="row?.[column.key]" :index="index">
-                  {{ formatCellValue(row?.[column.key]) }}
+            <td v-for="col in cols" :key="`${String(rk(row, i))}:${col.key}`" :class="tdCls(col)">
+              <slot :name="`cell-${col.key}`" :row="row" :column="col" :value="row?.[col.key]" :index="i">
+                <slot name="cell" :row="row" :column="col" :value="row?.[col.key]" :index="i">
+                  {{ fmt(row?.[col.key]) }}
                 </slot>
               </slot>
             </td>
@@ -49,78 +46,65 @@
     </div>
     <div
       class="lab-scroll-fade lab-scroll-fade-x-left"
-      :class="{ 'lab-scroll-fade-visible': scrollEdges.left }"
+      :class="{ 'lab-scroll-fade-visible': edges.left }"
       aria-hidden="true"
     />
     <div
       class="lab-scroll-fade lab-scroll-fade-x-right"
-      :class="{ 'lab-scroll-fade-visible': scrollEdges.right }"
+      :class="{ 'lab-scroll-fade-visible': edges.right }"
       aria-hidden="true"
     />
   </div>
 </template>
+
 <script setup lang="ts">
-const props = withDefaults(
-  defineProps<{
-    columns: LabDataTableColumn[]
-    rows: any[]
-    loading?: boolean
-    emptyText?: string
-    rowKey?: string | ((row: any, index: number) => PropertyKey)
-    tableClass?: string
-    theadClass?: string
-    tbodyClass?: string
-    rowClass?: string
-    maxHeightClass?: string
-    containerClass?: string
-  }>(),
-  {
-    loading: false,
-    emptyText: 'Ничего не найдено.',
-    rowKey: 'id',
-    tableClass: 'min-w-full text-xs',
-    theadClass: 'sticky top-0 z-10',
-    tbodyClass: '',
-    rowClass: 'border-b align-top',
-    maxHeightClass: 'max-h-136',
-    containerClass: ''
-  }
-)
-const scrollerRef = ref<HTMLElement | null>(null)
-const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(scrollerRef, { axis: 'x' })
-const normalizedRows = computed(() => (Array.isArray(props.rows) ? props.rows : []))
-const tableClassList = computed(() => [props.tableClass])
-const theadClassList = computed(() => [props.theadClass])
-const resolveRowKey = (row: LabDataTableRow, index: number): PropertyKey => {
-  if (typeof props.rowKey === 'function') return props.rowKey(row, index)
-  const keyName = String(props.rowKey || 'id')
-  const value = row?.[keyName]
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'symbol') return value
-  if (value !== undefined && value !== null && String(value) !== '') return String(value)
-  return `${index}`
+type Row = LabDataTableRow
+type Col = LabDataTableColumn
+
+const props = withDefaults(defineProps<{
+  columns: Col[]
+  rows: Row[]
+  loading?: boolean
+  emptyText?: string
+  rowKey?: string | ((row: Row, index: number) => PropertyKey)
+  title?: string
+}>(), {
+  loading: false,
+  emptyText: 'Ничего не найдено.',
+  rowKey: 'id'
+})
+
+const { columns: cols, loading, emptyText } = toRefs(props)
+const colsLen = computed(() => cols.value.length)
+const rowsSafe = computed<Row[]>(() => Array.isArray(props.rows) ? props.rows : [])
+const scrRef = ref<HTMLElement | null>(null)
+const { edges, sync } = useScrollableEdges(scrRef, { axis: 'x' })
+const rk = (row: Row, i: number): PropertyKey => {
+  if (typeof props.rowKey === 'function') return props.rowKey(row, i)
+  const k = String(props.rowKey || 'id')
+  const v = row?.[k]
+  return typeof v === 'string' || typeof v === 'number' || typeof v === 'symbol' ? v : v !== undefined && v !== null && String(v) !== '' ? String(v) : i
 }
-const headerClass = (column: LabDataTableColumn) => [
-  'py-2 pr-3 text-left font-medium whitespace-nowrap',
-  column.nowrap ? 'whitespace-nowrap' : '',
-  column.widthClass || '',
-  column.headerClass || ''
+
+const hdCls = (col: Col) => [
+  'py-2 pr-3 text-left font-medium',
+  col.nowrap ? 'whitespace-nowrap' : '',
+  col.widthClass || '',
+  col.headerClass || ''
 ]
-const cellClass = (column: LabDataTableColumn) => [
-  'py-2 pr-3 whitespace-nowrap',
-  column.nowrap ? 'whitespace-nowrap' : '',
-  column.widthClass || '',
-  column.cellClass || ''
+
+const tdCls = (col: Col) => [
+  'py-2 pr-3',
+  col.nowrap ? 'whitespace-nowrap' : '',
+  col.widthClass || '',
+  col.cellClass || ''
 ]
-const formatCellValue = (value: unknown) => {
-  if (value === null || value === undefined) return '—'
-  if (typeof value === 'string') return value || '—'
-  return String(value)
-}
+
+const fmt = (v: unknown) => v === null || v === undefined ? '—' : typeof v === 'string' ? v || '—' : String(v)
+
 watch(
-  () => [normalizedRows.value.length, props.columns.length, props.loading] as const,
-  () => {
-    nextTick(syncScrollEdges)
-  },
+  () => [rowsSafe.value.length, colsLen.value, loading.value] as const,
+  () => void nextTick(sync),
   { immediate: true }
 )
 </script>

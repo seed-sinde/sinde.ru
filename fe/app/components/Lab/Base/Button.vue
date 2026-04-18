@@ -76,7 +76,7 @@ const buttonClass = computed(() => [
   'lab-button min-w-0 select-none',
   props.focusClass,
   props.block && 'w-full',
-  props.iconOnly ? 'gap-0' : 'gap-2',
+  props.iconOnly ? 'rounded-full gap-0' : 'gap-2',
   props.iconOnly ? iconOnlySizeClassMap[props.size] : sizeClassMap[props.size],
   variantClassMap[props.variant],
   attrs.class,

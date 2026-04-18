@@ -1,20 +1,27 @@
 <script setup lang="ts">
-const { localeCode, t } = useInterfacePreferences()
+const { localeCode, showTranslationKeys } = useInterfacePreferences()
 const { saveInterfacePreferences } = useInterfacePreferencesSync()
+const { locale, key, load, t } = useI18nSection('ui')
+await useAsyncData(key.value, load, { watch: [locale] })
 const localeButtons = computed(() =>
-  INTERFACE_LOCALE_OPTIONS.map((option) => ({
+  INTERFACE_LOCALE_OPTIONS.map(option => ({
     ...option,
-    label: t(`locale.${option.code}`)
+    label: showTranslationKeys.value ? `locale.${option.code}` : option.nativeLabel
   }))
 )
 const pendingLocale = ref<InterfaceLocaleCode | null>(null)
 const open = ref(false)
 const selectedLocale = computed<InterfaceLocaleCode>(() => pendingLocale.value || localeCode.value)
 const selectedLocaleBadge = computed(
-  () => INTERFACE_LOCALE_OPTIONS.find((option) => option.code === selectedLocale.value)?.shortLabel || 'RU'
+  () =>
+    (showTranslationKeys.value
+      ? `locale.${selectedLocale.value}`
+      : INTERFACE_LOCALE_OPTIONS.find(option => option.code === selectedLocale.value)?.shortLabel) || 'RU'
 )
-const getLocaleMessageKey = (code: InterfaceLocaleCode): InterfaceMessageKey => `locale.${code}` as InterfaceMessageKey
-const triggerTitle = computed(() => `${t('locale.label')}: ${t(getLocaleMessageKey(selectedLocale.value))}`)
+const triggerTitle = computed(
+  () =>
+    `${showTranslationKeys.value ? `locale.${selectedLocale.value}` : INTERFACE_LOCALE_OPTIONS.find(option => option.code === selectedLocale.value)?.nativeLabel || 'English'} · ${showTranslationKeys.value ? 'locale.label' : t('locale.label')}`
+)
 const selectLocale = async (code: InterfaceLocaleCode) => {
   if (pendingLocale.value || selectedLocale.value === code) return
   open.value = false

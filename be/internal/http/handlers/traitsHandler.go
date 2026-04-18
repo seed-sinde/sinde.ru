@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"sinde.ru/internal/models"
 	"sinde.ru/internal/store"
 	"sinde.ru/utils"
-	"strconv"
 	"strings"
 )
 
@@ -47,9 +45,12 @@ func MemoryTraitHandler() fiber.Handler {
 			return responses.Error(c, fiber.StatusInternalServerError, "Ключ не найден")
 		}
 		key := keys[0]
-		resp := []string{key.Syn, trait.TValue}
-		c.Type("json")
-		return c.JSON(resp)
+		return c.JSON(models.TraitResponse{
+			TUUID:  trait.TUUID,
+			TKey:   key.Syn,
+			TKeyID: trait.TKey,
+			TValue: trait.TValue,
+		})
 	}
 }
 
@@ -70,8 +71,9 @@ func MemoryAddTraitHandler() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		defer utils.Benchmark("MemoryAddTraitHandler")()
 		var input struct {
-			TKey   string `json:"t_key"`
-			TValue string `json:"t_value"`
+			TKey   string         `json:"t_key"`
+			TValue string         `json:"t_value"`
+			Meta   map[string]any `json:"meta"`
 		}
 		if err := c.Bind().JSON(&input); err != nil {
 			return responses.Error(c, fiber.StatusBadRequest, "Некорректное тело запроса", err.Error())
@@ -81,7 +83,15 @@ func MemoryAddTraitHandler() fiber.Handler {
 		if input.TKey == "" || input.TValue == "" {
 			return responses.Error(c, fiber.StatusBadRequest, "Отсутствуют обязательные поля")
 		}
-		key, err := services.PdbGetOrCreateCanonicalKeyBySyn(c, input.TKey)
+		metaJSON := "{}"
+		if input.Meta != nil {
+			metaBytes, err := json.Marshal(input.Meta)
+			if err != nil {
+				return responses.Error(c, fiber.StatusBadRequest, "Некорректная meta", err.Error())
+			}
+			metaJSON = string(metaBytes)
+		}
+		key, err := services.PdbGetOrCreateKeyBySynMeta(c, input.TKey, metaJSON)
 		if err != nil {
 			return responses.Error(c, fiber.StatusInternalServerError, "Ошибка сохранения ключа", err.Error())
 		}
@@ -97,7 +107,7 @@ func MemoryAddTraitHandler() fiber.Handler {
 			return responses.Error(c, fiber.StatusInternalServerError, "Ошибка сохранения особенности")
 		}
 		resp := store.SyncTrait(trait)
-		return c.SendString(resp.TUUID.String())
+		return c.JSON(resp)
 	}
 }
 
@@ -129,16 +139,15 @@ func MemoryResolveUUIDHandler() fiber.Handler {
 				return responses.Error(c, 500, "Ключ для особенности не найден")
 			}
 			key := keys[0]
-			// Формируем минимальный JSON без лишних аллокаций.
-			// Пример: ["height","180"]
-			var buf bytes.Buffer
-			buf.Grow(len(key.Syn) + len(trait.TValue) + 8)
-			buf.WriteByte('[')
-			buf.WriteString(strconv.Quote(key.Syn))
-			buf.WriteByte(',')
-			buf.WriteString(strconv.Quote(trait.TValue))
-			buf.WriteByte(']')
-			body := buf.Bytes()
+			body, err := json.Marshal(models.TraitResponse{
+				TUUID:  trait.TUUID,
+				TKey:   key.Syn,
+				TKeyID: trait.TKey,
+				TValue: trait.TValue,
+			})
+			if err != nil {
+				return responses.Error(c, fiber.StatusInternalServerError, "Не удалось сериализовать особенность", err.Error())
+			}
 			// Считаем и выставляем ETag (weak допустим). Если совпал — 304 без тела.
 			sum := sha256.Sum256(body)
 			etag := `W/"` + hex.EncodeToString(sum[:]) + `"`

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/goccy/go-json"
 	"github.com/jackc/pgx/v5"
 	"sinde.ru/db"
 	"sinde.ru/internal/models"
@@ -50,6 +51,48 @@ func PdbGetCanonicalKeyBySyn(ctx context.Context, syn string) (*models.Key, erro
 	}
 	return &key, nil
 }
+
+func normalizeKeyMetaJSON(metaJSON string) string {
+	trimmed := strings.TrimSpace(metaJSON)
+	if trimmed == "" {
+		return "{}"
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &payload); err != nil || payload == nil {
+		return "{}"
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return "{}"
+	}
+	return string(raw)
+}
+
+func PdbGetKeyBySynMeta(ctx context.Context, syn, metaJSON string) (*models.Key, error) {
+	syn = strings.TrimSpace(syn)
+	if syn == "" {
+		return nil, nil
+	}
+	const query = `
+		SELECT k.id, k.syn_id, s.name, COALESCE(k.meta, '{}'::jsonb)::text
+		FROM traits_k k
+		JOIN key_syns s ON s.id = k.syn_id
+		WHERE lower(s.name) = lower($1)
+		  AND k.meta = $2::jsonb
+		ORDER BY k.id
+		LIMIT 1
+	`
+	var key models.Key
+	err := db.PDB.QueryRow(ctx, query, syn, normalizeKeyMetaJSON(metaJSON)).Scan(&key.ID, &key.SynID, &key.Syn, &key.Meta)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &key, nil
+}
+
 func PdbGetOrCreateCanonicalKeyBySyn(ctx context.Context, syn string) (*models.Key, error) {
 	syn = strings.TrimSpace(syn)
 	if syn == "" {
@@ -80,6 +123,39 @@ func PdbGetOrCreateCanonicalKeyBySyn(ctx context.Context, syn string) (*models.K
 		return nil, err
 	}
 	return PdbGetCanonicalKeyBySyn(ctx, syn)
+}
+
+func PdbGetOrCreateKeyBySynMeta(ctx context.Context, syn, metaJSON string) (*models.Key, error) {
+	syn = strings.TrimSpace(syn)
+	if syn == "" {
+		return nil, nil
+	}
+	normalizedMeta := normalizeKeyMetaJSON(metaJSON)
+	key, err := PdbGetKeyBySynMeta(ctx, syn, normalizedMeta)
+	if err != nil || key != nil {
+		return key, err
+	}
+	const query = `
+		WITH ensured_syn AS (
+			INSERT INTO key_syns (name)
+			VALUES ($1)
+			ON CONFLICT (name) DO NOTHING
+			RETURNING id
+		),
+		syn_row AS (
+			SELECT id FROM ensured_syn
+			UNION ALL
+			SELECT id FROM key_syns WHERE name = $1
+			LIMIT 1
+		)
+		INSERT INTO traits_k (syn_id, meta)
+		VALUES ((SELECT id FROM syn_row), $2::jsonb)
+		ON CONFLICT (syn_id, meta) DO NOTHING
+	`
+	if _, err := db.PDB.Exec(ctx, query, syn, normalizedMeta); err != nil {
+		return nil, err
+	}
+	return PdbGetKeyBySynMeta(ctx, syn, normalizedMeta)
 }
 
 // Обновление meta по ID.

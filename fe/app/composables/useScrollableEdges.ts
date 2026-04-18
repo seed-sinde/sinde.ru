@@ -1,4 +1,4 @@
-export type ScrollableEdgesAxis = 'x' | 'y' | 'both'
+export type ScrollableEdgesAxis = "x" | "y" | "both"
 
 export const useScrollableEdges = (
   target: Ref<HTMLElement | null>,
@@ -14,7 +14,7 @@ export const useScrollableEdges = (
     bottom: false
   })
 
-  const axis = options?.axis || 'both'
+  const axis = options?.axis || "both"
   const threshold = options?.threshold ?? 2
   let resizeObserver: ResizeObserver | null = null
   let removeScrollListener: (() => void) | null = null
@@ -28,7 +28,7 @@ export const useScrollableEdges = (
       edges.bottom = false
       return
     }
-    if (axis === 'x' || axis === 'both') {
+    if (axis === "x" || axis === "both") {
       const maxScrollLeft = Math.max(0, element.scrollWidth - element.clientWidth)
       edges.left = element.scrollLeft > threshold
       edges.right = element.scrollLeft < maxScrollLeft - threshold
@@ -36,7 +36,7 @@ export const useScrollableEdges = (
       edges.left = false
       edges.right = false
     }
-    if (axis === 'y' || axis === 'both') {
+    if (axis === "y" || axis === "both") {
       const maxScrollTop = Math.max(0, element.scrollHeight - element.clientHeight)
       edges.top = element.scrollTop > threshold
       edges.bottom = element.scrollTop < maxScrollTop - threshold
@@ -60,9 +60,9 @@ export const useScrollableEdges = (
       return
     }
     const onScroll = () => sync()
-    element.addEventListener('scroll', onScroll, { passive: true })
+    element.addEventListener("scroll", onScroll, {passive: true})
     removeScrollListener = () => {
-      element.removeEventListener('scroll', onScroll)
+      element.removeEventListener("scroll", onScroll)
     }
     resizeObserver = new ResizeObserver(() => {
       sync()
@@ -73,10 +73,10 @@ export const useScrollableEdges = (
 
   watch(
     target,
-    (element) => {
+    element => {
       attach(element)
     },
-    { flush: 'post' }
+    {flush: "post"}
   )
 
   onMounted(() => {

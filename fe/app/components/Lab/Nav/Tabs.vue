@@ -1,32 +1,34 @@
 <template>
-  <div class="lab-tabs-root" :class="containerClass">
-    <div class="relative min-w-0">
-      <div ref="tabsScrollerRef" class="lab-scroll-hidden min-w-0 overflow-x-auto overflow-y-hidden">
-        <div role="tablist" :class="resolvedListClass">
+  <div>
+    <div class="relative">
+      <div ref="tabsScrollerRef" class="lab-scroll-hidden overflow-x-auto overflow-y-hidden">
+        <div role="tablist" class="flex min-w-max items-end gap-0">
           <component
-            :is="tabComponent(item)"
-            v-for="(item, index) in items"
+            :is="item.link ? nuxtLinkComponent : 'button'"
+            v-for="(item, index) in resolvedItems"
             :key="String(item.value)"
-            :ref="(el: Element | { $el?: Element } | null) => setTabRef(index, el)"
-            v-bind="tabComponentProps(item)"
+            :ref="bindTabRef(index)"
+            :to="item.routeTarget"
+            :replace="item.link ? linkReplace : undefined"
+            :type="item.link ? undefined : 'button'"
             role="tab"
-            :aria-selected="isActive(item.value) ? 'true' : 'false'"
-            :tabindex="isActive(item.value) ? 0 : -1"
+            :tabindex="item.disabled ? -1 : item.active ? 0 : -1"
+            :aria-selected="item.active ? 'true' : 'false'"
             :aria-disabled="item.disabled ? 'true' : undefined"
+            :disabled="item.disabled"
             :class="[
-              resolvedButtonClass,
-              noSelect ? 'select-none' : '',
-              isActive(item.value) ? activeClass : inactiveClass
+              tabBaseClass,
+              item.active ? activeStyles : inactiveStyles,
+              item.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
             ]"
             @click="onTabClick($event, item)"
-            @keydown="onTabKeydown($event, index)"
           >
-            <slot name="tab" :item="item" :active="isActive(item.value)">
+            <slot name="tab" :item="item" :active="item.active">
               <span>{{ item.label }}</span>
               <span
                 v-if="item.badge !== undefined && item.badge !== null"
-                class="ml-1.5 text-xs text-(--lab-text-soft)"
-                :class="isActive(item.value) ? 'text-(--lab-accent)' : ''"
+                class="ml-1.5 text-xs"
+                :class="item.active ? 'text-(--lab-accent)' : 'text-(--lab-text-soft)'"
               >
                 {{ item.badge }}
               </span>
@@ -34,6 +36,7 @@
           </component>
         </div>
       </div>
+
       <div
         class="lab-scroll-fade lab-scroll-fade-x-left"
         :class="{ 'lab-scroll-fade-visible': tabsScrollEdges.left }"
@@ -45,244 +48,125 @@
         aria-hidden="true"
       />
     </div>
-    <div v-if="renderPanels" :class="panelClass">
-      <div v-for="item in items" v-show="isActive(item.value)" :key="`panel:${String(item.value)}`">
-        <slot :name="`panel-${String(item.value)}`" :value="item.value" :item="item" />
+
+    <div v-if="renderPanels && activeValue !== null" class="space-y-4 p-4">
+      <div :key="String(activeValue)">
+        <slot :name="`panel-${String(activeValue)}`" :value="activeValue" />
       </div>
     </div>
   </div>
 </template>
+
 <script setup lang="ts">
-import { twMerge } from 'tailwind-merge'
+import type { Component, ComponentPublicInstance } from 'vue'
+
 const props = withDefaults(
   defineProps<{
     modelValue: LabTabValue
     items: LabTabItem[]
-    containerClass?: string
-    listClass?: string
-    buttonClass?: string
-    activeClass?: string
-    inactiveClass?: string
-    panelClass?: string
-    noSelect?: boolean
     renderPanels?: boolean
     routeQueryKey?: string
-    routeDefaultValue?: LabTabValue
+    routeParamKey?: string
     routePath?: string
     routePersistDefault?: boolean
-    routeActiveValue?: LabTabValue | null
-    routeToMap?: Record<string, RouteLocationRaw | undefined>
+    routeTargetMap?: TabRouteTargetMap
   }>(),
   {
-    containerClass:
-      'max-sm:[&_.lab-tabs-root_.lab-tabs-root]:mt-2 max-sm:[&_.lab-tabs-root_.lab-tabs-root]:border-t max-sm:[&_.lab-tabs-root_.lab-tabs-root]:pt-2',
-    listClass: '',
-    buttonClass: '',
-    activeClass:
-      'border-b-(--lab-accent) bg-[color-mix(in_srgb,var(--lab-accent)_14%,transparent)] text-(--lab-accent)',
-    inactiveClass:
-      'text-(--lab-text-muted) hover:bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_72%,transparent)] hover:text-(--lab-text-primary)',
-    panelClass: 'space-y-3',
-    noSelect: false,
     renderPanels: true,
     routeQueryKey: '',
+    routeParamKey: '',
     routePath: '',
-    routePersistDefault: false,
-    routeActiveValue: null
+    routePersistDefault: false
   }
 )
+
 const emit = defineEmits<{
   'update:modelValue': [value: LabTabValue]
   change: [value: LabTabValue, item: LabTabItem]
 }>()
+
 const route = useRoute()
-const router = useRouter()
-const LabBaseButton = resolveComponent('LabBaseButton')
-const NuxtLink = resolveComponent('NuxtLink')
+const nuxtLinkComponent = resolveComponent('NuxtLink') as Component
+
+const tabBaseClass = 'lab-tabs-focus relative -mb-px inline-flex h-9 shrink-0 items-center justify-center border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-2.5 text-xs font-medium whitespace-nowrap outline-none select-none'
+const activeStyles = 'border-(--lab-accent) bg-[color-mix(in_srgb,var(--lab-accent)_14%,transparent)] text-(--lab-accent)'
+const inactiveStyles = 'text-(--lab-text-muted) hover:border-(--lab-border-strong) hover:bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_72%,transparent)] hover:text-(--lab-text-primary)'
+
 const tabsScrollerRef = ref<HTMLElement | null>(null)
-const { edges: tabsScrollEdges, sync: syncTabsScrollEdges } = useScrollableEdges(tabsScrollerRef, { axis: 'x' })
-const resolvedListClass = computed(() =>
-  twMerge(
-    'flex min-w-max items-end gap-0 border-b [border-color:color-mix(in_srgb,var(--lab-border)_62%,transparent)]',
-    props.listClass
-  )
-)
-const resolvedButtonClass = computed(() =>
-  twMerge(
-    'lab-tabs-focus text-(--lab-text-muted) relative inline-flex h-9 shrink-0 items-center justify-center border-0 border-b-2 border-transparent bg-transparent px-2.5 text-xs font-medium whitespace-nowrap outline-none transition-colors',
-    props.buttonClass
-  )
-)
-const fallbackValue = computed<LabTabValue>(() => {
-  if (props.routeDefaultValue !== undefined) return props.routeDefaultValue
-  const first = props.items[0]
-  if (first) return first.value
-  return props.modelValue
-})
-const allowedValues = computed(() => props.items.map((item) => item.value))
-const routedValue = computed<LabTabValue | null>(() => {
-  if (props.routeActiveValue !== null && props.routeActiveValue !== undefined) {
-    return props.routeActiveValue
-  }
-  if (!props.routeQueryKey) return null
-  return normalizeTabRouteValue(route.query[props.routeQueryKey], allowedValues.value, fallbackValue.value)
-})
-const activeValue = computed<LabTabValue>(() => {
-  if (routedValue.value !== null) return routedValue.value
-  if (props.items.some((item) => item.value === props.modelValue)) return props.modelValue
-  return fallbackValue.value
-})
 const tabRefs = ref<Array<HTMLElement | null>>([])
-const syncTabsScrollEdgesSoon = () => {
-  if (import.meta.client) {
-    requestAnimationFrame(syncTabsScrollEdges)
-    return
-  }
-  syncTabsScrollEdges()
+const { edges: tabsScrollEdges } = useScrollableEdges(tabsScrollerRef, { axis: 'x' })
+
+const findItemValue = (raw: unknown) => {
+  const candidate = Array.isArray(raw) ? raw[0] : raw
+  if (typeof candidate !== 'string' && typeof candidate !== 'number') return null
+  return props.items.find(item => stringifyTabValue(item.value) === stringifyTabValue(candidate))?.value ?? null
 }
-const hasElementRef = (value: Element | { $el?: Element } | null): value is { $el: Element } => {
-  return Boolean(value && typeof value === 'object' && '$el' in value && value.$el)
-}
-const setTabRef = (index: number, el: Element | { $el?: Element } | null) => {
-  const node = el instanceof HTMLElement ? el : hasElementRef(el) && el.$el instanceof HTMLElement ? el.$el : null
-  tabRefs.value[index] = node
-}
-const isActive = (value: LabTabValue) => value === activeValue.value
-const scrollActiveTabIntoView = async () => {
-  await nextTick()
-  const activeIndex = props.items.findIndex((item) => item.value === activeValue.value)
-  if (activeIndex < 0) {
-    syncTabsScrollEdgesSoon()
-    return
-  }
-  const activeTab = tabRefs.value[activeIndex]
-  if (activeTab) {
-    activeTab.scrollIntoView({
-      block: 'nearest',
-      inline: 'nearest'
-    })
-  }
-  syncTabsScrollEdgesSoon()
-}
-watch(
-  routedValue,
-  (next) => {
-    if (next === null) return
-    if (props.modelValue === next) return
-    emit('update:modelValue', next)
-  },
-  { immediate: true }
-)
-watch(
-  () => [activeValue.value, props.items.length],
-  () => {
-    void scrollActiveTabIntoView()
-  },
-  { immediate: true }
-)
-const tabToMapResolved = computed(() => {
-  const out = new Map<LabTabValue, RouteLocationRaw | undefined>()
-  for (const item of props.items) {
-    const routeOptions: BuildTabRouteOptions = {
-      defaultValue: fallbackValue.value,
-      persistDefault: props.routePersistDefault
-    }
-    if (props.routeQueryKey) {
-      routeOptions.queryKey = props.routeQueryKey
-    }
-    if (props.routePath) {
-      routeOptions.path = props.routePath
-    }
-    if (props.routeToMap) {
-      routeOptions.targetMap = props.routeToMap
-    }
-    out.set(item.value, buildTabRouteLocation(route, item.value, routeOptions))
-  }
-  return out
+
+const activeValue = computed<LabTabValue | null>(() => {
+  const paramValue = props.routeParamKey ? findItemValue(route.params[props.routeParamKey]) : null
+  if (paramValue !== null) return paramValue
+  const queryValue = props.routeQueryKey ? findItemValue(route.query[props.routeQueryKey]) : null
+  if (queryValue !== null) return queryValue
+  if (findItemValue(props.modelValue) !== null) return props.modelValue
+  return props.items[0]?.value ?? null
 })
-const tabTo = (item: LabTabItem) => tabToMapResolved.value.get(item.value)
-const isLinkTab = (item: LabTabItem) => !item.disabled && Boolean(tabTo(item))
-const tabComponent = (item: LabTabItem) => (isLinkTab(item) ? NuxtLink : LabBaseButton)
-const tabComponentProps = (item: LabTabItem) => {
-  if (isLinkTab(item)) {
+
+const getTabRoute = (item: LabTabItem) =>
+  buildTabRouteLocation(route, item.value, {
+    ...(props.routeQueryKey ? { queryKey: props.routeQueryKey } : {}),
+    defaultValue: props.items[0]?.value ?? props.modelValue,
+    ...(props.routePath ? { path: props.routePath } : {}),
+    persistDefault: props.routePersistDefault,
+    ...(props.routeTargetMap ? { targetMap: props.routeTargetMap } : {})
+  })
+
+const linkReplace = computed(() => Boolean(props.routeQueryKey && !props.routeParamKey && !props.routeTargetMap))
+const activeKey = computed(() => (activeValue.value === null ? '' : stringifyTabValue(activeValue.value)))
+const resolvedItems = computed(() =>
+  props.items.map(item => {
+    const routeTarget = item.disabled ? undefined : getTabRoute(item)
     return {
-      to: tabTo(item)
+      ...item,
+      active: stringifyTabValue(item.value) === activeKey.value,
+      link: Boolean(routeTarget),
+      routeTarget
     }
-  }
-  return {
-    type: 'button',
-    disabled: item.disabled,
-    focusClass: ''
-  }
+  })
+)
+
+const setTabRef = (i: number, el: Element | ComponentPublicInstance | null) => {
+  tabRefs.value[i] = el instanceof HTMLElement ? el : el && typeof el === 'object' && '$el' in el && el.$el instanceof HTMLElement ? el.$el : null
 }
-const emitTabChange = (item: LabTabItem) => {
-  if (item.disabled) return
-  if (item.value === activeValue.value) return
+
+const bindTabRef = (i: number) => (el: Element | ComponentPublicInstance | null) => setTabRef(i, el)
+
+const onTabClick = (event: MouseEvent, item: LabTabItem & { link?: boolean }) => {
+  if (item.disabled || item.value === activeValue.value) return
+  if (item.link) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+    return
+  }
   emit('update:modelValue', item.value)
   emit('change', item.value, item)
 }
-const navigateToTab = async (item: LabTabItem) => {
-  if (item.disabled) return
-  if (item.value === activeValue.value) return
-  const nextLocation = tabTo(item)
-  emitTabChange(item)
-  if (!nextLocation) return
-  try {
-    await router.replace(nextLocation)
-  } catch {
-    // ignore navigation duplication
+
+watch(
+  () => activeValue.value,
+  newVal => {
+    if (newVal === null || stringifyTabValue(newVal) === stringifyTabValue(props.modelValue)) return
+    emit('update:modelValue', newVal)
   }
-}
-const hasModifierKey = (event: MouseEvent) =>
-  event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0
-const onTabClick = (event: MouseEvent, item: LabTabItem) => {
-  if (item.disabled) {
-    event.preventDefault()
-    return
-  }
-  if (isLinkTab(item)) {
-    if (item.value === activeValue.value && !hasModifierKey(event)) {
-      event.preventDefault()
-      return
-    }
-    emit('change', item.value, item)
-    return
-  }
-  void navigateToTab(item)
-}
-const moveFocus = (startIndex: number, step: 1 | -1) => {
-  if (!props.items.length) return
-  let next = startIndex
-  for (let i = 0; i < props.items.length; i += 1) {
-    next = (next + step + props.items.length) % props.items.length
-    const item = props.items[next]
-    if (!item?.disabled) {
-      const tab = tabRefs.value[next]
-      tab?.focus()
-      tab?.scrollIntoView({
-        block: 'nearest',
-        inline: 'nearest'
-      })
-      syncTabsScrollEdgesSoon()
-      return
-    }
-  }
-}
-const onTabKeydown = (event: KeyboardEvent, index: number) => {
-  if (event.key === 'ArrowRight') {
-    event.preventDefault()
-    moveFocus(index, 1)
-    return
-  }
-  if (event.key === 'ArrowLeft') {
-    event.preventDefault()
-    moveFocus(index, -1)
-    return
-  }
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    const item = props.items[index]
-    if (item) void navigateToTab(item)
-  }
-}
+)
+
+watch(
+  () => activeValue.value,
+  async (newVal) => {
+    if (!import.meta.client || newVal === null) return
+    const idx = resolvedItems.value.findIndex(item => item.active)
+    if (idx < 0) return
+    await nextTick()
+    tabRefs.value[idx]?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  },
+  { immediate: true }
+)
 </script>

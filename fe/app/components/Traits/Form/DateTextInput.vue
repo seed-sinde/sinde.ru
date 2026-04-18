@@ -66,7 +66,7 @@ const renderSlots = (slotsValue: string[], mode: InputDateTextMode): string => {
 }
 const findSlotAtOrAfter = (caret: number, mode: InputDateTextMode): number => {
   const positions = maskSpec(mode).slots
-  const index = positions.findIndex((pos) => pos >= caret)
+  const index = positions.findIndex(pos => pos >= caret)
   return index >= 0 ? index : positions.length - 1
 }
 const findSlotAtOrBefore = (caret: number, mode: InputDateTextMode): number => {
@@ -112,7 +112,7 @@ const onFocus = (event: FocusEvent) => {
   const input = event.target as HTMLInputElement
   const slotsValue = toSlots(model.value || '', mode)
   displayValue.value = renderSlots(slotsValue, mode)
-  const firstEmpty = slotsValue.findIndex((item) => !item)
+  const firstEmpty = slotsValue.findIndex(item => !item)
   const targetSlot = firstEmpty >= 0 ? firstEmpty : slotsValue.length
   setCaretBySlot(input, targetSlot, mode)
 }

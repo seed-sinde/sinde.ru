@@ -1,31 +1,31 @@
 const DEFAULT_LIMIT = 30
-const STORAGE_KEY = 'ui.preferences.v1'
+const STORAGE_KEY = "ui.preferences.v1"
 const createDefaultMineralsFilters = (): MineralsFiltersSnapshot => ({
-  q: '',
-  sort: 'name_asc',
+  q: "",
+  sort: "name_asc",
   limit: DEFAULT_LIMIT,
   offset: 0,
-  imageFilter: 'any',
+  imageFilter: "any",
   crystalSystems: [],
-  crystalSystemMode: 'any',
+  crystalSystemMode: "any",
   chemistryAll: [],
   chemistryAny: [],
   chemistryNone: []
 })
-export const useUiPreferencesStore = defineStore('uiPreferences', () => {
-  const interfaceLocale = ref<InterfaceLocaleCode>('ru')
-  const themePreference = ref<ThemePreference>('system')
+export const useUiPreferencesStore = defineStore("uiPreferences", () => {
+  const interfaceLocale = ref<InterfaceLocaleCode>("ru")
+  const themePreference = ref<ThemePreference>("system")
   const mineralsFilters = reactive<MineralsFiltersSnapshot>(createDefaultMineralsFilters())
   const restored = ref(false)
   const hasActiveMineralsFilters = () =>
     Boolean(
       mineralsFilters.q.trim() ||
-      mineralsFilters.sort !== 'name_asc' ||
+      mineralsFilters.sort !== "name_asc" ||
       mineralsFilters.limit !== DEFAULT_LIMIT ||
       mineralsFilters.offset > 0 ||
-      mineralsFilters.imageFilter !== 'any' ||
+      mineralsFilters.imageFilter !== "any" ||
       mineralsFilters.crystalSystems.length ||
-      mineralsFilters.crystalSystemMode !== 'any' ||
+      mineralsFilters.crystalSystemMode !== "any" ||
       mineralsFilters.chemistryAll.length ||
       mineralsFilters.chemistryAny.length ||
       mineralsFilters.chemistryNone.length
@@ -43,16 +43,16 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
     chemistryNone: mineralsFilters.chemistryNone.slice()
   })
   const replaceMineralsFilters = (next: Partial<MineralsFiltersSnapshot>) => {
-    mineralsFilters.q = String(next.q || '').trim()
-    mineralsFilters.sort = next.sort === 'name_desc' ? 'name_desc' : 'name_asc'
+    mineralsFilters.q = String(next.q || "").trim()
+    mineralsFilters.sort = next.sort === "name_desc" ? "name_desc" : "name_asc"
     mineralsFilters.limit =
-      typeof next.limit === 'number' && Number.isFinite(next.limit) && next.limit > 0 ? next.limit : DEFAULT_LIMIT
+      typeof next.limit === "number" && Number.isFinite(next.limit) && next.limit > 0 ? next.limit : DEFAULT_LIMIT
     mineralsFilters.offset =
-      typeof next.offset === 'number' && Number.isFinite(next.offset) && next.offset >= 0 ? next.offset : 0
+      typeof next.offset === "number" && Number.isFinite(next.offset) && next.offset >= 0 ? next.offset : 0
     mineralsFilters.imageFilter =
-      next.imageFilter === 'with' || next.imageFilter === 'without' ? next.imageFilter : 'any'
+      next.imageFilter === "with" || next.imageFilter === "without" ? next.imageFilter : "any"
     mineralsFilters.crystalSystems = Array.isArray(next.crystalSystems) ? next.crystalSystems.slice() : []
-    mineralsFilters.crystalSystemMode = next.crystalSystemMode === 'all' ? 'all' : 'any'
+    mineralsFilters.crystalSystemMode = next.crystalSystemMode === "all" ? "all" : "any"
     mineralsFilters.chemistryAll = Array.isArray(next.chemistryAll) ? next.chemistryAll.slice() : []
     mineralsFilters.chemistryAny = Array.isArray(next.chemistryAny) ? next.chemistryAny.slice() : []
     mineralsFilters.chemistryNone = Array.isArray(next.chemistryNone) ? next.chemistryNone.slice() : []
@@ -79,8 +79,8 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
       replaceMineralsFilters(parsed.mineralsFilters || {})
     } catch {
       window.localStorage.removeItem(STORAGE_KEY)
-      interfaceLocale.value = 'ru'
-      themePreference.value = 'system'
+      interfaceLocale.value = "ru"
+      themePreference.value = "system"
       clearMineralsFilters()
     } finally {
       restored.value = true
@@ -90,7 +90,7 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
     if (!import.meta.client || !restored.value) return
     try {
       const hasMeaningfulState =
-        interfaceLocale.value !== 'ru' || themePreference.value !== 'system' || hasActiveMineralsFilters()
+        interfaceLocale.value !== "ru" || themePreference.value !== "system" || hasActiveMineralsFilters()
       if (!hasMeaningfulState) {
         window.localStorage.removeItem(STORAGE_KEY)
         return
@@ -118,7 +118,7 @@ export const useUiPreferencesStore = defineStore('uiPreferences', () => {
         mineralsFilters.chemistryNone
       ],
       persistState,
-      { deep: true }
+      {deep: true}
     )
   }
   return {

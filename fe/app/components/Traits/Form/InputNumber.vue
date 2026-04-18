@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-stretch">
+  <div class="relative">
     <LabBaseInput
       :id="inputId"
       v-model="valueText"
@@ -9,10 +9,16 @@
       step="any"
       :aria-label="ariaLabel"
     />
-    <div v-if="unitLabel" class="relative flex items-center justify-center px-3 py-2.5 font-mono text-xs text-zinc-300">
-      <span class="-t-2 absolute text-xs text-zinc-400" />
-      {{ unitLabel }}
-    </div>
+    <span
+      v-if="unitLabel"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-y-0 right-12 left-3.5 flex items-center overflow-hidden text-sm whitespace-nowrap"
+    >
+      <span v-if="valueText" class="invisible shrink-0">{{ valueText }}</span>
+      <span :class="valueText ? 'pl-1' : ''" class="truncate text-(--lab-text-soft)">
+        {{ unitLabel }}
+      </span>
+    </span>
   </div>
 </template>
 <script setup lang="ts">
@@ -25,7 +31,7 @@ const ariaLabel = computed(() => props.label || 'Число')
 const unitLabel = computed(() => props.meta?.unit || '')
 const valueText = computed<string>({
   get: () => (model.value === null || model.value === undefined ? '' : String(model.value)),
-  set: (next) => {
+  set: next => {
     model.value = next
   }
 })

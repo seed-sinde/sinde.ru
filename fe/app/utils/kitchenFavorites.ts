@@ -1,10 +1,10 @@
-export type KitchenFavoriteListType = KitchenFavoriteIngredient['list_type']
+export type KitchenFavoriteListType = KitchenFavoriteIngredient["list_type"]
 export const normalizeKitchenFavoriteListType = (value: unknown): KitchenFavoriteListType =>
-  String(value || '')
+  String(value || "")
     .trim()
-    .toLowerCase() === 'exclude'
-    ? 'exclude'
-    : 'include'
+    .toLowerCase() === "exclude"
+    ? "exclude"
+    : "include"
 export const normalizeKitchenFavoriteIngredient = (
   item: KitchenFavoriteIngredient,
   fallback: KitchenFavoriteListType
@@ -19,8 +19,8 @@ export const upsertKitchenFavoriteIngredient = (
 ) => {
   const nextItem = normalizeKitchenFavoriteIngredient(item, fallback)
   const ingredientId = Number(nextItem.ingredient_id || 0)
-  const nextItems = items.filter((existing) => Number(existing.ingredient_id || 0) !== ingredientId)
+  const nextItems = items.filter(existing => Number(existing.ingredient_id || 0) !== ingredientId)
   return [nextItem, ...nextItems]
 }
 export const removeKitchenFavoriteIngredientById = (items: KitchenFavoriteIngredient[], ingredientId: number) =>
-  items.filter((item) => Number(item.ingredient_id || 0) !== ingredientId)
+  items.filter(item => Number(item.ingredient_id || 0) !== ingredientId)

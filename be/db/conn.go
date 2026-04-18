@@ -3,49 +3,67 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
-	"sinde.ru/utils"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
+	"sinde.ru/utils"
 )
 
 var PDB *pgxpool.Pool
+var RDB *redis.Client
 
-func Setup() (*pgxpool.Pool, error) {
-	config := utils.Config
-	if config == nil {
-		log.Fatal("Environment configuration is not initilized.")
+func Setup() (*pgxpool.Pool, *redis.Client, error) {
+	cfg := utils.Config
+	if cfg == nil {
+		log.Fatal("Environment configuration is not initialized.")
 	}
-	dbConfig, err := pgxpool.ParseConfig(fmt.Sprintf(
+	pgCfg, err := pgxpool.ParseConfig(fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.PostgresHost,
-		config.PostgresPort,
-		config.PostgresUser,
-		config.PostgresPassword,
-		config.PostgresDB,
-		config.PostgresSSL,
+		cfg.PostgresHost,
+		cfg.PostgresPort,
+		cfg.PostgresUser,
+		cfg.PostgresPassword,
+		cfg.PostgresDB,
+		cfg.PostgresSSL,
 	))
 	if err != nil {
-		log.Fatalf("Unable to parse DATABASE_URL: %v\n", err)
+		return nil, nil, err
 	}
-	dbConfig.MaxConns = 10
-	dbConfig.MinConns = 2
-	dbConfig.MaxConnLifetime = time.Hour
-	dbConfig.MaxConnIdleTime = 30 * time.Minute
-	PDB, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
+	pgCfg.MaxConns = 10
+	pgCfg.MinConns = 2
+	pgCfg.MaxConnLifetime = time.Hour
+	pgCfg.MaxConnIdleTime = 30 * time.Minute
+
+	pdb, err := pgxpool.NewWithConfig(context.Background(), pgCfg)
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v\n", err)
+		return nil, nil, err
 	}
-	err = PDB.Ping(context.Background())
-	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+	if err = pdb.Ping(context.Background()); err != nil {
+		return nil, nil, err
 	}
-	return PDB, nil
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddr,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err = rdb.Ping(ctx).Err(); err != nil {
+		return nil, nil, err
+	}
+	PDB = pdb
+	RDB = rdb
+	return pdb, rdb, nil
 }
-func Init() (err error) {
-	PDB, err = Setup()
+
+func Init() error {
+	_, _, err := Setup()
 	if err != nil {
-		log.Fatalf("Connection error PostgreSQL: %v", err)
+		return err
 	}
 	return nil
 }

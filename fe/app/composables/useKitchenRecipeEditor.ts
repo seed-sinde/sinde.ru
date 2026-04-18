@@ -1,6 +1,6 @@
-import { computed, reactive, ref, watch, type ComputedRef, type Ref } from 'vue'
-import { createKitchenRecipe, updateKitchenRecipe } from '~/composables/useKitchen'
-import { buildMediaFileUrl } from '~/utils/mediaUrl'
+import {computed, reactive, ref, watch, type ComputedRef, type Ref} from "vue"
+import {createKitchenRecipe, updateKitchenRecipe} from "~/composables/useKitchen"
+import {buildMediaFileUrl} from "~/utils/mediaUrl"
 type MaybeReadonlyRef<T> = Ref<T> | ComputedRef<T>
 export type KitchenRecipeStepDraft = {
   text: string
@@ -17,7 +17,7 @@ export type UseKitchenRecipeEditorOptions = {
   isCurrentUserAdmin: MaybeReadonlyRef<boolean>
   defaultRecipeDifficulty: MaybeReadonlyRef<string>
   isKitchenEditRoute: MaybeReadonlyRef<boolean>
-  getIngredientSuggestions: (query: string, selectedValues: string[]) => Array<{ name: string; category: string }>
+  getIngredientSuggestions: (query: string, selectedValues: string[]) => Array<{name: string; category: string}>
   normalizeMealTypeInput: (value: string) => string
   normalizeDietTypeInput: (value: string) => string
   normalizeCookingMethodInput: (value: string) => string
@@ -27,37 +27,37 @@ export type UseKitchenRecipeEditorOptions = {
 }
 export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) => {
   const form = reactive<KitchenRecipeForm>({
-    title: '',
-    description: '',
-    kcal: '',
-    prep_minutes: '',
-    cook_minutes: '',
-    servings: '',
-    difficulty: '',
-    meal_type: '',
-    cooking_method: '',
-    cuisine: '',
-    diet_type: '',
+    title: "",
+    description: "",
+    kcal: "",
+    prep_minutes: "",
+    cook_minutes: "",
+    servings: "",
+    difficulty: "",
+    meal_type: "",
+    cooking_method: "",
+    cuisine: "",
+    diet_type: "",
     is_public: true
   })
   const ingredientDraft = reactive<KitchenIngredient>({
-    name: '',
-    amount: '',
-    unit: '',
-    note: ''
+    name: "",
+    amount: "",
+    unit: "",
+    note: ""
   })
   const stepDraft = reactive<KitchenRecipeStepDraft>({
-    text: '',
-    image_key: '',
-    image_url: ''
+    text: "",
+    image_key: "",
+    image_url: ""
   })
   const coverImageDraft = reactive<KitchenRecipeImageDraft>({
-    image_key: '',
-    image_url: ''
+    image_key: "",
+    image_url: ""
   })
   const formIngredients = ref<KitchenIngredient[]>([])
   const formSteps = ref<KitchenFormStep[]>([])
-  const formTagsText = ref('')
+  const formTagsText = ref("")
   const groupRecipeIngredientsByCategory = ref(false)
   const createPending = ref(false)
   const createError = ref<string | null>(null)
@@ -67,40 +67,40 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
   const editingIngredientIndex = ref<number | null>(null)
   const hideFormIngredientSuggestions = ref(false)
   const ingredientActionInfo = ref<string | null>(null)
-  const editingRecipeModerationStatus = ref<AdminModerationStatus | ''>('')
-  const editingRecipeModerationNote = ref('')
+  const editingRecipeModerationStatus = ref<AdminModerationStatus | "">("")
+  const editingRecipeModerationNote = ref("")
   let ingredientActionNoticeTick = 0
   let resetTransientStateHandler: (() => void) | null = null
-  const activeRecipeUploadId = computed(() => String(editRecipeId.value || '').trim())
-  const isEditMode = computed(() => options.activeKitchenTab.value === 'edit')
+  const activeRecipeUploadId = computed(() => String(editRecipeId.value || "").trim())
+  const isEditMode = computed(() => options.activeKitchenTab.value === "edit")
   const hasRejectedModerationNote = computed(
-    () => editingRecipeModerationStatus.value === 'rejected' && Boolean(editingRecipeModerationNote.value)
+    () => editingRecipeModerationStatus.value === "rejected" && Boolean(editingRecipeModerationNote.value)
   )
   const formIngredientSuggestions = computed(() => {
     const selectedNames = formIngredients.value
       .filter((_, idx) => idx !== editingIngredientIndex.value)
-      .map((item) => item.name)
+      .map(item => item.name)
     return options.getIngredientSuggestions(ingredientDraft.name, selectedNames)
   })
   const normalizeIngredientAmount = (raw: string) => {
-    const compact = String(raw || '')
+    const compact = String(raw || "")
       .trim()
-      .replace(/\s+/g, '')
-      .replace(/,/g, '.')
-    if (!compact) return ''
+      .replace(/\s+/g, "")
+      .replace(/,/g, ".")
+    if (!compact) return ""
     if (!/^\d+(?:\.\d+)?$/.test(compact)) return null
     return compact
   }
-  const normalizeFormStep = (step: { text: string; image_key?: string | null }): KitchenFormStep => {
-    const imageKey = String(step.image_key || '').trim()
-    return imageKey ? { text: step.text, image_key: imageKey } : { text: step.text }
+  const normalizeFormStep = (step: {text: string; image_key?: string | null}): KitchenFormStep => {
+    const imageKey = String(step.image_key || "").trim()
+    return imageKey ? {text: step.text, image_key: imageKey} : {text: step.text}
   }
   const sanitizeIngredientAmountDraft = () => {
-    const raw = String(ingredientDraft.amount || '')
-    let next = raw.replace(/,/g, '.').replace(/[^\d.]/g, '')
-    const firstDotIndex = next.indexOf('.')
+    const raw = String(ingredientDraft.amount || "")
+    let next = raw.replace(/,/g, ".").replace(/[^\d.]/g, "")
+    const firstDotIndex = next.indexOf(".")
     if (firstDotIndex >= 0) {
-      next = `${next.slice(0, firstDotIndex + 1)}${next.slice(firstDotIndex + 1).replace(/\./g, '')}`
+      next = `${next.slice(0, firstDotIndex + 1)}${next.slice(firstDotIndex + 1).replace(/\./g, "")}`
     }
     ingredientDraft.amount = next
   }
@@ -114,20 +114,20 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
     }, 0)
   }
   const resetIngredientDraft = () => {
-    ingredientDraft.name = ''
-    ingredientDraft.amount = ''
-    ingredientDraft.unit = ''
-    ingredientDraft.note = ''
+    ingredientDraft.name = ""
+    ingredientDraft.amount = ""
+    ingredientDraft.unit = ""
+    ingredientDraft.note = ""
     hideFormIngredientSuggestions.value = false
   }
   const resetStepDraft = () => {
-    stepDraft.text = ''
-    stepDraft.image_key = ''
-    stepDraft.image_url = ''
+    stepDraft.text = ""
+    stepDraft.image_key = ""
+    stepDraft.image_url = ""
   }
   const resetCoverImageDraft = () => {
-    coverImageDraft.image_key = ''
-    coverImageDraft.image_url = ''
+    coverImageDraft.image_key = ""
+    coverImageDraft.image_url = ""
   }
   const runTransientReset = () => {
     resetTransientStateHandler?.()
@@ -145,18 +145,18 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
   }
   const addFormIngredient = () => {
     createError.value = null
-    const name = ingredientDraft.name?.trim() || ''
+    const name = ingredientDraft.name?.trim() || ""
     if (!name) return
-    const normalizedAmount = normalizeIngredientAmount(ingredientDraft.amount || '')
+    const normalizedAmount = normalizeIngredientAmount(ingredientDraft.amount || "")
     if (normalizedAmount === null) {
-      createError.value = 'Количество ингредиента должно быть числом (например: 1, 0.5, 2.25).'
+      createError.value = "Количество ингредиента должно быть числом (например: 1, 0.5, 2.25)."
       return
     }
     const nextIngredient: KitchenIngredient = {
       name,
       amount: normalizedAmount,
-      unit: ingredientDraft.unit?.trim() || '',
-      note: ingredientDraft.note?.trim() || ''
+      unit: ingredientDraft.unit?.trim() || "",
+      note: ingredientDraft.note?.trim() || ""
     }
     const wasEditingIngredient = editingIngredientIndex.value !== null
     if (wasEditingIngredient && formIngredients.value[editingIngredientIndex.value!]) {
@@ -168,7 +168,7 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
     }
     cancelIngredientEditing()
     if (isEditMode.value) {
-      showIngredientActionInfo(wasEditingIngredient ? 'Ингредиент обновлён.' : 'Ингредиент добавлен.')
+      showIngredientActionInfo(wasEditingIngredient ? "Ингредиент обновлён." : "Ингредиент добавлен.")
     }
   }
   const removeFormIngredient = (index: number) => {
@@ -186,10 +186,10 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
     const ingredient = formIngredients.value[index]
     if (!ingredient) return
     editingIngredientIndex.value = index
-    ingredientDraft.name = String(ingredient.name || '')
-    ingredientDraft.amount = String(ingredient.amount || '')
-    ingredientDraft.unit = String(ingredient.unit || '')
-    ingredientDraft.note = String(ingredient.note || '')
+    ingredientDraft.name = String(ingredient.name || "")
+    ingredientDraft.amount = String(ingredient.amount || "")
+    ingredientDraft.unit = String(ingredient.unit || "")
+    ingredientDraft.note = String(ingredient.note || "")
     hideFormIngredientSuggestions.value = true
   }
   const addFormStep = () => {
@@ -224,27 +224,27 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
     next.splice(toIndex, 0, moved)
     formSteps.value = next
   }
-  const resetRecipeForm = (resetOptions: { skipEditRouteRedirect?: boolean } = {}) => {
+  const resetRecipeForm = (resetOptions: {skipEditRouteRedirect?: boolean} = {}) => {
     editRecipeId.value = null
     createRecipeId.value = globalThis.crypto.randomUUID()
     ingredientActionInfo.value = null
-    editingRecipeModerationStatus.value = ''
-    editingRecipeModerationNote.value = ''
-    form.title = ''
-    form.description = ''
-    form.kcal = ''
-    form.prep_minutes = ''
-    form.cook_minutes = ''
-    form.servings = ''
+    editingRecipeModerationStatus.value = ""
+    editingRecipeModerationNote.value = ""
+    form.title = ""
+    form.description = ""
+    form.kcal = ""
+    form.prep_minutes = ""
+    form.cook_minutes = ""
+    form.servings = ""
     form.difficulty = options.defaultRecipeDifficulty.value
-    form.meal_type = ''
-    form.cooking_method = ''
-    form.cuisine = ''
-    form.diet_type = ''
+    form.meal_type = ""
+    form.cooking_method = ""
+    form.cuisine = ""
+    form.diet_type = ""
     form.is_public = true
     formIngredients.value = []
     formSteps.value = []
-    formTagsText.value = ''
+    formTagsText.value = ""
     cancelIngredientEditing()
     resetStepDraft()
     resetCoverImageDraft()
@@ -268,66 +268,66 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
     createError.value = null
     createSuccess.value = null
     form.title = recipe.title
-    form.description = recipe.description || ''
+    form.description = recipe.description || ""
     form.kcal = Number(recipe.kcal || 0)
     form.prep_minutes = Number(recipe.prep_minutes || 0)
     form.cook_minutes = Number(recipe.cook_minutes || 0)
     form.servings = Number(recipe.servings || 1)
     form.difficulty = recipe.difficulty || options.defaultRecipeDifficulty.value
     form.meal_type = labels.mealTypeLabel(recipe.meal_type)
-    form.cooking_method = recipe.cooking_method ? labels.cookingMethodLabel(recipe.cooking_method) : ''
-    form.cuisine = recipe.cuisine || ''
-    form.diet_type = recipe.diet_type ? labels.dietTypeLabel(recipe.diet_type) : ''
+    form.cooking_method = recipe.cooking_method ? labels.cookingMethodLabel(recipe.cooking_method) : ""
+    form.cuisine = recipe.cuisine || ""
+    form.diet_type = recipe.diet_type ? labels.dietTypeLabel(recipe.diet_type) : ""
     form.is_public = recipe.is_public
-    coverImageDraft.image_key = String(recipe.cover_image_key || '')
+    coverImageDraft.image_key = String(recipe.cover_image_key || "")
     coverImageDraft.image_url = buildMediaFileUrl(recipe.cover_image_key)
-    formIngredients.value = recipe.ingredients.map((item) => ({ ...item }))
+    formIngredients.value = recipe.ingredients.map(item => ({...item}))
     cancelIngredientEditing()
-    formSteps.value = recipe.steps.map((step) => normalizeFormStep(step))
-    formTagsText.value = recipe.tags.join(', ')
+    formSteps.value = recipe.steps.map(step => normalizeFormStep(step))
+    formTagsText.value = recipe.tags.join(", ")
     resetStepDraft()
     editingRecipeModerationStatus.value = recipe.moderation_status
-    editingRecipeModerationNote.value = String(recipe.moderation_note || '').trim()
+    editingRecipeModerationNote.value = String(recipe.moderation_note || "").trim()
     runTransientReset()
-    options.activeKitchenTab.value = 'edit'
+    options.activeKitchenTab.value = "edit"
   }
   const submitRecipe = async () => {
     createError.value = null
     createSuccess.value = null
     if (!options.isAuthenticated.value) {
-      createError.value = 'Для публикации рецепта нужен активный аккаунт.'
+      createError.value = "Для публикации рецепта нужен активный аккаунт."
       return
     }
     if (!form.title.trim()) {
-      createError.value = 'Укажите название рецепта.'
+      createError.value = "Укажите название рецепта."
       return
     }
     if (!form.description.trim()) {
-      createError.value = 'Добавьте описание рецепта.'
+      createError.value = "Добавьте описание рецепта."
       return
     }
     if (formIngredients.value.length === 0) {
-      createError.value = 'Добавьте хотя бы один ингредиент.'
+      createError.value = "Добавьте хотя бы один ингредиент."
       return
     }
     if (formSteps.value.length === 0) {
-      createError.value = 'Добавьте хотя бы один шаг приготовления.'
+      createError.value = "Добавьте хотя бы один шаг приготовления."
       return
     }
-    if (formIngredients.value.some((ingredient) => normalizeIngredientAmount(ingredient.amount || '') === null)) {
-      createError.value = 'У одного или нескольких ингредиентов неверное количество. Используйте только числа.'
+    if (formIngredients.value.some(ingredient => normalizeIngredientAmount(ingredient.amount || "") === null)) {
+      createError.value = "У одного или нескольких ингредиентов неверное количество. Используйте только числа."
       return
     }
     const tags = formTagsText.value
       .split(/[\n,;]+/)
-      .map((item) => item.trim())
+      .map(item => item.trim())
       .filter(Boolean)
     createPending.value = true
     try {
-      const recipeId = editRecipeId.value ? '' : createRecipeId.value
-      const coverImageKey = String(coverImageDraft.image_key || '').trim()
-      const cookingMethod = options.normalizeCookingMethodInput(form.cooking_method) || ''
-      const dietType = options.normalizeDietTypeInput(form.diet_type) || ''
+      const recipeId = editRecipeId.value ? "" : createRecipeId.value
+      const coverImageKey = String(coverImageDraft.image_key || "").trim()
+      const cookingMethod = options.normalizeCookingMethodInput(form.cooking_method) || ""
+      const dietType = options.normalizeDietTypeInput(form.diet_type) || ""
       const payload: KitchenRecipeCreateInput = {
         title: form.title.trim(),
         description: form.description.trim(),
@@ -336,10 +336,10 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
         cook_minutes: Number(form.cook_minutes || 0),
         servings: Number(form.servings || 1),
         difficulty: form.difficulty || options.defaultRecipeDifficulty.value,
-        meal_type: options.normalizeMealTypeInput(form.meal_type) || 'other',
+        meal_type: options.normalizeMealTypeInput(form.meal_type) || "other",
         cuisine: form.cuisine.trim(),
         ingredients: formIngredients.value,
-        steps: formSteps.value.map((step) => normalizeFormStep(step)),
+        steps: formSteps.value.map(step => normalizeFormStep(step)),
         tags,
         is_public: form.is_public
       }
@@ -358,19 +358,19 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
       if (editRecipeId.value) {
         await updateKitchenRecipe(editRecipeId.value, payload)
         createSuccess.value = options.isCurrentUserAdmin.value
-          ? 'Рецепт обновлён.'
-          : 'Рецепт обновлён и отправлен на модерацию.'
+          ? "Рецепт обновлён."
+          : "Рецепт обновлён и отправлен на модерацию."
       } else {
         await createKitchenRecipe(payload)
         createSuccess.value = options.isCurrentUserAdmin.value
-          ? 'Рецепт опубликован.'
-          : 'Рецепт отправлен на модерацию.'
-        resetRecipeForm({ skipEditRouteRedirect: true })
-        options.activeKitchenTab.value = 'create'
+          ? "Рецепт опубликован."
+          : "Рецепт отправлен на модерацию."
+        resetRecipeForm({skipEditRouteRedirect: true})
+        options.activeKitchenTab.value = "create"
       }
       await options.onAfterSubmit()
     } catch (err: any) {
-      createError.value = err?.data?.message || err?.message || 'Не удалось сохранить рецепт.'
+      createError.value = err?.data?.message || err?.message || "Не удалось сохранить рецепт."
     } finally {
       createPending.value = false
     }
@@ -383,12 +383,12 @@ export const useKitchenRecipeEditor = (options: UseKitchenRecipeEditorOptions) =
   }
   watch(
     () => options.defaultRecipeDifficulty.value,
-    (nextValue) => {
+    nextValue => {
       if (!form.difficulty) {
         form.difficulty = nextValue
       }
     },
-    { immediate: true }
+    {immediate: true}
   )
   return {
     form,

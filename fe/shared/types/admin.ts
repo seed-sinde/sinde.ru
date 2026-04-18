@@ -1,7 +1,7 @@
-import type { AuthLoginAttemptView, AuthSecurityEventView, AuthSessionView, AuthUser } from './auth'
+import type {AuthLoginAttemptView, AuthSecurityEventView, AuthSessionView, AuthUser} from "./auth"
 
-export type AdminTab = 'users' | 'moderation' | 'keys' | 'analysis'
-export type AdminModerationStatus = 'draft' | 'pending' | 'approved' | 'rejected'
+export type AdminTab = "users" | "moderation" | "keys" | "analysis"
+export type AdminModerationStatus = "draft" | "pending" | "approved" | "rejected"
 export type AdminUserView = {
   user_id: string
   email: string

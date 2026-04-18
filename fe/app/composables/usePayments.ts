@@ -4,13 +4,13 @@ let paymentAccessInFlight: Promise<PaymentAccessSummary | null> | null = null
 let paymentHistoryInFlight: Promise<PaymentOrderView[]> | null = null
 
 export const usePayments = () => {
-  const { json: useApiJson } = useAPI()
-  const { isAuthenticated, isAdmin } = useAuth()
-  const access = useState<PaymentAccessSummary | null>('payments-access', () => null)
-  const accessLoading = useState<boolean>('payments-access-loading', () => false)
-  const history = useState<PaymentOrderView[]>('payments-history', () => [])
-  const historyLoading = useState<boolean>('payments-history-loading', () => false)
-  const historyLoaded = useState<boolean>('payments-history-loaded', () => false)
+  const {json: useApiJson} = useAPI()
+  const {isAuthenticated, isAdmin} = useAuth()
+  const access = useState<PaymentAccessSummary | null>("payments-access", () => null)
+  const accessLoading = useState<boolean>("payments-access-loading", () => false)
+  const history = useState<PaymentOrderView[]>("payments-history", () => [])
+  const historyLoading = useState<boolean>("payments-history-loading", () => false)
+  const historyLoaded = useState<boolean>("payments-history-loaded", () => false)
   const hasActiveAccess = computed(() => Boolean(access.value?.has_active_access))
 
   const clearAccess = () => {
@@ -36,8 +36,8 @@ export const usePayments = () => {
     accessLoading.value = true
     paymentAccessInFlight = (async () => {
       try {
-        const res = await useApiJson<PaymentsApiResult<PaymentAccessSummary>>('/payments/access', {
-          method: 'GET'
+        const res = await useApiJson<PaymentsApiResult<PaymentAccessSummary>>("/payments/access", {
+          method: "GET"
         })
         access.value = res.data || null
         return access.value
@@ -68,8 +68,8 @@ export const usePayments = () => {
     historyLoading.value = true
     paymentHistoryInFlight = (async () => {
       try {
-        const res = await useApiJson<PaymentsApiResult<PaymentUserOrdersListResult>>('/payments/history', {
-          method: 'GET'
+        const res = await useApiJson<PaymentsApiResult<PaymentUserOrdersListResult>>("/payments/history", {
+          method: "GET"
         })
         history.value = res.data?.items || []
         historyLoaded.value = true
@@ -86,20 +86,20 @@ export const usePayments = () => {
     return await paymentHistoryInFlight
   }
 
-  const createOrder = async (input: { plan_code: 'pro' | 'donation'; amount?: number; return_to?: string }) => {
-    return await useApiJson<PaymentsApiResult<PaymentCreateOrderResult>>('/payments/init', {
-      method: 'POST',
+  const createOrder = async (input: {plan_code: "pro" | "donation"; amount?: number; return_to?: string}) => {
+    return await useApiJson<PaymentsApiResult<PaymentCreateOrderResult>>("/payments/init", {
+      method: "POST",
       body: {
         plan_code: input.plan_code,
         amount: Number(input.amount || 0),
-        return_to: input.return_to || ''
+        return_to: input.return_to || ""
       }
     })
   }
 
-  const lookupPublicOrder = async (input: { order_id: string; token: string; sync_state?: boolean }) => {
-    return await useApiJson<PaymentsApiResult<PaymentPublicLookupResult>>('/payments/lookup', {
-      method: 'POST',
+  const lookupPublicOrder = async (input: {order_id: string; token: string; sync_state?: boolean}) => {
+    return await useApiJson<PaymentsApiResult<PaymentPublicLookupResult>>("/payments/lookup", {
+      method: "POST",
       auth: {
         allowAutoRefresh: false
       },
@@ -115,7 +115,7 @@ export const usePayments = () => {
     return await useApiJson<PaymentsApiResult<PaymentRefundOrderResult>>(
       `/payments/${encodeURIComponent(orderID)}/refund`,
       {
-        method: 'POST'
+        method: "POST"
       }
     )
   }
@@ -128,11 +128,11 @@ export const usePayments = () => {
     offset?: number
   }) => {
     const query = new URLSearchParams()
-    if (params?.q) query.set('q', String(params.q))
-    if (params?.status) query.set('status', String(params.status))
-    if (params?.plan) query.set('plan', String(params.plan))
-    if (typeof params?.limit === 'number') query.set('limit', String(params.limit))
-    if (typeof params?.offset === 'number') query.set('offset', String(params.offset))
+    if (params?.q) query.set("q", String(params.q))
+    if (params?.status) query.set("status", String(params.status))
+    if (params?.plan) query.set("plan", String(params.plan))
+    if (typeof params?.limit === "number") query.set("limit", String(params.limit))
+    if (typeof params?.offset === "number") query.set("offset", String(params.offset))
     const suffix = query.toString()
     return await useApiJson<
       PaymentsApiResult<{
@@ -141,39 +141,39 @@ export const usePayments = () => {
         limit: number
         offset: number
       }>
-    >(`/auth/admin/orders${suffix ? `?${suffix}` : ''}`, {
-      method: 'GET'
+    >(`/auth/admin/orders${suffix ? `?${suffix}` : ""}`, {
+      method: "GET"
     })
   }
 
   const adminSummary = async () => {
-    return await useApiJson<PaymentsApiResult<PaymentAdminOrdersSummary>>('/auth/admin/payments/summary', {
-      method: 'GET'
+    return await useApiJson<PaymentsApiResult<PaymentAdminOrdersSummary>>("/auth/admin/payments/summary", {
+      method: "GET"
     })
   }
   const adminUserAccess = async (userId: string) => {
     return await useApiJson<PaymentsApiResult<PaymentAccessSummary>>(`/auth/admin/users/${userId}/access`, {
-      method: 'GET'
+      method: "GET"
     })
   }
   const adminUserOrders = async (userId: string, limit = 100) => {
     return await useApiJson<PaymentsApiResult<PaymentUserOrdersListResult>>(
       `/auth/admin/users/${userId}/orders?limit=${encodeURIComponent(String(limit))}`,
       {
-        method: 'GET'
+        method: "GET"
       }
     )
   }
 
   watch(
     isAuthenticated,
-    (authed) => {
+    authed => {
       if (!authed) {
         clearAccess()
         clearHistory()
       }
     },
-    { immediate: true }
+    {immediate: true}
   )
 
   return {

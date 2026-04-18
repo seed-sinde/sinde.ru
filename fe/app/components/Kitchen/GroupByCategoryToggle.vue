@@ -21,7 +21,7 @@ const resolvedButtonClass = computed(() => [
     : '',
   props.buttonClass
 ])
-const resolvedTextClass = computed(() => props.textClass || 'text-xs lab-text-muted')
+const resolvedTextClass = computed(() => props.textClass || 'text-xs text-(--lab-text-muted)')
 const toggle = () => {
   model.value = !model.value
 }

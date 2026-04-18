@@ -4,7 +4,7 @@ export default defineNuxtPlugin(() => {
     const originalInfo = console.info
     // eslint-disable-next-line no-console
     console.info = (...args) => {
-      if (typeof args[0] === 'string' && args[0].includes('<Suspense> is an experimental feature')) {
+      if (typeof args[0] === "string" && args[0].includes("<Suspense> is an experimental feature")) {
         return // terminate msg
       }
       originalInfo(...args)

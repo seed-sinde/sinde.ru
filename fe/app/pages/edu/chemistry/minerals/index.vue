@@ -18,7 +18,8 @@ const LIMIT_OPTIONS = [30, 60, 100]
 const SEARCH_DEBOUNCE_MS = 350
 const route = useRoute()
 const router = useRouter()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('minerals')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { data: periodicTableElementsData, error: chemistryElementsError } = await useChemistryElements()
 if (chemistryElementsError.value) {
   throw createError({ statusCode: 500, statusMessage: 'Не удалось загрузить элементы' })
@@ -31,13 +32,13 @@ preferencesStore.restorePersisted()
 const state = preferencesStore.mineralsFilters
 const periodicTableElements = computed(() => periodicTableElementsData.value || [])
 const crystalSystemOptions: CrystalSystemOption[] = [
-  { value: 'cubic', label: 'minerals.crystal_system.cubic' },
-  { value: 'hexagonal', label: 'minerals.crystal_system.hexagonal' },
-  { value: 'monoclinic', label: 'minerals.crystal_system.monoclinic' },
-  { value: 'orthorhombic', label: 'minerals.crystal_system.orthorhombic' },
-  { value: 'tetragonal', label: 'minerals.crystal_system.tetragonal' },
-  { value: 'triclinic', label: 'minerals.crystal_system.triclinic' },
-  { value: 'unknown', label: 'minerals.crystal_system.unknown' }
+  { value: 'cubic', label: 'crystal_system.cubic' },
+  { value: 'hexagonal', label: 'crystal_system.hexagonal' },
+  { value: 'monoclinic', label: 'crystal_system.monoclinic' },
+  { value: 'orthorhombic', label: 'crystal_system.orthorhombic' },
+  { value: 'tetragonal', label: 'crystal_system.tetragonal' },
+  { value: 'triclinic', label: 'crystal_system.triclinic' },
+  { value: 'unknown', label: 'crystal_system.unknown' }
 ]
 const mineralCrystalSystems = new Set<MineralCrystalSystem>(
   crystalSystemOptions.map((item: CrystalSystemOption) => item.value)
@@ -49,7 +50,7 @@ const allElementSymbols = computed(() =>
   periodicTableElements.value
     .slice()
     .sort((left, right) => left.number - right.number)
-    .map((element) => element.symbol)
+    .map(element => element.symbol)
 )
 const compareElementOrder = (left: string, right: string) => {
   const leftOrder = elementOrder.value.get(left) ?? Number.MAX_SAFE_INTEGER
@@ -94,7 +95,7 @@ const applyRouteState = (query: Record<string, unknown>) => {
 }
 watch(
   () => route.query,
-  (query) => {
+  query => {
     if (restoreRouteFromStore.value && !hasMineralsRouteQueryValues(query as Record<string, unknown>)) return
     applyRouteState(query as Record<string, unknown>)
   },
@@ -215,7 +216,7 @@ const clearChemistry = async () => {
 }
 const excludeAllNonSelected = async () => {
   const selected = new Set([...state.chemistryAll, ...state.chemistryAny, ...state.chemistryNone])
-  state.chemistryNone = allElementSymbols.value.filter((symbol) => !selected.has(symbol))
+  state.chemistryNone = allElementSymbols.value.filter(symbol => !selected.has(symbol))
   state.offset = 0
   await syncRouteFromState()
 }
@@ -241,7 +242,7 @@ const requestParams = computed(() =>
 )
 const visibleLimitOptions = computed(() =>
   Array.from(new Set([...LIMIT_OPTIONS, state.limit]))
-    .filter((value) => value > 0 && value <= 100)
+    .filter(value => value > 0 && value <= 100)
     .sort((left, right) => left - right)
 )
 const sortOptions: SelectOptionInputStrict[] = [
@@ -249,12 +250,12 @@ const sortOptions: SelectOptionInputStrict[] = [
   { value: 'name_desc', label: 'Имя Я-А' }
 ]
 const imageFilterOptions: Array<{ value: MineralImageFilter; label: string }> = [
-  { value: 'without', label: 'без' },
-  { value: 'any', label: 'без/с' },
-  { value: 'with', label: 'с' }
+  { value: 'any', label: 'Все' },
+  { value: 'with', label: 'С фото' },
+  { value: 'without', label: 'Без фото' }
 ]
 const limitOptions = computed<SelectOptionInput[]>(() =>
-  visibleLimitOptions.value.map((limitValue) => ({
+  visibleLimitOptions.value.map(limitValue => ({
     value: String(limitValue),
     label: String(limitValue)
   }))
@@ -291,10 +292,14 @@ const totalPages = computed(() => {
   return Math.max(1, Math.ceil(meta.value.total / meta.value.limit))
 })
 const currentPage = computed(() => Math.floor(meta.value.offset / meta.value.limit) + 1)
+const visibleRangeLabel = computed(() => {
+  if (!meta.value.total) return '0'
+  return `${meta.value.offset + 1}-${Math.min(meta.value.offset + minerals.value.length, meta.value.total)}`
+})
 const hasPreviousPage = computed(() => meta.value.offset > 0)
 const hasNextPage = computed(() => meta.value.offset + meta.value.limit < meta.value.total)
 const errorMessage = computed(() => {
-  const value = error.value as any
+  const value = error.value as { data?: { message?: string }; message?: string } | null
   return value?.data?.message || value?.message || 'Не удалось загрузить минералы.'
 })
 const mineralListItemName = (mineral: MineralListItem) => String(mineral.mineral_name || '').trim()
@@ -334,14 +339,34 @@ const chemistryBucketMeta: Record<ChemistryBucket, ChemistryBucketMeta> = {
   }
 }
 const chemistryBuckets = computed(() =>
-  chemistryBucketOrder.map((key) => ({
+  chemistryBucketOrder.map(key => ({
     key,
     ...chemistryBucketMeta[key],
     values: key === 'all' ? state.chemistryAll : key === 'any' ? state.chemistryAny : state.chemistryNone
   }))
 )
+const activeChemistryCount = computed(
+  () => state.chemistryAll.length + state.chemistryAny.length + state.chemistryNone.length
+)
+const activeFilterCount = computed(
+  () =>
+    Number(Boolean(state.q.trim())) +
+    Number(state.imageFilter !== 'any') +
+    Number(Boolean(activeChemistryCount.value)) +
+    Number(Boolean(state.crystalSystems.length))
+)
+const filterMetaLabel = computed(() =>
+  activeFilterCount.value ? `${activeFilterCount.value} активн.` : 'без активных условий'
+)
+const detailedFiltersMetaLabel = computed(() => {
+  const parts = [
+    activeChemistryCount.value ? `${activeChemistryCount.value} эл.` : '',
+    state.crystalSystems.length ? `${state.crystalSystems.length} систем` : ''
+  ].filter(Boolean)
+  return parts.join(' · ') || 'состав и решётка'
+})
 const chemistryBucketClass = (bucket: ChemistryBucket) => {
-  const baseClass = `lab-focus w-full border border-l-2 px-0 py-0 text-left transition ${chemistryBucketMeta[bucket].borderClass}`
+  const baseClass = `lab-focus w-full border border-(--lab-border) border-l-2 px-0 py-0 text-left transition ${chemistryBucketMeta[bucket].borderClass}`
   if (activeChemistryBucket.value === bucket) {
     return `${baseClass} ${chemistryBucketMeta[bucket].activeClass}`
   }
@@ -356,11 +381,11 @@ const chemistryBucketClass = (bucket: ChemistryBucket) => {
 const chemistryBucketText = (values: string[]) => values.join(', ')
 const selectedElementNumbers = computed(() =>
   periodicTableElements.value
-    .filter((element) => Boolean(selectedBucketByElement.value[element.symbol]))
-    .map((element) => element.number)
+    .filter(element => Boolean(selectedBucketByElement.value[element.symbol]))
+    .map(element => element.number)
 )
 const hiddenElementNumbers = computed(() =>
-  periodicTableElements.value.filter((element) => element.xpos === 18).map((element) => element.number)
+  periodicTableElements.value.filter(element => element.xpos === 18).map(element => element.number)
 )
 const selectionToneByNumber = computed(() =>
   periodicTableElements.value.reduce<Partial<Record<number, ChemistryBucket>>>((acc, element) => {
@@ -384,7 +409,7 @@ const onPeriodicElementClick = async (element: PeriodicTableElement) => {
 const crystalSystemLabel = (value: MineralCrystalSystem) =>
   t(
     (crystalSystemOptions.find((item: CrystalSystemOption) => item.value === value)?.label ||
-      'minerals.crystal_system.unknown') as InterfaceMessageKey
+      'crystal_system.unknown')
   )
 const crystalSystemHelpText =
   'Кристаллическая система описывает симметрию решётки минерала. Кубическая: наиболее симметричная. Тетрагональная и гексагональная: оси с регулярной симметрией. Ромбическая, моноклинная и триклинная: менее симметричные. Неизвестно: система не указана или не определена.'
@@ -432,49 +457,62 @@ onBeforeUnmount(() => {
         { label: title, current: true }
       ]"
     />
-    <section class="overflow-hidden">
-      <div class="flex min-w-0 flex-wrap gap-3 border-b p-4">
-        <LabField label="Поиск минерала" for-id="minerals-search">
-          <LabBaseInput
-            id="minerals-search"
-            name="minerals_search"
-            :model-value="state.q"
-            placeholder="Название минерала"
-            class="max-w-fit"
-            @update:model-value="onSearchInput"
-          />
-        </LabField>
-        <LabField label="Сортировка" for-id="minerals-sort">
-          <LabBaseSelect
-            id="minerals-sort"
-            name="minerals_sort"
-            :model-value="state.sort"
-            :options="sortOptions"
-            class="max-w-fit"
-            @update:model-value="onSortChange"
-          />
-        </LabField>
-        <LabField label="На страницу" for-id="minerals-limit">
-          <LabBaseSelect
-            id="minerals-limit"
-            name="minerals_limit"
-            :model-value="String(state.limit)"
-            :options="limitOptions"
-            class="max-w-fit"
-            @update:model-value="onLimitChange"
-          />
-        </LabField>
-        <div class="flex min-w-0 flex-wrap items-end justify-between gap-2 text-sm text-zinc-400 xl:col-span-12">
+    <section class="overflow-hidden border-y border-(--lab-border) bg-(--lab-bg-surface)">
+      <div class="border-b border-(--lab-border) bg-(--lab-bg-canvas) p-4">
+        <div class="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div class="min-w-0">
+            <p class="text-xs tracking-[0.18em] text-(--lab-text-muted) uppercase">Каталог минералов</p>
+            <p class="mt-1 text-sm leading-6 text-(--lab-text-secondary)">
+              Поиск по названию, фото, составу и кристаллической системе.
+            </p>
+          </div>
+          <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <span class="px-1 text-xs text-(--lab-text-muted)">{{ filterMetaLabel }}</span>
+            <LabBaseButton variant="secondary" size="sm" label="Сбросить все фильтры" @click="clearAllFilters" />
+          </div>
+        </div>
+
+        <div class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-[minmax(16rem,1fr)_12rem_8rem] xl:grid-cols-[minmax(18rem,1fr)_12rem_8rem_18rem]">
+          <LabField label="Поиск минерала" for-id="minerals-search">
+            <LabBaseInput
+              id="minerals-search"
+              name="minerals_search"
+              :model-value="state.q"
+              placeholder="Название минерала"
+              input-class="w-full bg-(--lab-bg-control) text-(--lab-text-primary)"
+              @update:model-value="onSearchInput"
+            />
+          </LabField>
+          <LabField label="Сортировка" for-id="minerals-sort">
+            <LabBaseSelect
+              id="minerals-sort"
+              name="minerals_sort"
+              :model-value="state.sort"
+              :options="sortOptions"
+              select-class="w-full bg-(--lab-bg-control) text-(--lab-text-primary)"
+              @update:model-value="onSortChange"
+            />
+          </LabField>
+          <LabField label="На страницу" for-id="minerals-limit">
+            <LabBaseSelect
+              id="minerals-limit"
+              name="minerals_limit"
+              :model-value="String(state.limit)"
+              :options="limitOptions"
+              select-class="w-full bg-(--lab-bg-control) text-(--lab-text-primary)"
+              @update:model-value="onLimitChange"
+            />
+          </LabField>
           <LabField label="Фото">
-            <div class="flex min-w-0 items-center gap-1">
+            <div class="grid min-w-0 grid-cols-3 gap-1">
               <button
                 v-for="option in imageFilterOptions"
                 :key="option.value"
                 type="button"
-                class="lab-focus px-2 py-1 text-xs transition"
+                class="lab-focus px-2 py-2 text-xs transition"
                 :class="
                   state.imageFilter === option.value
-                    ? 'text-(--lab-text-primary) ring-1 ring-(--lab-accent)'
+                    ? 'bg-[color-mix(in_srgb,var(--lab-accent)_16%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-1 ring-(--lab-accent)'
                     : 'text-(--lab-text-secondary) hover:text-(--lab-text-primary) hover:ring-1 hover:ring-(--lab-border)'
                 "
                 :aria-pressed="state.imageFilter === option.value"
@@ -484,17 +522,26 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </LabField>
-          <LabBaseButton variant="secondary" size="sm" label="Сбросить все фильтры" @click="clearAllFilters" />
         </div>
-        <LabSpoiler v-model="isElementsFilterOpen" label="Химический фильтр">
-          <div class="flex flex-wrap items-center gap-2">
-            <p class="text-sm leading-6 text-zinc-400">Выберите режим и отмечайте элементы прямо в таблице.</p>
+
+        <LabSpoiler
+          v-model="isElementsFilterOpen"
+          label="Состав и кристаллы"
+          description="Элементы выбираются прямо в таблице, кристаллические системы комбинируются через режим или/и."
+          container-class="mt-4"
+          content-class="space-y-4 border-x border-b border-(--lab-border) bg-(--lab-bg-surface) p-3"
+        >
+          <template #meta>{{ detailedFiltersMetaLabel }}</template>
+
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm leading-6 text-(--lab-text-secondary)">Выберите режим состава и отмечайте элементы.</p>
             <div class="flex flex-wrap items-center gap-2">
               <LabBaseButton variant="secondary" size="sm" label="Очистить химию" @click="clearChemistry" />
               <LabBaseButton variant="danger" size="sm" label="Исключить остальные" @click="excludeAllNonSelected" />
             </div>
           </div>
-          <div class="grid grid-cols-1 gap-px overflow-hidden border sm:grid-cols-3">
+
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <button
               v-for="bucket in chemistryBuckets"
               :key="bucket.key"
@@ -530,6 +577,7 @@ onBeforeUnmount(() => {
               </div>
             </button>
           </div>
+
           <div class="min-w-0 overflow-x-auto">
             <ChemistryPeriodicTableGrid
               layout="minerals"
@@ -549,10 +597,11 @@ onBeforeUnmount(() => {
               @element-click="onPeriodicElementClick"
             />
           </div>
-          <div class="space-y-2">
-            <div class="flex flex-wrap items-center gap-2">
+
+          <div class="space-y-2 border-t border-(--lab-border) pt-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="inline-flex min-w-0 shrink-0 items-center gap-2 whitespace-nowrap">
-                <div class="text-sm text-zinc-100">Кристаллическая система</div>
+                <div class="text-sm font-medium text-(--lab-text-primary)">Кристаллическая система</div>
                 <LabHelpTooltip :text="crystalSystemHelpText" />
               </div>
               <LabBaseSwitch
@@ -570,11 +619,11 @@ onBeforeUnmount(() => {
                   v-for="item in crystalSystemOptions"
                   :key="item.value"
                   type="button"
-                  class="lab-focus shrink-0 border px-3 py-2 text-left text-sm transition"
+                  class="lab-focus shrink-0 border border-(--lab-border) px-3 py-2 text-left text-sm transition"
                   :class="
                     state.crystalSystems.includes(item.value)
-                      ? 'border-zinc-500 bg-zinc-900 text-zinc-100 ring-1 ring-zinc-500 ring-inset'
-                      : 'border-zinc-800 bg-zinc-950/90 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                      ? 'bg-[color-mix(in_srgb,var(--lab-warning)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-1 ring-(--lab-warning) ring-inset'
+                      : 'bg-(--lab-bg-canvas) text-(--lab-text-secondary) hover:text-(--lab-text-primary) hover:ring-1 hover:ring-(--lab-border)'
                   "
                   @click="toggleCrystalSystem(item.value)"
                 >
@@ -585,41 +634,44 @@ onBeforeUnmount(() => {
           </div>
         </LabSpoiler>
       </div>
-      <div v-if="error" class="border-b bg-rose-950/20 p-4">
+      <div v-if="error" class="border-b border-(--lab-border) bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-canvas))] p-4">
         <LabErrorMessage :text="errorMessage" error-class="text-sm" />
         <div class="mt-3">
           <LabBaseButton variant="secondary" size="sm" label="Повторить" @click="refresh" />
         </div>
       </div>
-      <div v-else-if="pending && !minerals.length" class="flex min-h-72 items-center justify-center border-b p-6">
+      <div v-else-if="pending && !minerals.length" class="flex min-h-72 items-center justify-center border-b border-(--lab-border) p-6">
         <LabLoader size="md" variant="inline" label="Загружаем минералы..." />
       </div>
-      <div v-else-if="!minerals.length" class="border-b p-6 text-sm leading-6 text-zinc-400">
-        По текущим условиям ничего не найдено. Попробуйте ослабить поиск или очистить chemistry-фильтр.
+      <div v-else-if="!minerals.length" class="border-b border-(--lab-border) p-6 text-sm leading-6 text-(--lab-text-secondary)">
+        По текущим условиям ничего не найдено. Попробуйте ослабить поиск или очистить фильтры.
       </div>
-      <div v-else class="divide-y">
-        <div class="text-xs text-zinc-100">Найдено: {{ meta.total }}</div>
+      <div v-else class="divide-y divide-(--lab-border)">
+        <div class="flex items-center justify-between gap-3 px-4 py-2 text-xs text-(--lab-text-secondary)">
+          <span>Показано: {{ visibleRangeLabel }}</span>
+          <span>Найдено: <span class="text-(--lab-text-primary)">{{ meta.total }}</span></span>
+        </div>
         <div v-for="mineral in minerals" :key="mineral.database_id">
           <NuxtLink
             :to="`/edu/chemistry/minerals/${mineral.database_id}`"
-            class="block px-4 py-2 transition hover:bg-white/10 hover:ring-1 hover:ring-zinc-600/70 hover:ring-inset"
+            class="block px-4 py-2 transition hover:bg-[color-mix(in_srgb,var(--lab-text-primary)_7%,transparent)] hover:ring-1 hover:ring-(--lab-border) hover:ring-inset"
           >
             <LabViewerLaTex
               v-if="showMineralListItemNameAsFormula(mineral)"
               :formula="mineralListItemNameLatex(mineral)"
             />
-            <div v-else class="text-sm leading-5 font-semibold wrap-break-word text-zinc-100">
+            <div v-else class="text-sm leading-5 font-semibold wrap-break-word text-(--lab-text-primary)">
               {{ mineralListItemName(mineral) }}
             </div>
           </NuxtLink>
         </div>
       </div>
-      <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="text-sm text-zinc-400">
+      <div class="flex flex-col gap-3 border-t border-(--lab-border) p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-sm text-(--lab-text-secondary)">
           Страница
-          <span class="text-zinc-100">{{ currentPage }}</span>
+          <span class="text-(--lab-text-primary)">{{ currentPage }}</span>
           из
-          <span class="text-zinc-100">{{ totalPages }}</span>
+          <span class="text-(--lab-text-primary)">{{ totalPages }}</span>
         </div>
         <div class="flex items-center gap-2">
           <LabBaseButton

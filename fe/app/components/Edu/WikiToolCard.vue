@@ -33,8 +33,8 @@ const cardStyle = computed(() => ({
               <Icon :name="tool.icon" class="h-5 w-5" />
             </span>
             <div class="min-w-0 space-y-2">
-              <h3 class="lab-text-primary text-lg leading-tight font-semibold">{{ tool.title }}</h3>
-              <p class="lab-text-secondary text-sm leading-6 wrap-break-word">{{ tool.text }}</p>
+              <h3 class="text-lg leading-tight font-semibold text-(--lab-text-primary)">{{ tool.title }}</h3>
+              <p class="text-sm leading-6 wrap-break-word text-(--lab-text-secondary)">{{ tool.text }}</p>
             </div>
           </div>
         </div>

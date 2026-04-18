@@ -2,7 +2,7 @@
   <label
     :for="switchId"
     :class="[
-      'relative inline-flex items-center gap-2 text-xs whitespace-nowrap select-none',
+      'relative inline-flex max-w-fit items-center gap-2 text-xs whitespace-nowrap select-none',
       disabled ? 'cursor-default opacity-70' : 'cursor-pointer',
       containerClass
     ]"
@@ -16,7 +16,7 @@
       :checked="modelValue"
       :disabled="disabled"
       @change="onChange"
-    >
+    />
     <div class="lab-focus-peer flex items-center gap-2 rounded-2xl pr-2">
       <span
         aria-hidden="true"

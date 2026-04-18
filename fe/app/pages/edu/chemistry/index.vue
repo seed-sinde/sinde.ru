@@ -4,7 +4,7 @@ definePageMeta({
   title,
   description: 'Раздел химии с переходом к таблице элементов и каталогу минералов.'
 })
-const dataWikiTools = wikiTools.filter((tool) => tool.category === 'chemistry')
+const dataWikiTools = wikiTools.filter(tool => tool.category === 'chemistry')
 </script>
 <template>
   <div>

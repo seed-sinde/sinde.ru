@@ -19,7 +19,7 @@
         @input="onInput"
         @focus="isFocused = true"
         @blur="isFocused = false"
-      >
+      />
       <div :class="segmentsWrapClass">
         <div :class="segmentClass(leftValue, 'left')">
           {{ leftValue }}
@@ -125,7 +125,7 @@ const onInput = (event: Event) => {
     lastCompletedValue.value = ''
   }
 }
-watch(normalizedValue, (nextValue) => {
+watch(normalizedValue, nextValue => {
   if (nextValue !== lastCompletedValue.value && nextValue.length < props.length) {
     lastCompletedValue.value = ''
   }

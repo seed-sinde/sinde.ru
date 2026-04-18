@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const route = useRoute()
 const requestEvent = useRequestEvent()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('minerals')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { data: periodicTableElementsData, error: chemistryElementsError } = await useChemistryElements()
 if (chemistryElementsError.value) {
   throw createError({ statusCode: 500, statusMessage: 'Не удалось загрузить элементы' })
@@ -11,14 +12,14 @@ const notFound = ref(false)
 const formatText = (value: unknown) => String(value || '').trim()
 const formatList = (value?: string[] | null) =>
   (value || [])
-    .map((item) => String(item || '').trim())
+    .map(item => String(item || '').trim())
     .filter(Boolean)
     .join(', ')
 const formatNumber = (value?: number | null) => {
   if (typeof value !== 'number' || !Number.isFinite(value)) return ''
   return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 4 }).format(value)
 }
-const compactItems = (items: Array<{ label: string; value: string }>) => items.filter((item) => item.value)
+const compactItems = (items: Array<{ label: string; value: string }>) => items.filter(item => item.value)
 const toFormulaText = (value: unknown) => {
   const text = formatText(value)
   return {
@@ -68,7 +69,7 @@ const showMineralNameAsFormula = computed(() => isMineralFormulaLike(mineralName
 const mineralImages = computed(() => mineral.value?.images || [])
 const hasMineralImages = computed(() => mineralImages.value.length > 0)
 const mineralImageItems = computed(() =>
-  mineralImages.value.map((item) => ({
+  mineralImages.value.map(item => ({
     key: `${item.file}:${item.rruff_id || ''}`,
     src: buildMediaFileUrl(`chemistry/minerals/webp/${item.file}`),
     previewSrc: buildMediaFileUrl(`chemistry/minerals/preview/${item.file}`),
@@ -88,7 +89,7 @@ const setMineralViewerIndex = (index: number) => {
 }
 watch(
   mineralImageItems,
-  (items) => {
+  items => {
     if (!items.length) {
       activeImageIndex.value = 0
       return
@@ -103,7 +104,7 @@ const chemistryElements = computed(() => mineral.value?.chemistry_elements || []
 const valenceElements = computed(() => mineral.value?.valence_elements || [])
 const crystalSystems = computed(() => mineral.value?.crystal_systems || [])
 const crystalSystemLabel = (value: string) =>
-  t(`minerals.crystal_system.${String(value || 'unknown').trim() || 'unknown'}` as InterfaceMessageKey)
+  t(`crystal_system.${String(value || 'unknown').trim() || 'unknown'}`)
 const spaceGroups = computed(() => mineral.value?.space_groups || [])
 const parageneticModes = computed(() => mineral.value?.paragenetic_modes || [])
 const goToMinerals = () => navigateTo('/edu/chemistry/minerals')
@@ -119,10 +120,10 @@ const toElementChip = (symbol: string) => {
     to: element ? getPeriodicTableElementRoute(element) : null
   }
 }
-const chemistryElementChips = computed(() => chemistryElements.value.map(toElementChip).filter((item) => item.symbol))
+const chemistryElementChips = computed(() => chemistryElements.value.map(toElementChip).filter(item => item.symbol))
 const valenceElementChips = computed(() =>
   valenceElements.value
-    .map((symbol) => {
+    .map(symbol => {
       const chip = toElementChip(symbol)
       const formula = toFormulaText(chip.symbol)
       return {
@@ -131,7 +132,7 @@ const valenceElementChips = computed(() =>
         isFormula: formula.isFormula
       }
     })
-    .filter((item) => item.symbol)
+    .filter(item => item.symbol)
 )
 const primaryChemistry = computed(() => formatText(mineral.value?.ima_chemistry))
 const primaryValenceChemistry = computed(() => formatText(mineral.value?.valence_chemistry))
@@ -148,7 +149,7 @@ const chemistryItems = computed(() =>
   ])
 )
 const chemistryDisplayItems = computed(() =>
-  chemistryItems.value.map((item) => ({
+  chemistryItems.value.map(item => ({
     ...item,
     ...toFormulaText(item.value)
   }))
@@ -171,7 +172,7 @@ const originItems = computed(() =>
     { label: 'Oldest age Ma', value: formatNumber(mineral.value?.oldest_known_age_ma) }
   ])
 )
-const parageneticModeItems = computed(() => parageneticModes.value.map((item) => formatText(item)).filter(Boolean))
+const parageneticModeItems = computed(() => parageneticModes.value.map(item => formatText(item)).filter(Boolean))
 const notesItems = computed(() =>
   compactItems([{ label: 'Status notes', value: formatText(mineral.value?.status_notes) }])
 )
@@ -264,7 +265,7 @@ usePageSeo({
               />
               <LabViewerImageThumbnails
                 :items="
-                  mineralImageItems.slice(0, 8).map((item) => ({
+                  mineralImageItems.slice(0, 8).map(item => ({
                     key: item.key,
                     src: item.src,
                     thumbnailSrc: item.previewSrc,
@@ -367,7 +368,7 @@ usePageSeo({
     <LabViewerImage
       v-model="isImageViewerOpen"
       :items="
-        mineralImageItems.map((item) => ({
+        mineralImageItems.map(item => ({
           src: item.src,
           title: item.title,
           alt: item.alt

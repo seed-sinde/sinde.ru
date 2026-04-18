@@ -61,7 +61,7 @@ const weekDays = [
   { value: '6', label: 'Суббота' },
   { value: '7', label: 'Воскресенье' }
 ] as const
-const weekDayOptions = weekDays.map((day) => ({ value: day.value, label: day.label }))
+const weekDayOptions = weekDays.map(day => ({ value: day.value, label: day.label }))
 const fromDayId = computed(() => (props.id ? `${props.id}-from-day` : 'TraitScheduleFromDay'))
 const toDayId = computed(() => (props.id ? `${props.id}-to-day` : 'TraitScheduleToDay'))
 const fromTimeId = computed(() => (props.id ? `${props.id}-from-time` : 'TraitScheduleFromTime'))

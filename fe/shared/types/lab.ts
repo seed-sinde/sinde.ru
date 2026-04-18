@@ -1,20 +1,20 @@
 export type LabTestDepthKey =
-  | 'figurative'
-  | 'process'
-  | 'technology'
-  | 'engineering'
-  | 'industrial'
-  | 'economic'
-  | 'strategic'
+  | "figurative"
+  | "process"
+  | "technology"
+  | "engineering"
+  | "industrial"
+  | "economic"
+  | "strategic"
 export type LabTestRoleKey =
-  | 'engineer'
-  | 'technologist'
-  | 'operator'
-  | 'analyst'
-  | 'procurement'
-  | 'researcher'
-  | 'architect'
-export type LabTestStageStatus = 'stable' | 'warning' | 'critical' | 'improving'
+  | "engineer"
+  | "technologist"
+  | "operator"
+  | "analyst"
+  | "procurement"
+  | "researcher"
+  | "architect"
+export type LabTestStageStatus = "stable" | "warning" | "critical" | "improving"
 export type LabTestOption<T extends string> = {
   key: T
   label: string
@@ -31,7 +31,7 @@ export type LabTestTimelineStage = {
   bottleneck?: boolean
   details: Record<LabTestDepthKey, string>
 }
-export type LabTestHypothesisStatus = 'draft' | 'testing' | 'accepted'
+export type LabTestHypothesisStatus = "draft" | "testing" | "accepted"
 export type LabTestHypothesis = {
   id: string
   title: string

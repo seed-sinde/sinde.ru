@@ -1,227 +1,6 @@
-<template>
-  <div v-if="isVisible" class="viewer-shell fixed inset-0 z-60">
-    <div class="flex h-full w-full flex-col">
-      <div class="z-10" @click.stop>
-        <div class="relative">
-          <div
-            ref="toolbarScrollerRef"
-            class="viewer-toolbar lab-scroll-hidden overflow-x-auto overflow-y-hidden px-2.5 py-1.5 sm:px-3"
-          >
-            <div class="flex min-w-max items-center justify-end gap-2.5">
-              <div class="flex shrink-0 items-center justify-end gap-1.5">
-                <LabBaseButton
-                  icon="ic:round-swap-horiz"
-                  icon-only
-                  :title="t('viewer.flip_x')"
-                  :aria-label="t('viewer.flip_x')"
-                  variant="secondary"
-                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-                  @click="toggleFlipX"
-                />
-                <LabBaseButton
-                  icon="ic:round-swap-vert"
-                  icon-only
-                  :title="t('viewer.flip_y')"
-                  :aria-label="t('viewer.flip_y')"
-                  variant="secondary"
-                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-                  @click="toggleFlipY"
-                />
-                <LabBaseButton
-                  icon="ic:round-rotate-left"
-                  icon-only
-                  :title="t('viewer.rotate_left')"
-                  :aria-label="t('viewer.rotate_left')"
-                  variant="secondary"
-                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-                  @click="rotateLeft"
-                />
-                <LabBaseButton
-                  icon="ic:round-rotate-right"
-                  icon-only
-                  :title="t('viewer.rotate_right')"
-                  :aria-label="t('viewer.rotate_right')"
-                  variant="secondary"
-                  button-class="viewer-action h-8 shrink-0 px-2.5 text-sm"
-                  @click="rotateRight"
-                />
-              </div>
-              <span class="viewer-divider hidden h-5 w-px shrink-0 sm:block" aria-hidden="true" />
-              <div class="viewer-meta flex shrink-0 items-center gap-1.5 text-sm font-medium">
-                {{ t('viewer.scale') }}
-                <p class="viewer-scale-value tabular-nums">
-                  {{ scaleLabel }}
-                </p>
-              </div>
-              <slot name="toolbar-extra" :active-index="activeIndex" :active-item="activeItem" :items="resolvedItems" />
-              <LabBaseButton
-                icon="ic:round-close"
-                icon-only
-                :title="t('viewer.close')"
-                :aria-label="t('viewer.close')"
-                variant="secondary"
-                @click="close"
-              />
-            </div>
-          </div>
-          <div
-            class="lab-scroll-fade lab-scroll-fade-x-left"
-            :class="{ 'lab-scroll-fade-visible': toolbarScrollState.left }"
-            aria-hidden="true"
-          />
-          <div
-            class="lab-scroll-fade lab-scroll-fade-x-right"
-            :class="{ 'lab-scroll-fade-visible': toolbarScrollState.right }"
-            aria-hidden="true"
-          />
-        </div>
-      </div>
-      <div :class="viewportClass">
-        <div class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-stretch">
-          <LabBaseButton
-            v-if="showOverlayNavButtons"
-            icon="ic:round-navigate-before"
-            size="xl"
-            icon-only
-            :title="t('viewer.previous')"
-            :aria-label="t('viewer.previous')"
-            variant="secondary"
-            button-class="viewer-nav pointer-events-auto h-full w-16 cursor-pointer opacity-100 sm:w-32 rounded-none"
-            @click.stop="showPreviousImage"
-          />
-        </div>
-        <div class="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-stretch">
-          <LabBaseButton
-            v-if="showOverlayNavButtons"
-            icon="ic:round-navigate-next"
-            size="xl"
-            icon-only
-            :title="t('viewer.next')"
-            :aria-label="t('viewer.next')"
-            variant="secondary"
-            button-class="viewer-nav pointer-events-auto h-full w-16 cursor-pointer opacity-100 sm:w-32 rounded-none"
-            @click.stop="showNextImage"
-          />
-        </div>
-        <div
-          ref="viewportRef"
-          :class="contentViewportClass"
-          @click="onViewportBackdropClick"
-          @touchstart.passive="onViewportTouchStart"
-          @touchmove.passive="onViewportTouchMove"
-          @touchend="onViewportTouchEnd"
-          @touchcancel="resetViewportTouchState"
-        >
-          <div :class="contentClass" :style="contentStyle">
-            <div class="viewer-content-pattern" aria-hidden="true" />
-            <div ref="stageRef" :class="stageClass">
-              <Transition :name="slideTransitionName">
-                <div v-if="activeItem" :key="activeItem.src" :class="stageItemClass">
-                  <div :style="imageFrameStyle" class="relative shrink-0 overflow-visible">
-                    <img
-                      ref="imageRef"
-                      :src="activeItem.src"
-                      :alt="activeItem.alt"
-                      :class="[imageClass, imageLoaded ? 'opacity-100' : 'opacity-0']"
-                      :style="imageStyle"
-                      decoding="async"
-                      @load="onImageLoad"
-                      @click.stop="toggleZoom"
-                    >
-                  </div>
-                </div>
-              </Transition>
-              <div v-if="!imageLoaded" class="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span class="viewer-loader inline-flex p-3">
-                  <LabLoader variant="icon" />
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div
-          class="lab-scroll-fade lab-scroll-fade-x-left"
-          :class="{ 'viewer-edge-fade-visible': viewportScrollState.left && !showOverlayNavButtons }"
-          aria-hidden="true"
-        />
-        <div
-          class="lab-scroll-fade lab-scroll-fade-x-right"
-          :class="{ 'viewer-edge-fade-visible': viewportScrollState.right && !showOverlayNavButtons }"
-          aria-hidden="true"
-        />
-        <div
-          class="viewer-edge-fade viewer-edge-fade-top"
-          :class="{ 'viewer-edge-fade-visible': viewportScrollState.top }"
-          aria-hidden="true"
-        />
-        <div
-          class="viewer-edge-fade viewer-edge-fade-bottom"
-          :class="{ 'viewer-edge-fade-visible': viewportScrollState.bottom }"
-          aria-hidden="true"
-        />
-      </div>
-      <div
-        v-if="hasMultipleItems || activeItemHasCredits || displayTitle"
-        class="viewer-footer px-3 pt-0 pb-3 sm:px-4"
-        @click.stop
-      >
-        <div v-if="hasMultipleItems" class="flex items-center gap-2">
-          <div class="relative min-w-0 flex-1">
-            <div ref="thumbScrollerRef" class="lab-scroll-hidden min-w-0 overflow-x-auto pb-2">
-              <div class="flex min-w-max gap-2">
-                <button
-                  v-for="(item, index) in resolvedItems"
-                  :key="`${item.src}:${index}`"
-                  type="button"
-                  :data-thumb-index="index"
-                  class="viewer-thumb relative h-16 w-16 shrink-0 overflow-visible sm:h-18 sm:w-18"
-                  :class="index === activeIndex ? 'viewer-thumb-active' : 'viewer-thumb-inactive'"
-                  :aria-label="`Открыть изображение ${index + 1}`"
-                  :aria-current="index === activeIndex ? 'true' : undefined"
-                  @click="setActiveIndex(index)"
-                >
-                  <span
-                    class="viewer-thumb-indicator absolute inset-x-0 top-0 h-1"
-                    :class="index === activeIndex ? 'viewer-thumb-indicator-active' : 'viewer-thumb-indicator-inactive'"
-                    aria-hidden="true"
-                  />
-                  <img
-                    :src="item.thumbnailSrc || item.src"
-                    :alt="item.alt"
-                    class="h-full w-full object-cover pt-1.5"
-                    loading="lazy"
-                    decoding="async"
-                  >
-                </button>
-              </div>
-            </div>
-            <div
-              class="lab-scroll-fade lab-scroll-fade-x-left viewer-edge-fade-footer"
-              :class="{ 'lab-scroll-fade-visible': thumbScrollState.left }"
-              aria-hidden="true"
-            />
-            <div
-              class="lab-scroll-fade lab-scroll-fade-x-right viewer-edge-fade-footer"
-              :class="{ 'lab-scroll-fade-visible': thumbScrollState.right }"
-              aria-hidden="true"
-            />
-          </div>
-        </div>
-        <LabViewerImageCredits
-          v-if="activeItemHasCredits"
-          :title="displayTitle"
-          :author="activeItem?.author"
-          :attribution="activeItem?.attribution"
-          :source-url="activeItem?.sourceUrl"
-          :license-url="activeItem?.licenseUrl"
-          :license="activeItem?.license"
-        />
-      </div>
-    </div>
-  </div>
-</template>
 <script setup lang="ts">
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('ui')
+await useAsyncData(key.value, load, { watch: [locale] })
 const props = withDefaults(
   defineProps<{
     modelValue?: boolean
@@ -440,7 +219,7 @@ const viewportClass = computed(() => {
   return ['viewer-viewport relative min-h-0 flex-1 overflow-hidden']
 })
 const contentViewportClass = computed(() => [
-  'viewer-content-viewport h-full w-full',
+  'relative h-full w-full bg-[var(--lab-bg-canvas)]',
   canPanImage.value ? 'overflow-auto' : 'overflow-hidden'
 ])
 const contentClass = computed(() => {
@@ -851,7 +630,7 @@ watch(
 )
 watch(
   () => requestedRouteIndex.value,
-  (next) => {
+  next => {
     if (next === null) return
     activeIndex.value = next
     if (!props.modelValue) {
@@ -891,7 +670,7 @@ watch([fitsViewport, () => stageSize.width, () => stageSize.height], () => {
   }
   nextTick(alignOriginalPosition)
 })
-watch(isVisible, (next) => {
+watch(isVisible, next => {
   if (!next) return
   nextTick(observeViewport)
   queueLoadedImageStateSync()
@@ -934,131 +713,252 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect()
 })
 </script>
+<template>
+  <div v-if="isVisible" class="fixed inset-0 z-60 bg-(--lab-bg-canvas)">
+    <div class="flex h-full w-full flex-col">
+      <div class="z-10" @click.stop>
+        <div class="relative">
+          <div
+            ref="toolbarScrollerRef"
+            class="lab-scroll-hidden overflow-x-auto overflow-y-hidden border-b border-(--lab-border) bg-(--lab-bg-canvas) px-2.5 py-1.5 sm:px-3"
+          >
+            <div class="flex min-w-max items-center justify-end gap-2.5">
+              <div class="flex shrink-0 items-center justify-end gap-1.5">
+                <LabBaseButton
+                  icon="ic:round-swap-horiz"
+                  icon-only
+                  :title="t('viewer.flip_x')"
+                  :aria-label="t('viewer.flip_x')"
+                  variant="secondary"
+                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  @click="toggleFlipX"
+                />
+                <LabBaseButton
+                  icon="ic:round-swap-vert"
+                  icon-only
+                  :title="t('viewer.flip_y')"
+                  :aria-label="t('viewer.flip_y')"
+                  variant="secondary"
+                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  @click="toggleFlipY"
+                />
+                <LabBaseButton
+                  icon="ic:round-rotate-left"
+                  icon-only
+                  :title="t('viewer.rotate_left')"
+                  :aria-label="t('viewer.rotate_left')"
+                  variant="secondary"
+                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  @click="rotateLeft"
+                />
+                <LabBaseButton
+                  icon="ic:round-rotate-right"
+                  icon-only
+                  :title="t('viewer.rotate_right')"
+                  :aria-label="t('viewer.rotate_right')"
+                  variant="secondary"
+                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  @click="rotateRight"
+                />
+              </div>
+
+              <span class="hidden h-5 w-px shrink-0 bg-(--lab-border) sm:block" aria-hidden="true" />
+
+              <div class="flex shrink-0 items-center gap-1.5 text-sm font-medium text-(--lab-text-secondary)">
+                {{ t('viewer.scale') }}
+                <p class="w-[4ch] text-right tabular-nums">
+                  {{ scaleLabel }}
+                </p>
+              </div>
+
+              <slot name="toolbar-extra" :active-index="activeIndex" :active-item="activeItem" :items="resolvedItems" />
+
+              <LabBaseButton
+                icon="ic:round-close"
+                icon-only
+                :title="t('viewer.close')"
+                :aria-label="t('viewer.close')"
+                variant="secondary"
+                button-class="rounded-full bg-(--lab-bg-control) text-(--lab-text-primary) hover:bg-(--lab-bg-control-hover) hover:text-(--lab-text-primary) hover:border-(--lab-border-strong)"
+                @click="close"
+              />
+            </div>
+          </div>
+
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-left"
+            :class="{ 'lab-scroll-fade-visible': toolbarScrollState.left }"
+            aria-hidden="true"
+          />
+          <div
+            class="lab-scroll-fade lab-scroll-fade-x-right"
+            :class="{ 'lab-scroll-fade-visible': toolbarScrollState.right }"
+            aria-hidden="true"
+          />
+        </div>
+      </div>
+
+      <div :class="viewportClass">
+        <div class="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-stretch">
+          <LabBaseButton
+            v-if="showOverlayNavButtons"
+            icon="ic:round-navigate-before"
+            size="xl"
+            icon-only
+            :title="t('viewer.previous')"
+            :aria-label="t('viewer.previous')"
+            variant="secondary"
+            button-class="pointer-events-auto h-full w-16 cursor-pointer rounded-none border-y-0 border-l-0 bg-(--lab-bg-control) opacity-100 hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong) sm:w-32"
+            @click.stop="showPreviousImage"
+          />
+        </div>
+
+        <div class="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-stretch">
+          <LabBaseButton
+            v-if="showOverlayNavButtons"
+            icon="ic:round-navigate-next"
+            size="xl"
+            icon-only
+            :title="t('viewer.next')"
+            :aria-label="t('viewer.next')"
+            variant="secondary"
+            button-class="pointer-events-auto h-full w-16 cursor-pointer rounded-none border-y-0 border-r-0 bg-(--lab-bg-control)  opacity-100 hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong) sm:w-32"
+            @click.stop="showNextImage"
+          />
+        </div>
+
+        <div
+          ref="viewportRef"
+          :class="contentViewportClass"
+          @click="onViewportBackdropClick"
+          @touchstart.passive="onViewportTouchStart"
+          @touchmove.passive="onViewportTouchMove"
+          @touchend="onViewportTouchEnd"
+          @touchcancel="resetViewportTouchState"
+        >
+          <div :class="contentClass" :style="contentStyle">
+            <div
+              class="pointer-events-none absolute inset-0 z-0 bg-(--lab-bg-canvas) bg-[radial-gradient(circle,color-mix(in_srgb,var(--lab-text-primary)_12%,transparent)_0.8px,transparent_0.8px)] bg-size-[8px_8px] bg-repeat"
+              aria-hidden="true"
+            />
+            <div ref="stageRef" :class="stageClass">
+              <Transition :name="slideTransitionName">
+                <div v-if="activeItem" :key="activeItem.src" :class="stageItemClass">
+                  <div :style="imageFrameStyle" class="relative shrink-0 overflow-visible">
+                    <img
+                      ref="imageRef"
+                      :src="activeItem.src"
+                      :alt="activeItem.alt"
+                      :class="[imageClass, imageLoaded ? 'opacity-100' : 'opacity-0']"
+                      :style="imageStyle"
+                      decoding="async"
+                      @load="onImageLoad"
+                      @click.stop="toggleZoom"
+                    />
+                  </div>
+                </div>
+              </Transition>
+
+              <div v-if="!imageLoaded" class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span class="inline-flex bg-(--lab-bg-canvas) p-3 text-(--lab-text-primary)">
+                  <LabLoader variant="icon" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="lab-scroll-fade lab-scroll-fade-x-left"
+          :class="{ 'viewer-edge-fade-visible': viewportScrollState.left && !showOverlayNavButtons }"
+          aria-hidden="true"
+        />
+        <div
+          class="lab-scroll-fade lab-scroll-fade-x-right"
+          :class="{ 'viewer-edge-fade-visible': viewportScrollState.right && !showOverlayNavButtons }"
+          aria-hidden="true"
+        />
+
+        <div
+          class="pointer-events-none absolute top-0 right-0 left-0 z-20 h-6 bg-linear-to-b from-(--lab-bg-canvas) to-transparent opacity-0 transition-opacity duration-160"
+          :class="{ 'opacity-100': viewportScrollState.top }"
+          aria-hidden="true"
+        />
+        <div
+          class="pointer-events-none absolute right-0 bottom-0 left-0 z-20 h-6 bg-linear-to-t from-(--lab-bg-canvas) to-transparent opacity-0 transition-opacity duration-160"
+          :class="{ 'opacity-100': viewportScrollState.bottom }"
+          aria-hidden="true"
+        />
+      </div>
+
+      <div
+        v-if="hasMultipleItems || activeItemHasCredits || displayTitle"
+        class="border-t border-(--lab-border) bg-(--lab-bg-canvas) px-3 pt-0 pb-3 sm:px-4"
+        @click.stop
+      >
+        <div v-if="hasMultipleItems" class="flex items-center gap-2">
+          <div class="relative min-w-0 flex-1">
+            <div ref="thumbScrollerRef" class="lab-scroll-hidden min-w-0 overflow-x-auto pb-2">
+              <div class="flex min-w-max gap-2">
+                <button
+                  v-for="(item, index) in resolvedItems"
+                  :key="`${item.src}:${index}`"
+                  type="button"
+                  :data-thumb-index="index"
+                  class="relative h-16 w-16 shrink-0 overflow-visible sm:h-18 sm:w-18"
+                  :class="index === activeIndex ? 'opacity-100' : 'opacity-72 hover:opacity-92'"
+                  :aria-label="`Открыть изображение ${index + 1}`"
+                  :aria-current="index === activeIndex ? 'true' : undefined"
+                  @click="setActiveIndex(index)"
+                >
+                  <span
+                    class="absolute inset-x-0 top-0 h-1"
+                    :class="index === activeIndex ? 'bg-(--lab-accent)' : 'bg-transparent'"
+                    aria-hidden="true"
+                  />
+                  <img
+                    :src="item.thumbnailSrc || item.src"
+                    :alt="item.alt"
+                    class="h-full w-full object-cover pt-1.5"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="lab-scroll-fade lab-scroll-fade-x-left top-0 bottom-2"
+              :class="{ 'lab-scroll-fade-visible': thumbScrollState.left }"
+              aria-hidden="true"
+            />
+            <div
+              class="lab-scroll-fade lab-scroll-fade-x-right top-0 bottom-2"
+              :class="{ 'lab-scroll-fade-visible': thumbScrollState.right }"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+
+        <LabViewerImageCredits
+          v-if="activeItemHasCredits"
+          :title="displayTitle"
+          :author="activeItem?.author"
+          :attribution="activeItem?.attribution"
+          :source-url="activeItem?.sourceUrl"
+          :license-url="activeItem?.licenseUrl"
+          :license="activeItem?.license"
+        />
+      </div>
+    </div>
+  </div>
+</template>
 <style scoped>
-.viewer-shell {
-  background-color: var(--lab-bg-canvas);
-}
-/* 1. Область просмотра (viewport) должна быть оберткой для узора */
-.viewer-content-viewport {
-  position: relative;
-  background-color: var(--lab-bg-canvas); /* Фон под узором */
-}
-
-.viewer-content-pattern {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--lab-text-primary) 12%, transparent) 0.8px,
-    transparent 0.8px
-  );
-  background-size: 8px 8px;
-  background-repeat: repeat;
-}
-
-.viewer-content-viewport,
-.viewer-content-viewport > div {
-  background: transparent !important;
-}
-
-.viewer-toolbar,
-.viewer-loader,
-.viewer-footer {
-  background: var(--lab-bg-canvas);
-}
-.viewer-toolbar {
-  border-bottom: 1px solid;
-  border-color: var(--lab-border);
-}
-.viewer-edge-fade {
-  pointer-events: none;
-  position: absolute;
-  z-index: 20;
-  opacity: 0;
-  transition: opacity 160ms ease;
-}
-.viewer-edge-fade-visible {
-  opacity: 1;
-}
-.viewer-edge-fade-top,
-.viewer-edge-fade-bottom {
-  left: 0;
-  right: 0;
-  height: 1.5rem;
-}
-.viewer-edge-fade-top {
-  top: 0;
-  background: linear-gradient(to bottom, var(--lab-bg-canvas), transparent);
-}
-.viewer-edge-fade-bottom {
-  bottom: 0;
-  background: linear-gradient(to top, var(--lab-bg-canvas), transparent);
-}
-.viewer-edge-fade-footer {
-  top: 0;
-  bottom: 0.5rem;
-}
-.viewer-footer {
-  border-top: 1px solid;
-  border-color: var(--lab-border);
-}
-.viewer-action,
-.viewer-nav {
-  background: var(--lab-bg-control) !important;
-  color: var(--lab-text-primary);
-}
-.viewer-nav {
-  border-top: 0 !important;
-  border-bottom: 0 !important;
-  opacity: 1 !important;
-}
-.viewer-nav:first-child {
-  border-left: 0 !important;
-}
-.viewer-nav:last-child {
-  border-right: 0 !important;
-}
-.viewer-action:hover,
-.viewer-nav:hover {
-  border-color: var(--lab-border-strong) !important;
-  background: var(--lab-bg-control-hover) !important;
-  color: var(--lab-text-primary);
-}
-.viewer-divider {
-  background: var(--lab-border);
-}
-.viewer-meta {
-  color: var(--lab-text-secondary);
-}
-.viewer-loader {
-  color: var(--lab-text-primary);
-}
-.viewer-scale-value {
-  width: 4ch;
-  text-align: right;
-}
-.viewer-thumb-active {
-  opacity: 1;
-}
-.viewer-thumb-inactive {
-  opacity: 0.72;
-}
-.viewer-thumb-inactive:hover {
-  opacity: 0.92;
-}
-.viewer-thumb-indicator-active {
-  background: var(--lab-accent);
-}
-.viewer-thumb-indicator-inactive {
-  background: transparent;
-}
-:deep(.viewer-action .iconify),
-:deep(.viewer-nav .iconify) {
+:deep(.iconify) {
   color: currentColor;
   opacity: 1;
 }
+
 .viewer-slide-next-enter-active,
 .viewer-slide-next-leave-active,
 .viewer-slide-prev-enter-active,
@@ -1067,23 +967,28 @@ onBeforeUnmount(() => {
     transform 300ms ease,
     opacity 300ms ease;
 }
+
 .viewer-slide-next-enter-from,
 .viewer-slide-prev-enter-from {
   opacity: 0;
 }
+
 .viewer-slide-next-leave-active,
 .viewer-slide-prev-leave-active {
   position: absolute;
   inset: 0;
 }
+
 .viewer-slide-next-leave-to,
 .viewer-slide-prev-leave-to {
   opacity: 0;
 }
+
 .viewer-slide-next-enter-from,
 .viewer-slide-prev-leave-to {
   transform: translate3d(96px, 0, 0);
 }
+
 .viewer-slide-prev-enter-from,
 .viewer-slide-next-leave-to {
   transform: translate3d(-96px, 0, 0);

@@ -3,17 +3,16 @@ const props = withDefaults(
   defineProps<{
     modelValue?: boolean
     items: MenuItem[]
-    homeTo?: string
   }>(),
   {
-    modelValue: false,
-    homeTo: '/'
+    modelValue: false
   }
 )
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
-const { t, faviconLightSrc, faviconDarkSrc } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('nav')
+await useAsyncData(key.value, load, { watch: [locale] })
 const isOpen = computed(() => props.modelValue)
 const close = () => {
   emit('update:modelValue', false)
@@ -33,7 +32,7 @@ const close = () => {
         <button
           type="button"
           class="absolute inset-0 bg-[color-mix(in_srgb,var(--lab-bg-canvas)_72%,transparent)]"
-          :aria-label="t('nav.close_menu')"
+          :aria-label="t('close_menu')"
           @click="close"
         />
         <Transition
@@ -46,26 +45,17 @@ const close = () => {
         >
           <aside
             v-if="isOpen"
-            class="relative flex h-full w-full max-w-fit flex-col border-r bg-(--lab-bg-overlay) pt-1"
+            class="relative flex h-full w-full max-w-fit flex-col border-r border-(--lab-border) bg-(--lab-bg-overlay)"
           >
-            <div class="mb-1 flex items-center justify-between border-b px-1 pb-1">
-              <NuxtLink
-                :to="homeTo"
-                class="inline-flex h-9 w-9 items-center justify-center text-(--lab-text-primary) transition-colors hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)"
-                :aria-label="t('nav.home')"
-                @click="close"
-              >
-                <picture>
-                  <source :srcset="faviconDarkSrc" media="(prefers-color-scheme: dark)" >
-                  <img :src="faviconLightSrc" alt="" class="h-4.5 w-4.5 object-contain" >
-                </picture>
-              </NuxtLink>
+            <div class="flex items-center justify-between pr-2">
+              <LabNavHomeBtn @click="close" />
               <LabBaseButton
                 icon="ic:round-close"
                 icon-only
+                icon-size="lg"
                 size="sm"
                 variant="ghost"
-                :aria-label="t('nav.close_menu')"
+                :aria-label="t('close_menu')"
                 @click="close"
               />
             </div>

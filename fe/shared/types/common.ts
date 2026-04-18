@@ -1,5 +1,5 @@
-export type { CSSProperties } from 'vue'
-export type { RouteLocationRaw } from 'vue-router'
+export type {CSSProperties} from "vue"
+export type {RouteLocationRaw} from "vue-router"
 export type ID = string | number
 export type Nullable<T> = T | null
 export type Optional<T> = T | undefined
@@ -10,14 +10,14 @@ export type WithTimestamps = {
   createdAt?: Timestamp
   updatedAt?: Timestamp
 }
-export type CopyBlockVariant = 'default' | 'dark-cyan'
+export type CopyBlockVariant = "default" | "dark-cyan"
 export type MenuItem = {
   to: string
   label: string
   icon: string
   iconColor?: string
   isDev?: boolean
-  group?: 'tools' | 'knowledge'
+  group?: "tools" | "knowledge"
 }
 export type ApiResponse = {
   ok: boolean

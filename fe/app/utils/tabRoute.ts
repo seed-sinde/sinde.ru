@@ -1,4 +1,4 @@
-import type { RouteLocationNormalizedLoaded, RouteLocationRaw } from 'vue-router'
+import type {RouteLocationNormalizedLoaded, RouteLocationRaw} from "vue-router"
 export type TabRouteValue = string | number
 export type TabRouteTargetMap = Record<string, RouteLocationRaw | undefined>
 export type BuildTabRouteOptions = {
@@ -9,9 +9,9 @@ export type BuildTabRouteOptions = {
   targetMap?: TabRouteTargetMap
 }
 const readRouteValue = (raw: unknown): string => {
-  if (typeof raw === 'string') return raw
-  if (Array.isArray(raw)) return typeof raw[0] === 'string' ? raw[0] : ''
-  return ''
+  if (typeof raw === "string") return raw
+  if (Array.isArray(raw)) return typeof raw[0] === "string" ? raw[0] : ""
+  return ""
 }
 export const stringifyTabValue = (value: TabRouteValue): string => String(value)
 export const normalizeTabRouteValue = (
@@ -20,7 +20,7 @@ export const normalizeTabRouteValue = (
   fallback: TabRouteValue
 ): TabRouteValue => {
   const candidate = readRouteValue(raw)
-  const match = allowedValues.find((value) => stringifyTabValue(value) === candidate)
+  const match = allowedValues.find(value => stringifyTabValue(value) === candidate)
   return match ?? fallback
 }
 export const buildTabRouteLocation = (
@@ -32,10 +32,10 @@ export const buildTabRouteLocation = (
   const mapped = options.targetMap?.[valueKey]
   if (mapped) return mapped
   if (!options.queryKey) return undefined
-  const query = { ...route.query }
+  const query = {...route.query}
   const defaultKey = stringifyTabValue(options.defaultValue ?? value)
   if (!options.persistDefault && valueKey === defaultKey) {
-    const { [options.queryKey]: _removed, ...restQuery } = query
+    const {[options.queryKey]: _removed, ...restQuery} = query
     return {
       path: options.path || route.path,
       query: restQuery,

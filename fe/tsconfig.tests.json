@@ -1,10 +1,8 @@
 {
   "extends": "./.nuxt/tsconfig.app.json",
   "compilerOptions": {
-    "composite": true,
     "noEmit": true,
-    "skipLibCheck": true,
-    "types": ["node", "bun-types"]
+    "types": ["node"]
   },
   "include": [
     "./.nuxt/**/*.d.ts",
@@ -13,6 +11,5 @@
     "./server/**/*",
     "./tests/**/*.ts",
     "./types/**/*.d.ts"
-  ],
-  "exclude": []
+  ]
 }

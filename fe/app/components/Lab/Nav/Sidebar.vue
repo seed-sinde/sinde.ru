@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="relative flex h-full min-h-0 flex-col gap-1 overflow-x-hidden overflow-y-auto py-1"
+    class="relative flex h-full min-h-0 flex-col gap-1 overflow-x-hidden overflow-y-auto"
     :class="[
       animate ? 'transition-[width] duration-200' : '',
       collapsed ? 'w-10' : 'w-56',
@@ -8,42 +8,41 @@
     ]"
     @click="onNavBackgroundClick"
   >
-    <div v-if="showToggle" class="relative flex items-center px-1">
+    <div v-if="showToggle" class="relative flex items-center">
       <LabBaseButton
+        v-if="isCollapsedHoverToggle"
         size="sm"
         icon-only
         variant="ghost"
-        :button-class="[
-          'text-(--lab-text-primary) rounded-full',
-          isCollapsedHoverToggle ? 'cursor-ew-resize' : 'cursor-pointer'
-        ]"
-        :aria-label="primaryButtonAriaLabel"
+        button-class="m-1 h-8 w-8 p-0 text-(--lab-text-primary) rounded-full cursor-ew-resize"
+        :aria-label="t('expand_menu')"
         @mouseenter="isPrimaryControlHovered = true"
         @mouseleave="isPrimaryControlHovered = false"
         @focus="isPrimaryControlHovered = true"
         @blur="isPrimaryControlHovered = false"
-        @click="onPrimaryButtonClick"
+        @click="emit('toggle-collapse')"
       >
-        <template v-if="!isCollapsedHoverToggle">
-          <picture>
-            <source :srcset="faviconDarkSrc" media="(prefers-color-scheme: dark)" >
-            <img :src="faviconLightSrc" alt="" class="h-4.5 w-4.5 object-contain" >
-          </picture>
-        </template>
-        <span v-else aria-hidden="true" :class="collapseGlyphClass">
+        <span aria-hidden="true" :class="collapseGlyphClass">
           <span class="absolute inset-y-0 left-1 w-px bg-current" />
         </span>
       </LabBaseButton>
+      <LabNavHomeBtn
+        v-else
+        @mouseenter="isPrimaryControlHovered = true"
+        @mouseleave="isPrimaryControlHovered = false"
+        @focus="isPrimaryControlHovered = true"
+        @blur="isPrimaryControlHovered = false"
+      />
       <LabBaseButton
         size="sm"
         icon-only
         variant="ghost"
         :button-class="[
-          'text-(--lab-text-primary) rounded-full absolute right-1 cursor-ew-resize',
+          'm-1 text-(--lab-text-primary) rounded-full absolute right-1 cursor-ew-resize',
           animate ? 'transition-[opacity,background-color] duration-200' : '',
           collapsed ? 'pointer-events-none opacity-0' : 'opacity-100'
         ]"
-        :aria-label="t('nav.collapse_menu')"
+        :aria-label="t('collapse_menu')"
         @click="emit('toggle-collapse')"
       >
         <span aria-hidden="true" :class="collapseGlyphClass">
@@ -75,21 +74,16 @@
         </span>
       </NuxtLink>
     </div>
-    <div class="mt-auto space-y-1">
-      <div v-if="!collapsed" class="px-1">
-        <LabNavFooter :collapsed="collapsed" :show-controls="true" :show-links="false" />
-      </div>
-      <div :class="collapsed ? 'px-1' : 'px-2'">
-        <LabAvatar
-          :show-label="!collapsed"
-          :link-class="
-            collapsed
-              ? 'mx-auto h-8 w-8 justify-center hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
-              : 'min-h-8 px-2 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
-          "
-          @request-close="emit('request-close')"
-        />
-      </div>
+    <div class="mx-auto mt-6 pb-6">
+      <LabAvatar
+        :show-label="!collapsed"
+        :link-class="
+          collapsed
+            ? 'mx-auto h-8 w-8 justify-center hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
+            : 'min-h-8 px-2 py-1 hover:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)'
+        "
+        @request-close="emit('request-close')"
+      />
     </div>
   </nav>
 </template>
@@ -97,9 +91,9 @@
 const emit = defineEmits<{
   (e: 'toggle-collapse' | 'request-close'): void
 }>()
-const router = useRouter()
 const route = useRoute()
-const { t, faviconLightSrc, faviconDarkSrc } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('nav')
+await useAsyncData(key.value, load, { watch: [locale] })
 const props = withDefaults(
   defineProps<{
     items: MenuItem[]
@@ -116,16 +110,8 @@ const props = withDefaults(
 const { collapsed, showToggle, animate } = toRefs(props)
 const isPrimaryControlHovered = ref(false)
 const isCollapsedHoverToggle = computed(() => showToggle.value && collapsed.value && isPrimaryControlHovered.value)
-const primaryButtonAriaLabel = computed(() => (isCollapsedHoverToggle.value ? t('nav.expand_menu') : t('nav.home')))
 const collapseGlyphClass = 'relative inline-block h-3.5 w-3.5 border border-current opacity-90'
-const onPrimaryButtonClick = async () => {
-  if (isCollapsedHoverToggle.value) {
-    emit('toggle-collapse')
-    return
-  }
-  await router.push('/')
-}
-watch(collapsed, (next) => {
+watch(collapsed, next => {
   if (!next) {
     isPrimaryControlHovered.value = false
   }

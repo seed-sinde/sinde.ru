@@ -1,12 +1,19 @@
 <template>
-  <component
-    :is="as"
-    v-if="resolvedText"
-    :class="resolvedClassWithVisibility"
-    :aria-live="props.tone === 'error' ? 'assertive' : 'polite'"
+  <Transition
+    enter-active-class="transition-opacity duration-200"
+    leave-active-class="transition-opacity duration-200"
+    enter-from-class="opacity-0"
+    leave-to-class="opacity-0"
   >
-    {{ resolvedText }}
-  </component>
+    <component
+      :is="as"
+      v-if="resolvedText && visible"
+      :class="resolvedClass"
+      :aria-live="props.tone === 'error' ? 'assertive' : 'polite'"
+    >
+      {{ resolvedText }}
+    </component>
+  </Transition>
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
@@ -26,17 +33,17 @@ const props = withDefaults(
     size: 'sm',
     as: 'p',
     className: '',
-    durationMs: 5000
+    durationMs: 3000
   }
 )
 const toneClass: Record<NotifyTone, string> = {
   error:
-    'lab-text-danger bg-[color-mix(in_srgb,var(--lab-danger)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-danger)_22%,transparent)]',
+    'text-(--lab-text-danger) bg-[color-mix(in_srgb,var(--lab-danger)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-danger)_22%,transparent)]',
   success:
-    'lab-text-success bg-[color-mix(in_srgb,var(--lab-success)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-success)_22%,transparent)]',
-  info: 'lab-text-secondary bg-[color-mix(in_srgb,var(--lab-text-secondary)_10%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-text-secondary)_18%,transparent)]',
+    'text-(--lab-text-success) bg-[color-mix(in_srgb,var(--lab-success)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-success)_22%,transparent)]',
+  info: 'text-(--lab-text-secondary) bg-[color-mix(in_srgb,var(--lab-text-secondary)_10%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-text-secondary)_18%,transparent)]',
   warning:
-    'lab-text-warning bg-[color-mix(in_srgb,var(--lab-warning)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-warning)_22%,transparent)]'
+    'text-(--lab-text-warning) bg-[color-mix(in_srgb,var(--lab-warning)_12%,transparent)] ring-1 ring-inset ring-[color-mix(in_srgb,var(--lab-warning)_22%,transparent)]'
 }
 const sizeClass: Record<NotifySize, string> = {
   xs: 'min-h-4 px-2.5 py-1.5 text-xs leading-4',
@@ -44,6 +51,12 @@ const sizeClass: Record<NotifySize, string> = {
   base: 'min-h-6 px-3.5 py-2.5 text-base leading-6'
 }
 const resolvedText = computed(() => String(props.text || '').trim())
+const resolvedClass = computed(() => [
+  sizeClass[props.size],
+  toneClass[props.tone],
+  props.className,
+  'block max-w-full wrap-break-word'
+])
 const visible = ref(false)
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 const shouldAutoHide = computed(() => {
@@ -79,11 +92,4 @@ watch(
 onBeforeUnmount(() => {
   clearHideTimer()
 })
-const resolvedClassWithVisibility = computed(() => [
-  sizeClass[props.size],
-  toneClass[props.tone],
-  props.className,
-  'block max-w-full wrap-break-word transition-opacity duration-200',
-  visible.value ? 'visible opacity-100' : 'invisible opacity-0'
-])
 </script>

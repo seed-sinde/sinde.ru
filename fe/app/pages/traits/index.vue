@@ -1,33 +1,35 @@
 <script setup lang="ts">
-const { localeCode } = useInterfacePreferences()
-const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
-usePageSeo({
-  title: () => copy.value.pageTitle,
-  description: () => copy.value.pageDescriptionRoot
-})
+useTraitsStore().clear()
+useTraitsMobileHeader()
+const { locale, key, load, t } = useI18nSection('traits')
+await useAsyncData(key.value, load, { watch: [locale] })
 const route = useRoute()
 const { error: pasteError, pasteUuidAndNavigate } = usePasteUuid()
 const activeWorkspaceTab = computed<'traits' | 'saved'>(
   () => normalizeTabRouteValue(route.query.tab, ['traits', 'saved'], 'traits') as 'traits' | 'saved'
 )
+const pageTitle = computed(() => t('page.title'))
+const pageDescription = computed(() => t('page.description.root'))
+const mobileActions = computed<MobileHeaderAction[]>(() => [{ kind: 'traits-paste-uuid', mode: 'set' }])
 const breadcrumbItems = computed<BreadcrumbItem[]>(() =>
   activeWorkspaceTab.value === 'saved'
     ? [
-        { label: copy.value.pageTitle, to: '/traits' },
-        { label: copy.value.savedBreadcrumb, current: true, kind: 'tab' }
+        { label: t('page.title'), to: '/traits' },
+        { label: t('saved.breadcrumb'), current: true, kind: 'tab' }
       ]
-    : [{ label: copy.value.pageTitle, to: '/traits', current: true }]
+    : [{ label: t('page.title'), to: '/traits', current: true }]
 )
-const pasteUuid = async () => await pasteUuidAndNavigate((uuid) => `/traits/${uuid}`)
+const pasteUuid = async () => await pasteUuidAndNavigate(uuid => `/traits/${uuid}`)
+usePageSeo({ title: pageTitle, description: pageDescription })
 </script>
 <template>
   <div>
-    <LabNavHeader :title="copy.pageTitle" :breadcrumb-items="breadcrumbItems">
+    <LabNavHeader :title="pageTitle" :breadcrumb-items="breadcrumbItems" :mobile-actions="mobileActions">
       <template #actions="{ compact }">
         <TraitsUuidButton action="paste" :compact="compact" @click="pasteUuid" />
       </template>
     </LabNavHeader>
-    <LabNotify :text="pasteError" tone="error" class-name="px-4" />
+    <LabNotify :text="pasteError" tone="error" :temporary="true" class-name="px-4" />
     <TraitsWorkspaceTabs />
   </div>
 </template>

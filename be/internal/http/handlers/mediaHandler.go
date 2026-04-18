@@ -3,10 +3,33 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"net/url"
+	"path/filepath"
 	"sinde.ru/internal/http/responses"
 	"sinde.ru/internal/media"
 	"strings"
 )
+
+func chemistryDownloadName(storageKey string) string {
+	parts := strings.Split(media.NormalizeStorageKey(storageKey), "/")
+	if len(parts) < 4 || parts[0] != "chemistry" || parts[1] != "elements" {
+		return ""
+	}
+	symbol := strings.TrimSpace(parts[2])
+	fileName := strings.TrimSpace(parts[len(parts)-1])
+	if symbol == "" || fileName == "" {
+		return ""
+	}
+	ext := filepath.Ext(fileName)
+	base := strings.TrimSuffix(fileName, ext)
+	if base == "" {
+		return ""
+	}
+	if strings.Contains(strings.ToLower(base), strings.ToLower(symbol)) {
+		return fileName
+	}
+	return "chemistry-element-" + symbol + "-" + base + ext
+}
 
 func MediaUploadHandler() fiber.Handler {
 	return func(c fiber.Ctx) error {
@@ -75,6 +98,9 @@ func MediaGetFileHandler() fiber.Handler {
 		c.Set("Cache-Control", "public, max-age=31536000, immutable")
 		if object.ContentType != "" {
 			c.Set("Content-Type", object.ContentType)
+		}
+		if fileName := chemistryDownloadName(storageKey); fileName != "" {
+			c.Set("Content-Disposition", "inline; filename*=UTF-8''"+url.PathEscape(fileName))
 		}
 		if contentLength := media.ContentLengthHeader(object.Size); contentLength != "" {
 			c.Set("Content-Length", contentLength)

@@ -1,6 +1,6 @@
 export const parseQueryStringValue = (value: unknown) => {
-  if (Array.isArray(value)) return String(value[0] || '').trim()
-  return String(value || '').trim()
+  if (Array.isArray(value)) return String(value[0] || "").trim()
+  return String(value || "").trim()
 }
 
 export const normalizeMineralElementSymbol = (value: unknown) => formatPeriodicTableSymbol(value)
@@ -16,20 +16,20 @@ export const sortMineralElementSymbols = (
 export const parseQueryElementList = (value: unknown, compareElementOrder: (left: string, right: string) => number) =>
   sortMineralElementSymbols(
     parseQueryStringValue(value)
-      .split(',')
-      .map((item) => normalizeMineralElementSymbol(item))
+      .split(",")
+      .map(item => normalizeMineralElementSymbol(item))
       .filter(Boolean),
     compareElementOrder
   )
 
 export const parseQueryCrystalSystems = (value: unknown, allowedCrystalSystems: Set<MineralCrystalSystem>) =>
   parseQueryStringValue(value)
-    .split(',')
-    .map((item) => item.trim() as MineralCrystalSystem)
-    .filter((item) => allowedCrystalSystems.has(item))
+    .split(",")
+    .map(item => item.trim() as MineralCrystalSystem)
+    .filter(item => allowedCrystalSystems.has(item))
 
 export const parseQueryCrystalSystemMode = (value: unknown): MineralCrystalSystemMode =>
-  parseQueryStringValue(value) === 'all' ? 'all' : 'any'
+  parseQueryStringValue(value) === "all" ? "all" : "any"
 
 export const parseQueryLimit = (value: unknown, defaultLimit: number) => {
   const parsed = Number.parseInt(parseQueryStringValue(value), 10)
@@ -43,22 +43,22 @@ export const parseQueryOffset = (value: unknown) => {
   return parsed
 }
 
-export const parseQuerySort = (value: unknown): MineralsRouteState['sort'] => {
+export const parseQuerySort = (value: unknown): MineralsRouteState["sort"] => {
   const parsed = parseQueryStringValue(value)
-  return parsed === 'name_desc' ? 'name_desc' : 'name_asc'
+  return parsed === "name_desc" ? "name_desc" : "name_asc"
 }
 
 export const parseQueryImageFilter = (value: unknown): MineralImageFilter => {
   const parsed = parseQueryStringValue(value).toLowerCase()
-  if (parsed === 'with') return 'with'
-  if (parsed === 'without') return 'without'
-  return 'any'
+  if (parsed === "with") return "with"
+  if (parsed === "without") return "without"
+  return "any"
 }
 
 export const hasMineralsRouteQueryValues = (query: Record<string, unknown>) =>
-  Object.values(query).some((value) => {
-    if (Array.isArray(value)) return value.some((item) => String(item || '').trim())
-    return String(value || '').trim() !== ''
+  Object.values(query).some(value => {
+    if (Array.isArray(value)) return value.some(item => String(item || "").trim())
+    return String(value || "").trim() !== ""
   })
 
 export const readMineralsRouteState = (
@@ -91,14 +91,14 @@ export const buildMineralsRouteQuery = (
   const query: Record<string, string> = {}
   const search = state.q.trim()
   if (search) query.q = search
-  if (state.sort !== 'name_asc') query.sort = state.sort
+  if (state.sort !== "name_asc") query.sort = state.sort
   if (state.limit !== options.defaultLimit) query.limit = String(state.limit)
   if (state.offset > 0) query.offset = String(state.offset)
-  if (state.imageFilter !== 'any') query.image = state.imageFilter
-  if (state.crystalSystems.length) query.crystalSystem = state.crystalSystems.join(',')
-  if (state.crystalSystemMode !== 'any') query.crystalSystemMode = state.crystalSystemMode
-  if (state.chemistryAll.length) query.chemistryAll = options.sortElements(state.chemistryAll).join(',')
-  if (state.chemistryAny.length) query.chemistryAny = options.sortElements(state.chemistryAny).join(',')
-  if (state.chemistryNone.length) query.chemistryNone = options.sortElements(state.chemistryNone).join(',')
+  if (state.imageFilter !== "any") query.image = state.imageFilter
+  if (state.crystalSystems.length) query.crystalSystem = state.crystalSystems.join(",")
+  if (state.crystalSystemMode !== "any") query.crystalSystemMode = state.crystalSystemMode
+  if (state.chemistryAll.length) query.chemistryAll = options.sortElements(state.chemistryAll).join(",")
+  if (state.chemistryAny.length) query.chemistryAny = options.sortElements(state.chemistryAny).join(",")
+  if (state.chemistryNone.length) query.chemistryNone = options.sortElements(state.chemistryNone).join(",")
   return query
 }

@@ -1,17 +1,17 @@
-import type { AdminModerationStatus } from './admin'
-export type ImageCropTarget = 'cover' | 'step'
-export type KitchenStepImageTarget = 'draft' | 'item'
-export type FavoriteToggleVisualState = 'off' | 'partial' | 'on'
-export type RecipeToolbarAction = 'favorite' | 'search' | 'reset'
-export type KitchenMainTab = 'recipes' | 'ingredients' | 'my-recipes' | 'create' | 'edit'
-export type KitchenFormStep = { text: string; image_key?: string }
+import type {AdminModerationStatus} from "./admin"
+export type ImageCropTarget = "cover" | "step"
+export type KitchenStepImageTarget = "draft" | "item"
+export type FavoriteToggleVisualState = "off" | "partial" | "on"
+export type RecipeToolbarAction = "favorite" | "search" | "reset"
+export type KitchenMainTab = "recipes" | "ingredients" | "my-recipes" | "create" | "edit"
+export type KitchenFormStep = {text: string; image_key?: string}
 export type KitchenRecipeForm = {
   title: string
   description: string
-  kcal: number | ''
-  prep_minutes: number | ''
-  cook_minutes: number | ''
-  servings: number | ''
+  kcal: number | ""
+  prep_minutes: number | ""
+  cook_minutes: number | ""
+  servings: number | ""
   // Catalog code from kitchen_filter_options(kind='difficulty'), not a fixed ordinal level.
   difficulty: string
   meal_type: string
@@ -39,7 +39,7 @@ export type KitchenCatalogItem = {
   carbs_g?: number | null
   kcal?: number | null
 }
-export type KitchenCatalogGroup = { category: string; items: KitchenCatalogItem[] }
+export type KitchenCatalogGroup = {category: string; items: KitchenCatalogItem[]}
 export type KitchenIngredient = {
   name: string
   amount?: string
@@ -90,7 +90,7 @@ export type KitchenUserIngredient = {
 export type KitchenFavoriteIngredient = {
   ingredient_id: number
   user_id: string
-  list_type: 'include' | 'exclude'
+  list_type: "include" | "exclude"
   name: string
   category: string
   normalized_name: string
@@ -145,7 +145,7 @@ export type KitchenRecipeCreateInput = {
   cuisine: string
   diet_type?: string
   ingredients: KitchenIngredient[]
-  steps: { text: string; image_key?: string }[]
+  steps: {text: string; image_key?: string}[]
   tags?: string[]
   is_public?: boolean
 }
@@ -182,4 +182,4 @@ export type KitchenSearchInput = {
   limit?: number
   offset?: number
 }
-export type IndexedIngredient = { index: number; item: KitchenIngredient }
+export type IndexedIngredient = {index: number; item: KitchenIngredient}

@@ -1,64 +1,64 @@
-import { createError, getQuery, getRequestURL, setHeader, type H3Event } from 'h3'
+import {createError, getQuery, getRequestURL, setHeader, type H3Event} from "h3"
 const escapeHtml = (value: string) =>
   value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
 const normalizeAssetPath = (value: unknown, origin: string) => {
-  const raw = String(value || '').trim()
-  if (!raw) return ''
+  const raw = String(value || "").trim()
+  if (!raw) return ""
   let url: URL
   try {
     url = new URL(raw, origin)
   } catch {
-    return ''
+    return ""
   }
-  if (url.origin !== origin) return ''
-  if (!/^\/[a-z0-9/_-]+\.(glb|gltf)$/i.test(url.pathname)) return ''
+  if (url.origin !== origin) return ""
+  if (!/^\/[a-z0-9/_-]+\.(glb|gltf)$/i.test(url.pathname)) return ""
   return `${url.pathname}${url.search}`
 }
 const normalizeBackground = (value: unknown, fallback: string) => {
-  const raw = String(value || '').trim()
+  const raw = String(value || "").trim()
   if (!raw) return fallback
   if (/^#[0-9a-f]{3,8}$/i.test(raw)) return raw
   return fallback
 }
 const normalizeRotationPerSecond = (value: unknown) => {
-  const raw = String(value || '').trim()
-  if (!raw) return '18deg'
-  if (!/^[0-9]+(?:\.[0-9]+)?deg$/i.test(raw)) return '18deg'
+  const raw = String(value || "").trim()
+  if (!raw) return "18deg"
+  if (!/^[0-9]+(?:\.[0-9]+)?deg$/i.test(raw)) return "18deg"
   return raw.toLowerCase()
 }
 const getQueryValue = (value: unknown, fallback: string) => {
-  const raw = String(Array.isArray(value) ? value[0] : value || '').trim()
+  const raw = String(Array.isArray(value) ? value[0] : value || "").trim()
   return raw || fallback
 }
-export const renderModelViewerPage = (event: H3Event, fallbackTitle = '3D model') => {
+export const renderModelViewerPage = (event: H3Event, fallbackTitle = "3D model") => {
   const query = getQuery(event)
   const origin = getRequestURL(event).origin
   const src = normalizeAssetPath(query.src, origin)
   const title = escapeHtml(getQueryValue(query.title, fallbackTitle))
-  const background = normalizeBackground(query.background, '#18181b')
+  const background = normalizeBackground(query.background, "#18181b")
   const rotationPerSecond = escapeHtml(normalizeRotationPerSecond(query.rotationPerSecond))
   if (!src) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Bad Request',
-      message: 'Missing 3D model source'
+      statusMessage: "Bad Request",
+      message: "Missing 3D model source"
     })
   }
   const escapedSrc = escapeHtml(src)
-  setHeader(event, 'content-type', 'text/html; charset=utf-8')
+  setHeader(event, "content-type", "text/html; charset=utf-8")
   // setHeader(event, 'cache-control', 'public, max-age=3600')
-  setHeader(event, 'cache-control', 'no-store')
-  setHeader(event, 'x-frame-options', 'SAMEORIGIN')
-  setHeader(event, 'cross-origin-embedder-policy', 'require-corp')
-  setHeader(event, 'cross-origin-resource-policy', 'same-origin')
+  setHeader(event, "cache-control", "no-store")
+  setHeader(event, "x-frame-options", "SAMEORIGIN")
+  setHeader(event, "cross-origin-embedder-policy", "require-corp")
+  setHeader(event, "cross-origin-resource-policy", "same-origin")
   setHeader(
     event,
-    'content-security-policy',
+    "content-security-policy",
     [
       "default-src 'self' data: blob:",
       "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
@@ -70,7 +70,7 @@ export const renderModelViewerPage = (event: H3Event, fallbackTitle = '3D model'
       "worker-src 'self' blob:",
       "frame-ancestors 'self'",
       "base-uri 'none'"
-    ].join('; ')
+    ].join("; ")
   )
   return `<!doctype html>
 <html lang="ru">

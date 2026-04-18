@@ -1,4 +1,4 @@
-export type DocsSlug = 'company' | 'offer' | 'terms' | 'privacy'
+export type DocsSlug = "company" | "offer" | "terms" | "privacy"
 
 export type DocSectionItem = {
   label: string
@@ -13,9 +13,4 @@ export type DocContent = {
   introItems?: DocSectionItem[]
   sectionsTitle?: string
   sections: DocSectionItem[]
-}
-
-export type DocsPageContent = {
-  tabsTitle: string
-  documents: Record<DocsSlug, DocContent>
 }

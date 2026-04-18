@@ -1,5 +1,18 @@
 <script setup lang="ts">
-const { t } = useInterfacePreferences()
+type PaymentHistoryRow = LabDataTableRow & {
+  id: string
+  orderId: string
+  createdAt: string
+  plan: string
+  amount: string
+  status: string
+  access: string
+  refund: string
+  canRefund: boolean
+}
+
+const { locale, key, load, t } = useI18nSection('payments')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { formatAbsoluteDateTime } = useLocalizedDateTime()
 const { access, accessLoading, ensureAccessLoaded, history, historyLoading, loadHistory, refundOrder, loadAccess } =
   usePayments()
@@ -32,23 +45,33 @@ const formatPaymentAmount = (value?: number | null) => {
 const paymentStatusLabel = (status?: string | null) => {
   switch (String(status || '').trim()) {
     case 'success':
-      return t('payments.status.success')
+      return t('status.success')
     case 'pending':
-      return t('payments.status.pending')
+      return t('status.pending')
     case 'failed':
-      return t('payments.status.failed')
+      return t('status.failed')
     case 'canceled':
-      return t('payments.status.canceled')
+      return t('status.canceled')
     case 'refunded':
-      return t('payments.status.refunded')
+      return t('status.refunded')
     default:
-      return t('payments.status.unknown')
+      return t('status.unknown')
   }
 }
 const paymentPlanLabel = (planCode?: string | null) =>
-  String(planCode || '').trim() === 'donation' ? t('payments.plan.donation') : t('payments.plan.pro')
-const paymentHistoryRows = computed(() =>
-  history.value.map((item) => ({
+  String(planCode || '').trim() === 'donation' ? t('plan.donation') : t('plan.pro')
+const paymentHistoryRows = computed<{
+  id: string
+  orderId: string
+  createdAt: string
+  plan: string
+  amount: string
+  status: string
+  access: string
+  refund: string
+  canRefund: boolean
+}[]>(() =>
+  history.value.map(item => ({
     id: item.order_id,
     orderId: item.order_id,
     createdAt: formatDateTime(item.created_at),
@@ -120,19 +143,20 @@ await loadPaymentHistoryState()
         :rows="paymentHistoryRows"
         :loading="historyLoading"
         empty-text="У вас пока нет завершённых или созданных платёжных операций."
+        row-key="orderId"
       >
         <template #cell-refund="{ row }">
           <LabConfirmActionButton
-            v-if="row.canRefund"
+            v-if="(row as PaymentHistoryRow).canRefund"
             icon="ic:round-undo"
             confirm-icon="ic:round-check"
             label="Оформить возврат"
             confirm-label="Подтвердить"
             tooltip="Вернуть этот платёж?"
             :disabled="refundPendingOrderId !== ''"
-            @confirm="submitRefund(row.orderId)"
+            @confirm="submitRefund((row as PaymentHistoryRow).orderId)"
           />
-          <span v-else>{{ row.refund }}</span>
+          <span v-else>{{ (row as PaymentHistoryRow).refund }}</span>
         </template>
       </LabDataTable>
     </section>

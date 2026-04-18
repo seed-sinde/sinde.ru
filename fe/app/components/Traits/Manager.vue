@@ -1,263 +1,236 @@
 <template>
-  <section class="px-3 py-3 sm:px-4 sm:py-4 lg:px-5 lg:py-5">
-    <div class="grid gap-4 xl:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] xl:items-start">
-      <aside class="space-y-3 xl:sticky xl:top-4">
-        <TraitsFormAdd @add="onAdd" />
-        <LabNotify
-          :text="error"
-          tone="error"
-          as="div"
-          class-name="border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300"
+  <section class="grid grid-cols-1 items-start gap-3 xl:grid-cols-[22rem_minmax(0,1fr)]">
+    <aside class="min-w-0 space-y-2">
+      <TraitsFormAdd @add="onAdd" />
+      <LabNotify
+        :text="error"
+        tone="error"
+        as="div"
+        class-name="px-3 py-2 text-sm text-rose-300"
+      />
+    </aside>
+    <section class="min-w-0 space-y-2">
+      <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <LabBaseButton
+          :label="isAllSelected ? t('manager.clear_selection') : t('manager.select_all')"
+          variant="secondary"
+          size="sm"
+          @click="toggleSelectAll"
         />
-      </aside>
-      <section class="space-y-3">
-        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <LabBaseButton
-            :label="isAllSelected ? copy.manager.clearSelection : copy.manager.selectAll"
-            variant="secondary"
-            size="sm"
-            @click="toggleSelectAll"
-          />
-          <LabBaseButton
-            v-show="hasSelected || inProcess"
-            icon="ic:round-edit"
-            :label="copy.manager.editValue"
-            variant="secondary"
-            size="sm"
-            :disabled="!canEditSelected"
-            @click="startEditSelected"
-          />
-          <LabBaseButton
-            icon="ic:round-delete"
-            :label="copy.manager.deleteSelected"
-            variant="danger"
-            size="sm"
-            :disabled="!hasSelected || inProcess"
-            @click="removeSelectedTraits(selectedIds)"
-          />
-          <div class="lab-text-muted text-xs sm:ml-auto">
-            {{ copy.manager.total.replace('{count}', String(traits.length)) }}
-          </div>
-        </div>
-        <TraitsEditValueForm
-          v-if="editingTrait"
-          :trait="editingTrait"
-          :meta="editingTraitMeta"
-          :pending="inProcess"
-          @save="onSaveEditedValue"
-          @cancel="closeEditForm"
+        <LabBaseButton
+          v-show="hasSelected || inProcess"
+          icon="ic:round-edit"
+          :label="t('manager.edit_value')"
+          variant="secondary"
+          size="sm"
+          :disabled="!canEditSelected"
+          @click="startEditSelected"
         />
-        <div class="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
-          <TraitsCard
-            v-for="trait in traits"
-            :key="trait.t_uuid"
-            :trait="trait"
-            :selected="Boolean(selectedUuids[trait.t_uuid])"
-            @update:selected="selectedUuids[trait.t_uuid] = $event"
-          />
+        <LabBaseButton
+          icon="ic:round-delete"
+          :label="t('manager.delete_selected')"
+          variant="danger"
+          size="sm"
+          :disabled="!hasSelected || inProcess"
+          @click="removeSelectedTraits(selectedIds)"
+        />
+        <div class="text-xs text-(--lab-text-muted) sm:ml-auto">
+          {{ t('manager.total', { count: String(totalTraits) }) }}
         </div>
-        <div v-if="traits.length === 0" class="border border-dashed px-4 py-4 text-sm text-(--lab-text-muted) italic">
-          {{ copy.manager.empty }}
-        </div>
-      </section>
-    </div>
+      </div>
+      <LabLoader v-if="showInlineSyncLoader" variant="inline" :label="t('library.loading')" class="text-xs" />
+      <div class="grid grid-cols-1 gap-1.5 md:grid-cols-2 2xl:grid-cols-3">
+        <TraitsCard
+          v-for="trait in resolvedTraits"
+          :key="trait.t_uuid"
+          :trait="trait"
+          :selected="Boolean(selectedMap[trait.t_uuid])"
+          :editing="editingTraitUuid === trait.t_uuid"
+          :editing-meta="editingTraitMetaMap[trait.t_uuid] || null"
+          :edit-pending="inProcess"
+          :state-tone="traitVisualState[trait.t_uuid] || ''"
+          @update:selected="selectedMap[trait.t_uuid] = $event"
+          @request-edit="startEditForTraitUuid(trait.t_uuid)"
+          @save-inline="onSaveEditedValue"
+          @cancel-inline="closeEditForm"
+        />
+      </div>
+      <div v-if="totalTraits === 0" class="p-4 text-sm text-(--lab-text-muted) italic">
+        {{ t('manager.empty') }}
+      </div>
+    </section>
   </section>
 </template>
 <script setup lang="ts">
-const { localeCode } = useInterfacePreferences()
-const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
+const { locale, key, load, t } = useI18nSection('traits')
+await useAsyncData(key.value, load, { watch: [locale] })
 const store = useTraitsStore()
-const route = useRoute()
+const streamStatus = useTraitStreamStatus()
 const { uuid, skipFetchUuid } = useTraitNavigation()
-watchEffect(() => {
-  if (!uuid.value && /^\/traits\/?$/.test(route.path)) {
-    store.clear()
-  }
-})
-const traits = computed(() => store.traits)
+const { data: traitsData, pending: traitsPending } = await useTraitLoader(uuid, skipFetchUuid)
+const { traits: storeTraits, currentUuid: storeCurrentUuid } = storeToRefs(store)
+const resolvedTraits = computed<Trait[]>(() =>
+  storeTraits.value.length > 0
+    ? storeTraits.value
+    : Array.isArray(traitsData.value) && traitsData.value.length > 0
+      ? traitsData.value
+      : []
+)
 const {
-  selectedMap: selectedUuids,
+  selectedMap,
   hasSelected,
   isAllSelected,
   toggleSelectAll,
   clear: clearSelection,
   selectedIds
-} = useSelectionMap(traits)
-const { addTrait: onAdd, removeSelected: removeSelectedTraits, editTraitValue, inProcess, error } = useTraitActions()
+} = useSelectionMap(resolvedTraits)
+const {
+  addTrait: addTraitAction,
+  removeSelected: removeSelectedTraitsAction,
+  editTraitValue,
+  inProcess,
+  error
+} = useTraitActions()
 const editingTraitUuid = ref<string | null>(null)
-const { data: traitsData } = await useTraitLoader(uuid, skipFetchUuid)
-const hasResolvedStoreTraits = () => {
-  return Boolean(uuid.value) && store.currentUuid === uuid.value && store.traits.length > 0
-}
-const applyResolvedTraits = (items?: Trait[] | null) => {
-  if (!uuid.value) return
-  if ((!Array.isArray(items) || items.length === 0) && hasResolvedStoreTraits()) {
-    return
-  }
-  store.currentUuid = uuid.value
-  store.setTraits(Array.isArray(items) ? items : [])
-}
-applyResolvedTraits(traitsData.value)
-watch(
-  () => traitsData.value,
-  (next) => {
-    applyResolvedTraits(next)
-  }
-)
+const traitVisualState = reactive<Record<string, 'added' | 'updated' | 'removing' | ''>>({})
+const editingTraitMetaMap = reactive<Record<string, KeyMeta>>({})
+const removingIds = reactive(new Set<string>())
+const visualStateTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const selectedSingleTraitUuid = computed(() => (selectedIds.value.length === 1 ? selectedIds.value[0] : ''))
 const canEditSelected = computed(() => Boolean(selectedSingleTraitUuid.value) && !inProcess.value)
-const editingTrait = computed(() => {
-  const targetUuid = String(editingTraitUuid.value || '').trim()
-  if (!targetUuid) return null
-  return traits.value.find((trait) => trait.t_uuid === targetUuid) || null
-})
-const findMetaBySyn = (syn: string): TraitKey | null => {
-  const targetSyn = String(syn || '')
-    .trim()
-    .toLowerCase()
-  if (!targetSyn) return null
-  const entries = Object.values(store.keyMetaById || {})
-  const found = entries.find(
-    (entry) =>
-      String(entry?.syn || '')
-        .trim()
-        .toLowerCase() === targetSyn
+const isCurrentStreamPending = computed(
+  () => Boolean(uuid.value) && streamStatus.value.uuid === uuid.value && streamStatus.value.pending
+)
+const totalTraits = computed(() => resolvedTraits.value.length)
+const showInlineSyncLoader = computed(
+  () => traitsPending.value || inProcess.value || removingIds.size > 0 || isCurrentStreamPending.value
+)
+const editingTrait = computed(() =>
+  (u => (u ? resolvedTraits.value.find(t => t.t_uuid === u) || null : null))(
+    String(editingTraitUuid.value || '').trim()
   )
-  return found || null
+)
+const setTraitVisualState = (u: string, s: 'added' | 'updated' | 'removing' | '', ttl = 900) => {
+  const id = String(u || '').trim()
+  if (!id) return
+  const t = visualStateTimers.get(id)
+  if (t) clearTimeout(t)
+  traitVisualState[id] = s
+  if (!s) return
+  const nt = setTimeout(() => {
+    if (traitVisualState[id] === s) traitVisualState[id] = ''
+    visualStateTimers.delete(id)
+  }, ttl)
+  visualStateTimers.set(id, nt)
 }
-const ensureMetaForTrait = async (trait: Trait | null) => {
-  if (!trait) return
-  if (trait.t_key_id && store.keyMetaById?.[trait.t_key_id]) return
-  if (findMetaBySyn(trait.t_key)) return
-  try {
-    const res = await getKeyMeta(trait.t_key)
-    if (res?.data) store.setKeyMetaBulk([res.data])
-  } catch {
-    // optional meta preload: ignore errors and fallback to string input
-  }
+const onAdd = async (p: TraitInput) => {
+  const r = await addTraitAction(p)
+  if (r?.traitUuid) setTraitVisualState(r.traitUuid, r.action === 'updated' ? 'updated' : 'added')
+}
+const resolveSelectedIds = (s: string[] | { value?: string[] }) =>
+  Array.isArray(s) ? s : Array.isArray(s?.value) ? s.value : []
+const removeSelectedTraits = async (s: string[] | { value?: string[] }) => {
+  const ids = resolveSelectedIds(s)
+    .map(v => String(v || '').trim())
+    .filter(Boolean)
+  if (!ids.length || inProcess.value) return
+  ids.forEach(id => removingIds.add(id))
+  await removeSelectedTraitsAction(ids)
+  ids.forEach(id => {
+    removingIds.delete(id)
+    selectedMap[id] = false
+  })
 }
 const editingTraitMeta = computed<KeyMeta>(() => {
-  const trait = editingTrait.value
-  if (!trait) return { dataType: 'string' }
-  if (trait.t_key_id) {
-    const byId = store.keyMetaById?.[trait.t_key_id]
-    if (byId?.meta) return byId.meta as KeyMeta
-  }
-  const bySyn = findMetaBySyn(trait.t_key)
-  if (bySyn?.meta) return bySyn.meta as KeyMeta
-  return { dataType: 'string' }
+  const t = editingTrait.value
+  if (!t) return { dataType: 'string' }
+  const m = t.t_key_id ? store.keyMetaById?.[t.t_key_id]?.meta : null
+  return (m as KeyMeta) || { dataType: 'string' }
 })
 const startEditSelected = async () => {
   if (!selectedSingleTraitUuid.value) return
-  editingTraitUuid.value = selectedSingleTraitUuid.value
-  await ensureMetaForTrait(editingTrait.value)
+  await startEditForTraitUuid(selectedSingleTraitUuid.value)
 }
-const closeEditForm = () => {
-  editingTraitUuid.value = null
+const startEditForTraitUuid = async (u: string) => {
+  const id = String(u || '').trim()
+  if (!id) return
+  editingTraitUuid.value = id
+  const t = resolvedTraits.value.find(x => x.t_uuid === id) || null
+  if (t) {
+    editingTraitMetaMap[id] = editingTraitMeta.value
+  }
 }
-const onSaveEditedValue = async (payload: { traitUuid: string; t_key: string; t_value: string }) => {
-  const nextTraitUuid = await editTraitValue({
-    traitUuid: payload.traitUuid,
-    t_value: payload.t_value
-  })
-  if (!nextTraitUuid) return
+const closeEditForm = () => (editingTraitUuid.value = null)
+const onSaveEditedValue = async (p: { traitUuid: string; t_key: string; t_value: string }) => {
+  const r = await editTraitValue({ traitUuid: p.traitUuid, t_value: p.t_value })
+  if (!r?.nextTraitUuid) return
   editingTraitUuid.value = null
   clearSelection()
-  selectedUuids[nextTraitUuid] = true
+  selectedMap[r.nextTraitUuid] = true
+  setTraitVisualState(r.nextTraitUuid, 'updated')
 }
-watch(traits, (nextTraits) => {
-  if (!editingTraitUuid.value) return
-  if (!nextTraits.some((trait) => trait.t_uuid === editingTraitUuid.value)) {
+watch(resolvedTraits, n => {
+  if (editingTraitUuid.value && !n.some(t => t.t_uuid === editingTraitUuid.value)) {
     editingTraitUuid.value = null
   }
 })
-const collectMetaTargets = (sourceTraits: Trait[]) => {
-  const ids = Array.from(
-    new Set(sourceTraits.map((t) => t?.t_key_id).filter((v): v is number => typeof v === 'number' && v > 0))
-  )
-  const keysWithoutId = Array.from(
-    new Set(
-      sourceTraits
-        .filter((t) => !t?.t_key_id && typeof t?.t_key === 'string')
-        .map((t) => String(t.t_key).trim())
-        .filter(Boolean)
-    )
-  )
-  return { ids, keysWithoutId }
+watch(
+  resolvedTraits,
+  n => {
+    const a = new Set(n.map(t => String(t.t_uuid || '').trim()))
+    Object.keys(traitVisualState).forEach(u => !a.has(u) && (traitVisualState[u] = ''))
+  },
+  { deep: true }
+)
+const collectMetaTargets = (s: Trait[]) => {
+  return {
+    ids: [...new Set(s.map(t => t?.t_key_id).filter((v): v is number => typeof v === 'number' && v > 0))]
+  }
 }
-const hasMetaForTrait = (trait: Trait) => {
-  const id = Number(trait.t_key_id || 0)
-  if (id > 0 && store.keyMetaById[id]) return true
-  const syn = String(trait.t_key || '')
-    .trim()
-    .toLowerCase()
-  if (!syn) return true
-  return Object.values(store.keyMetaById).some(
-    (item) =>
-      String(item?.syn || '')
-        .trim()
-        .toLowerCase() === syn
-  )
-}
-const fetchKeyMeta = async (sourceTraits: Trait[]): Promise<TraitKey[]> => {
-  const unresolvedTraits = sourceTraits.filter((trait) => !hasMetaForTrait(trait))
-  if (!unresolvedTraits.length) return []
-  const { ids, keysWithoutId } = collectMetaTargets(sourceTraits)
-  if (!ids.length && !keysWithoutId.length) return []
+const fetchKeyMeta = async (s: Trait[]): Promise<TraitKey[]> => {
+  const ids = collectMetaTargets(s).ids.filter(id => !store.keyMetaById[id])
+  if (!ids.length) return []
   try {
-    const [bulkRes, keyMetaResults] = await Promise.all([
-      ids.length
-        ? getKeysMetaBulk(ids)
-        : Promise.resolve({ data: { items: [] as TraitKey[] } } as ApiResponseWithData<{ items: TraitKey[] }>),
-      Promise.all(
-        keysWithoutId.map(async (syn) => {
-          try {
-            const res = await getKeyMeta(syn)
-            return res?.data || null
-          } catch {
-            return null
-          }
-        })
-      )
-    ])
-    const byId = new Map<number, TraitKey>()
-    for (const item of bulkRes?.data?.items || []) {
-      if (item?.id) byId.set(item.id, item)
-    }
-    for (const item of keyMetaResults) {
-      if (item?.id) byId.set(item.id, item)
-    }
-    return Array.from(byId.values())
+    const res = await getKeysMetaBulk(ids)
+    return res?.data?.items || []
   } catch (e) {
     console.warn('meta preload failed', e)
     return []
   }
 }
-const metaTargets = computed(() => collectMetaTargets(traits.value))
-const metaCacheKey = computed(() => {
-  const idPart = metaTargets.value.ids.join(',')
-  const keyPart = metaTargets.value.keysWithoutId.join(',')
-  return `traits-meta:${uuid.value || ''}:${idPart}:${keyPart}`
-})
+const metaTargets = computed(() => collectMetaTargets(resolvedTraits.value))
+const metaCacheKey = computed(() => `traits-meta:${uuid.value || ''}:${metaTargets.value.ids.join(',')}`)
+const canFetchMeta = computed(
+  () =>
+    !!uuid.value &&
+    resolvedTraits.value.length > 0 &&
+    storeCurrentUuid.value === uuid.value &&
+    !isCurrentStreamPending.value
+)
+const metaFetchStateKey = computed(() => `${metaCacheKey.value}:${canFetchMeta.value ? 'ready' : 'pending'}`)
 const { data: keyMetaData } = await useAsyncData<TraitKey[]>(
-  () => metaCacheKey.value,
-  async () => await fetchKeyMeta(traits.value),
+  () => metaFetchStateKey.value,
+  () => (canFetchMeta.value ? fetchKeyMeta(resolvedTraits.value) : Promise.resolve([])),
   {
     server: true,
     lazy: false,
     default: () => [],
-    watch: [metaCacheKey]
+    watch: [metaCacheKey, canFetchMeta]
   }
 )
-const applyMeta = (items?: TraitKey[] | null) => {
-  if (!Array.isArray(items) || items.length === 0) return
-  store.setKeyMetaBulk(items)
+const applyMeta = (i?: TraitKey[] | null) => {
+  if (!Array.isArray(i) || i.length === 0) return
+  store.setKeyMetaBulk(i)
 }
 applyMeta(keyMetaData.value)
 watch(
   () => keyMetaData.value,
-  (next) => {
-    applyMeta(next)
-  }
+  next => applyMeta(next)
 )
+onBeforeUnmount(() => {
+  for (const timer of visualStateTimers.values()) {
+    clearTimeout(timer)
+  }
+  visualStateTimers.clear()
+})
 </script>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-const { localeCode } = useInterfacePreferences()
+useTraitsMobileHeader()
+const { locale, key, load, t } = useI18nSection('traits')
+await useAsyncData(key.value, load, { watch: [locale] })
 const formatShortUuid = shortUuid
-const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
 const route = useRoute()
 const store = useTraitsStore()
 const { error: pasteError, pasteUuidAndNavigate } = usePasteUuid()
@@ -19,14 +20,14 @@ const setUuid = computed(() => {
 if (!UUID_RE.test(traitUuid.value)) {
   throw createError({
     statusCode: 404,
-    message: copy.value.detail.notFound
+    message: t('detail.not_found')
   })
 }
-const pasteUuid = async () => await pasteUuidAndNavigate((uuid) => `/traits/trait/${uuid}`)
+const pasteUuid = async () => await pasteUuidAndNavigate(uuid => `/traits/trait/${uuid}`)
 const resolveTraitFromStore = () => {
   const targetUuid = traitUuid.value
   if (!targetUuid) return null
-  const match = store.traits.find((item) => String(item?.t_uuid || '').trim() === targetUuid)
+  const match = store.traits.find(item => String(item?.t_uuid || '').trim() === targetUuid)
   return match ? { ...match } : null
 }
 const { data: traitData, error: traitError } = await useAsyncData<Trait | null>(
@@ -36,7 +37,11 @@ const { data: traitData, error: traitError } = await useAsyncData<Trait | null>(
     try {
       const item = await fetchTraitByUuid(traitUuid.value)
       return item || fallback || null
-    } catch (error) {
+    } catch (error: any) {
+      const status = Number(error?.statusCode ?? error?.status ?? error?.response?.status ?? 0)
+      if (status === 404) {
+        return fallback || null
+      }
       if (fallback) return fallback
       throw error
     }
@@ -48,29 +53,27 @@ const { data: traitData, error: traitError } = await useAsyncData<Trait | null>(
   }
 )
 if (traitError.value && !traitData.value) {
+  const statusCode = Number((traitError.value as any)?.statusCode || (traitError.value as any)?.status || 500)
   throw createError({
-    statusCode: 500,
-    message: copy.value.detail.loadFailed
-  })
-}
-if (!traitData.value) {
-  throw createError({
-    statusCode: 404,
-    message: copy.value.detail.notFound
+    statusCode,
+    message: statusCode === 404 ? t('detail.not_found') : t('detail.load_failed')
   })
 }
 const trait = computed<Trait | null>(() => traitData.value ?? null)
 const traitKey = computed(() => String(trait.value?.t_key || '').trim())
 const title = computed(
-  () => `${traitKey.value || copy.value.detail.titleFallback} · ${copy.value.detail.titleFallback}`
+  () => `${traitKey.value || t('detail.title_fallback')} · ${t('detail.title_fallback')}`
 )
+const pageDescription = computed(() => t('detail.seo_description', { key: traitKey.value }))
+const breadcrumbItems = computed<BreadcrumbItem[]>(() => [{ label: t('detail.breadcrumb'), to: '/traits' }])
 const { data: metaEntryData } = await useAsyncData<TraitKey | null>(
-  () => `trait-meta:${traitUuid.value}:${traitKey.value}`,
+  () => `trait-meta:${traitUuid.value}:${String(trait.value?.t_key_id || 0)}`,
   async () => {
-    if (!traitKey.value) return null
+    const keyId = Number(trait.value?.t_key_id || 0)
+    if (keyId <= 0) return null
     try {
-      const res = await getKeyMeta(traitKey.value)
-      return res?.data || null
+      const res = await getKeysMetaBulk([keyId])
+      return res?.data?.items?.[0] || null
     } catch {
       return null
     }
@@ -79,7 +82,7 @@ const { data: metaEntryData } = await useAsyncData<TraitKey | null>(
     server: true,
     lazy: false,
     default: () => null,
-    watch: [traitKey]
+    watch: [trait]
   }
 )
 const metaEntry = computed<TraitKey | null>(() => metaEntryData.value ?? null)
@@ -88,7 +91,7 @@ const metaRaw = computed<Record<string, any>>(() => {
   return raw && typeof raw === 'object' ? raw : {}
 })
 const metaType = computed(() => String(metaRaw.value.dataType || metaRaw.value.type || '').trim())
-const dataTypeLabel = computed(() => getDataTypeLabel(metaType.value, copy.value.detail.metaMissing))
+const dataTypeLabel = computed(() => getDataTypeLabel(metaType.value, t('detail.meta_missing')))
 const metaInfoEntries = computed(() => {
   const raw = metaRaw.value || {}
   const items: Array<{ key: string; label: string; value: string }> = []
@@ -96,7 +99,7 @@ const metaInfoEntries = computed(() => {
   if (typeof keyId === 'number' && Number.isFinite(keyId)) {
     items.push({
       key: 'keyId',
-      label: copy.value.detail.keyId,
+      label: t('detail.key.id'),
       value: String(keyId)
     })
   }
@@ -115,6 +118,10 @@ const metaInfoEntries = computed(() => {
 const displayValue = computed(() => {
   return formatTraitValueForDisplay(String(trait.value?.t_value || ''), metaType.value)
 })
+const mobileActions = computed<MobileHeaderAction[]>(() => [
+  { kind: 'traits-copy-uuid', uuid: traitUuid.value },
+  { kind: 'traits-paste-uuid', mode: 'trait' }
+])
 const colorInfo = computed(() => {
   if (metaType.value !== 'color') return null
   return resolveColorPreviewInfo(String(trait.value?.t_value || ''), metaRaw.value)
@@ -122,16 +129,20 @@ const colorInfo = computed(() => {
 const displayValueText = computed(() => colorInfo.value?.text || displayValue.value || '—')
 definePageMeta({
   robots: 'noindex, nofollow',
-  key: (route) => route.path
+  key: route => route.path
 })
 usePageSeo({
   title,
-  description: () => copy.value.detail.seoDescription.replace('{key}', traitKey.value)
+  description: pageDescription
 })
 </script>
 <template>
-  <div v-if="trait" class="space-y-2">
-    <LabNavHeader :title :breadcrumb-items="[{ label: copy.detail.breadcrumb, to: '/traits' }]">
+  <div>
+    <LabNavHeader
+      :title
+      :breadcrumb-items="breadcrumbItems"
+      :mobile-actions="mobileActions"
+    >
       <template #actions="{ compact }">
         <Icon
           v-if="setUuid && !compact"
@@ -142,10 +153,10 @@ usePageSeo({
         <NuxtLink
           v-if="setUuid && !compact"
           :to="`/traits/${setUuid}`"
-          class="lab-text-muted min-w-0 truncate font-mono text-sm transition hover:text-(--lab-text-primary)"
-          :title="copy.detail.openSetTitle.replace('{uuid}', setUuid)"
+          class="min-w-0 truncate font-mono text-sm text-(--lab-text-muted) transition hover:text-(--lab-text-primary)"
+          :title="t('detail.open_set_title', { uuid: setUuid })"
         >
-          {{ formatShortUuid(setUuid, 5) || copy.uuidButton.emptyUuid }}
+          {{ formatShortUuid(setUuid, 5) || t('detail.copy_uuid_idle') }}
         </NuxtLink>
         <Icon
           v-if="setUuid && !compact"
@@ -153,68 +164,43 @@ usePageSeo({
           class="h-4 w-4 shrink-0 text-zinc-600"
           aria-hidden="true"
         />
-        <TraitsUuidButton action="copy" :uuid="trait.t_uuid" :compact="compact" />
+        <TraitsUuidButton action="copy" :uuid="traitUuid" :compact="compact" />
         <TraitsUuidButton action="paste" :compact="compact" @click="pasteUuid" />
       </template>
     </LabNavHeader>
     <LabNotify :text="pasteError" tone="error" class-name="px-4" />
-    <section class="space-y-4 px-3 py-3 sm:px-4 sm:py-4 lg:px-5">
-      <article
-        class="mx-auto max-w-5xl border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_84%,transparent)]"
-      >
-        <div class="border-b px-4 py-3 sm:px-5">
-          <LabCopyBlock
-            label="UUID"
-            :value="trait.t_uuid"
-            :title-idle="copy.detail.copyUuidIdle"
-            :title-success="copy.detail.copyUuidSuccess"
-            :title-error="copy.detail.copyUuidError"
+    <section class="space-y-2 p-4">
+      <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
+        <h2 class="text-lg font-semibold tracking-tight sm:text-2xl">{{ trait?.t_key }}</h2>
+        <span class="text-lg text-(--lab-text-soft) sm:text-2xl">:</span>
+        <div class="flex min-w-0 flex-1 items-center gap-2 text-base sm:text-xl">
+          <span
+            v-if="colorInfo"
+            class="inline-block h-2.5 w-2.5 shrink-0 self-center rounded-full border"
+            :style="{ backgroundColor: colorInfo.css }"
+            aria-hidden="true"
           />
+          <span class="min-w-0 leading-relaxed wrap-break-word whitespace-pre-wrap">
+            {{ displayValueText }}
+          </span>
         </div>
-        <div class="border-b px-4 py-4 sm:px-5">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
-                <h2 class="text-lg font-semibold tracking-tight sm:text-2xl">{{ trait.t_key }}</h2>
-                <span class="lab-text-soft text-lg sm:text-2xl">:</span>
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2 text-base sm:text-xl">
-                    <span
-                      v-if="colorInfo"
-                      class="inline-block h-2.5 w-2.5 shrink-0 self-center rounded-full border"
-                      :style="{ backgroundColor: colorInfo.css }"
-                      aria-hidden="true"
-                    />
-                    <span class="min-w-0 leading-relaxed wrap-break-word whitespace-pre-wrap">
-                      {{ displayValueText }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p
-                v-if="trait.t_value && trait.t_value !== displayValueText"
-                class="lab-text-muted mt-3 font-mono text-xs wrap-break-word whitespace-pre-wrap"
-              >
-                {{ trait.t_value }}
-              </p>
-            </div>
-            <div class="w-full max-w-lg space-y-2 lg:w-80 lg:flex-none">
-              <p class="lab-text-muted text-xs tracking-wide uppercase">{{ copy.detail.keyParams }}</p>
-              <div v-if="metaInfoEntries.length" class="flex flex-wrap gap-2 text-xs">
-                <span
-                  v-for="entry in metaInfoEntries"
-                  :key="entry.key"
-                  class="inline-flex items-center gap-1 border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_62%,transparent)] px-2 py-1"
-                >
-                  <span class="lab-text-muted">{{ entry.label }}:</span>
-                  <span class="lab-text-secondary">{{ entry.value }}</span>
-                </span>
-              </div>
-              <p v-else class="text-sm sm:text-base">—</p>
-            </div>
-          </div>
-        </div>
-      </article>
+      </div>
+      <p
+        v-if="trait?.t_value && trait?.t_value !== displayValueText"
+        class="mt-3 font-mono text-xs wrap-break-word whitespace-pre-wrap text-(--lab-text-muted)"
+      >
+        {{ trait?.t_value }}
+      </p>
+      <p class="w-full max-w-lg text-xs tracking-wide text-(--lab-text-muted) uppercase lg:w-80">
+        {{ t('detail.key.params') }}
+      </p>
+      <div v-if="metaInfoEntries.length" class="flex w-full max-w-lg flex-wrap gap-2 text-xs lg:w-80">
+        <span v-for="entry in metaInfoEntries" :key="entry.key" class="inline-flex items-center gap-1 px-2 py-1">
+          <span class="text-(--lab-text-muted)">{{ entry.label }}:</span>
+          <span class="text-(--lab-text-secondary)">{{ entry.value }}</span>
+        </span>
+      </div>
+      <p v-else class="w-full max-w-lg text-sm sm:text-base lg:w-80">пусто</p>
     </section>
   </div>
 </template>

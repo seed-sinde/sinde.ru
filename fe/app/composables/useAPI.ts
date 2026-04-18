@@ -1,141 +1,242 @@
-import { joinURL } from 'ufo'
-import { hasAuthSessionHint, syncAuthSessionHint } from '~/utils/authSessionHint'
-import { interfaceLocaleToTag, normalizeInterfaceLocale } from '~/data/interfacePreferences'
+import {joinURL} from "ufo"
+import {hasAuthSessionHint, syncAuthSessionHint} from "~/utils/authSessionHint"
+import {interfaceLocaleToTag, normalizeInterfaceLocale} from "~/data/themePreferences"
+type HttpMethod = NonNullable<ApiJsonOptions["method"]>
+type AuthOptions = {
+  requiresSession?: boolean
+  allowAutoRefresh?: boolean
+}
 type ApiJsonOptions = NonNullable<Parameters<typeof $fetch>[1]> & {
-  auth?: {
-    requiresSession?: boolean
-    allowAutoRefresh?: boolean
+  auth?: AuthOptions
+}
+type FetchOptions = NonNullable<Parameters<typeof $fetch>[1]>
+type BasicFetch = <T>(request: string, options?: FetchOptions) => Promise<T>
+type HeaderMap = Record<string, string>
+type FetchErrorLike = {
+  status?: number
+  statusCode?: number
+  message?: string
+  data?: {message?: string}
+  response?: {
+    status?: number
+    _data?: {message?: string}
   }
 }
-type BasicFetch = <Response>(request: string, options?: NonNullable<Parameters<typeof $fetch>[1]>) => Promise<Response>
-const shouldNotifyAuthStateStale = (path: string, method: string) => {
-  const normalizedPath = String(path || '').trim()
-  const normalizedMethod = String(method || 'GET').toUpperCase()
-  if (!normalizedPath) return false
-  if (normalizedMethod === 'GET' && (normalizedPath === '/auth/summary' || normalizedPath === '/auth/admin/summary')) {
-    return false
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
+const AUTH_PUBLIC_PATHS = new Set([
+  "/auth/register",
+  "/auth/verify-email/request",
+  "/auth/verify-email/confirm",
+  "/auth/login",
+  "/auth/login/2fa",
+  "/auth/refresh",
+  "/auth/logout",
+  "/auth/password/forgot",
+  "/auth/password/reset"
+])
+const AUTH_STALE_SKIP_PATHS = new Set(["/auth/summary", "/auth/admin/summary"])
+const CSRF_COOKIE_NAMES = ["csrf_token", "__Host-csrf_token"] as const
+const SESSION_STATE_MESSAGES = new Set([
+  "authentication required",
+  "invalid or expired session",
+  "unauthorized",
+  "требуется авторизация.",
+  "требуется авторизация",
+  "недействительная или просроченная сессия.",
+  "недействительная или просроченная сессия"
+])
+const KITCHEN_PROTECTED_PREFIXES = [
+  "/kitchen/ingredients/custom",
+  "/kitchen/ingredients/favorites",
+  "/kitchen/recipes/manage/",
+  "/kitchen/recipes/mine",
+  "/kitchen/admin/"
+] as const
+const KITCHEN_RECIPE_FAVORITE_RE = /^\/kitchen\/recipes\/[^/]+\/favorite(?:\?.*)?$/
+const KITCHEN_RECIPE_ITEM_RE = /^\/kitchen\/recipes\/[^/?]+(?:\?.*)?$/
+
+const toPath = (p: string) => (p.startsWith("/") ? p : `/${p}`)
+const getMethod = (m?: ApiJsonOptions["method"]): HttpMethod => String(m ?? "GET").toUpperCase() as HttpMethod
+const decodeCookieValue = (v: string) => {
+  try {
+    return decodeURIComponent(v)
+  } catch {
+    return v
   }
-  return true
 }
-function readCSRFFromCookieHeader(cookieHeader: string | undefined) {
-  const raw = String(cookieHeader || '')
-  if (!raw) return ''
-  let hostCsrfToken = ''
-  for (const chunk of raw.split(';')) {
-    const [namePart, ...valueParts] = chunk.split('=')
-    const name = String(namePart || '').trim()
-    if (name !== 'csrf_token' && name !== '__Host-csrf_token') continue
-    const value = valueParts.join('=').trim()
-    if (!value) return ''
-    const decoded = (() => {
-      try {
-        return decodeURIComponent(value)
-      } catch {
-        return value
-      }
-    })()
-    if (name === 'csrf_token') {
-      return decoded
-    }
-    hostCsrfToken = decoded
-  }
-  return hostCsrfToken
+const getStatusCodeFromError = (e: FetchErrorLike) => Number(e?.status || e?.statusCode || e?.response?.status || 0)
+const getErrorMessage = (e: FetchErrorLike) =>
+  String(e?.data?.message || e?.response?._data?.message || e?.message || "").trim()
+const shouldNotifyAuthStateStale = (path: string, method: string) =>
+  Boolean(path) && !(method === "GET" && AUTH_STALE_SKIP_PATHS.has(path))
+const isSessionStateError = (msg: string) => SESSION_STATE_MESSAGES.has(msg.trim().toLowerCase())
+const notifyAuthStateStale = () => {
+  if (!import.meta.client) return
+  window.dispatchEvent(new Event("auth-state-stale"))
 }
-function readCookieFromDocument(names: readonly string[]) {
-  if (!import.meta.client) return ''
-  const raw = String(document.cookie || '')
-  if (!raw) return ''
-  let fallback = ''
-  for (const chunk of raw.split(';')) {
-    const [namePart, ...valueParts] = chunk.split('=')
-    const name = String(namePart || '').trim()
+const readCookieValue = (raw: string, names: readonly string[]) => {
+  if (!raw) return ""
+  let fallback = ""
+  for (const chunk of raw.split(";")) {
+    const [namePart, ...valueParts] = chunk.split("=")
+    const name = String(namePart || "").trim()
     if (!name || !names.includes(name)) continue
-    const value = valueParts.join('=').trim()
-    if (!value) return ''
-    const decoded = (() => {
-      try {
-        return decodeURIComponent(value)
-      } catch {
-        return value
-      }
-    })()
-    if (name === 'csrf_token') {
-      return decoded
-    }
+    const value = valueParts.join("=").trim()
+    if (!value) return ""
+    const decoded = decodeCookieValue(value)
+    if (name === "csrf_token") return decoded
     fallback = decoded
   }
   return fallback
 }
-function copyHeaderIfMissing(
-  headers: Record<string, string>,
-  requestHeaders: Record<string, string | undefined>,
-  sourceName: string,
-  targetName = sourceName
-) {
-  if (headers[targetName] || headers[targetName.toLowerCase()]) return
-  const value = requestHeaders[sourceName]
-  if (!value) return
-  headers[targetName] = value
-}
-const getStatusCodeFromError = (err: any) => Number(err?.status || err?.statusCode || err?.response?.status || 0)
-const getErrorMessage = (err: any) =>
-  String(err?.data?.message || err?.response?._data?.message || err?.message || '').trim()
-const isSessionStateError = (message: string) => {
-  const normalized = message.trim().toLowerCase()
-  if (!normalized) return false
-  return (
-    normalized === 'authentication required' ||
-    normalized === 'invalid or expired session' ||
-    normalized === 'unauthorized' ||
-    normalized === 'требуется авторизация.' ||
-    normalized === 'требуется авторизация' ||
-    normalized === 'недействительная или просроченная сессия.' ||
-    normalized === 'недействительная или просроченная сессия'
-  )
-}
-const isProtectedKitchenPath = (path: string, method: string) => {
-  if (path === '/kitchen/ingredients/account') return true
-  if (path.startsWith('/kitchen/ingredients/custom')) return true
-  if (path.startsWith('/kitchen/ingredients/favorites')) return true
-  if (path.startsWith('/kitchen/recipes/manage/')) return true
-  if (path.startsWith('/kitchen/recipes/mine')) return true
-  if (path.startsWith('/kitchen/admin/')) return true
-  if (/^\/kitchen\/recipes\/[^/]+\/favorite(?:\?.*)?$/.test(path)) return true
-  if (path === '/kitchen/recipes' && method === 'POST') return true
-  if (/^\/kitchen\/recipes\/[^/?]+(?:\?.*)?$/.test(path) && ['PATCH', 'DELETE'].includes(method)) return true
-  return false
-}
-const isProtectedPath = (path: string, method: string) => {
-  const normalized = String(path || '').trim()
-  if (!normalized) return false
-  if (normalized.startsWith('/auth/')) {
-    return ![
-      '/auth/register',
-      '/auth/verify-email/request',
-      '/auth/verify-email/confirm',
-      '/auth/login',
-      '/auth/login/2fa',
-      '/auth/refresh',
-      '/auth/logout',
-      '/auth/password/forgot',
-      '/auth/password/reset'
-    ].includes(normalized)
+const readCSRFFromCookieHeader = (cookieHeader?: string) =>
+  readCookieValue(String(cookieHeader || ""), CSRF_COOKIE_NAMES)
+const readCookieFromDocument = (names: readonly string[]) =>
+  !import.meta.client ? "" : readCookieValue(String(document.cookie || ""), names)
+const mergeHeaders = (src?: HeadersInit) => {
+  const out: HeaderMap = {}
+  if (!src) return out
+  if (src instanceof Headers) {
+    src.forEach((v, k) => (out[k.toLowerCase()] = v))
+    return out
   }
-  if (normalized === '/media/upload') return true
-  return isProtectedKitchenPath(normalized, method)
+  if (Array.isArray(src)) {
+    for (const [k, v] of src) {
+      if (typeof v === "string") out[String(k).toLowerCase()] = v
+    }
+    return out
+  }
+  for (const [k, v] of Object.entries(src)) {
+    if (typeof v === "string") out[k.toLowerCase()] = v
+  }
+  return out
 }
-const canAutoRefreshByPath = (path: string, method: string, auth: ApiJsonOptions['auth'], err?: any) => {
-  const normalized = String(path || '').trim()
-  if (!normalized) return false
-  if (normalized === '/auth/refresh') return false
-  if (auth?.allowAutoRefresh === false) return false
-  if (!isProtectedPath(normalized, method) && auth?.requiresSession !== true) return false
-  if (err && !isSessionStateError(getErrorMessage(err))) return false
-  return true
+const setHeaderIfMissing = (headers: HeaderMap, key: string, value?: string) => {
+  const k = key.toLowerCase()
+  if (!value || headers[k]) return
+  headers[k] = value
 }
-const notifyAuthStateStale = () => {
+const copyRequestHeadersIfMissing = (
+  headers: HeaderMap,
+  reqHeaders: Record<string, string | undefined>,
+  keys: readonly string[]
+) => {
+  for (const key of keys) setHeaderIfMissing(headers, key, reqHeaders[key])
+}
+const isProtectedKitchenPath = (path: string, method: string) =>
+  path === "/kitchen/ingredients/account" ||
+  KITCHEN_PROTECTED_PREFIXES.some(p => path.startsWith(p)) ||
+  KITCHEN_RECIPE_FAVORITE_RE.test(path) ||
+  (path === "/kitchen/recipes" && method === "POST") ||
+  (KITCHEN_RECIPE_ITEM_RE.test(path) && ["PATCH", "DELETE"].includes(method))
+const isProtectedPath = (path: string, method: string) =>
+  !path
+    ? false
+    : path.startsWith("/auth/")
+      ? !AUTH_PUBLIC_PATHS.has(path)
+      : path === "/media/upload"
+        ? true
+        : isProtectedKitchenPath(path, method)
+const canAutoRefreshByPath = (path: string, method: string, auth?: AuthOptions, err?: FetchErrorLike) =>
+  Boolean(path) &&
+  path !== "/auth/refresh" &&
+  auth?.allowAutoRefresh !== false &&
+  (isProtectedPath(path, method) || auth?.requiresSession === true) &&
+  (!err || isSessionStateError(getErrorMessage(err)))
+const buildJsonHeaders = (path: string, method: string, options: ApiJsonOptions) => {
+  const headers = mergeHeaders(options.headers)
+  if (import.meta.server) {
+    const reqHeaders = useRequestHeaders([
+      "cookie",
+      "x-csrf-token",
+      "user-agent",
+      "accept-language",
+      "x-forwarded-for",
+      "x-real-ip"
+    ])
+    copyRequestHeadersIfMissing(headers, reqHeaders, [
+      "cookie",
+      "x-csrf-token",
+      "user-agent",
+      "accept-language",
+      "x-forwarded-for",
+      "x-real-ip"
+    ])
+    if (!headers["x-csrf-token"]) {
+      setHeaderIfMissing(headers, "x-csrf-token", readCSRFFromCookieHeader(reqHeaders.cookie))
+    }
+  }
+  if (import.meta.client && !headers["accept-language"]) {
+    const ui = useUiPreferencesStore()
+    headers["accept-language"] = interfaceLocaleToTag(normalizeInterfaceLocale(ui.interfaceLocale))
+  }
+  if (import.meta.client && !SAFE_METHODS.has(method) && !headers["x-csrf-token"]) {
+    const csrf = readCookieFromDocument(CSRF_COOKIE_NAMES).trim()
+    if (csrf) {
+      headers["x-csrf-token"] = csrf
+    }
+  }
+  return headers
+}
+const buildJsonRequestConfig = (options: ApiJsonOptions, headers: HeaderMap) => {
+  const {auth: _auth, ...rest} = options
+  return {
+    ...rest,
+    credentials: "include" as const,
+    headers
+  }
+}
+const emitAuthUserRefreshed = (user: AuthUser | null) => {
   if (!import.meta.client) return
-  window.dispatchEvent(new Event('auth-state-stale'))
+  window.dispatchEvent(new CustomEvent("auth-user-refreshed", {detail: {user}}))
+}
+const refreshSession = async (basicFetch: BasicFetch, headers: HeaderMap) => {
+  const res = await basicFetch<ApiResponseWithData<{user?: AuthUser}>>("/api/proxy/auth/refresh", {
+    method: "POST",
+    credentials: "include",
+    headers
+  })
+  const user = res?.data?.user || null
+  if (import.meta.client) {
+    syncAuthSessionHint(Boolean(user))
+    emitAuthUserRefreshed(user)
+    const csrf = readCookieFromDocument(CSRF_COOKIE_NAMES).trim()
+    if (csrf) headers["x-csrf-token"] = csrf
+  }
+  return user
+}
+const handleJsonError = (path: string, method: string, err: FetchErrorLike) => {
+  if (
+    import.meta.client &&
+    hasAuthSessionHint() &&
+    getStatusCodeFromError(err) === 401 &&
+    isSessionStateError(getErrorMessage(err)) &&
+    shouldNotifyAuthStateStale(path, method)
+  )
+    notifyAuthStateStale()
+}
+const parseJsonLikeStreamPayload = async (res: Response, onLine: (line: unknown) => void) => {
+  const text = await res.text()
+  const payload = JSON.parse(text)
+  if (!Array.isArray(payload)) {
+    onLine(payload)
+    return
+  }
+  const isTuple = payload.length === 2 && typeof payload[0] === "string" && typeof payload[1] === "string"
+  if (isTuple) onLine(payload)
+  else payload.forEach(item => onLine(item))
+}
+const createHttpError = async (res: Response) => {
+  const text = await res.text().catch(() => "")
+  const err = new Error(`Stream request failed: HTTP ${res.status}`) as Error & {
+    status?: number
+    statusCode?: number
+    data?: string
+  }
+  err.status = res.status
+  err.statusCode = res.status
+  err.data = text
+  return err
 }
 /**
  * Provides shared API helpers for JSON and NDJSON requests.
@@ -146,180 +247,83 @@ export const useAPI = () => {
    * Executes a proxied JSON request with auth-aware retry logic.
    */
   const json = async <T>(path: string, options: ApiJsonOptions = {}): Promise<T> => {
-    const p = path.startsWith('/') ? path : `/${path}`
-    const method = String((options as Record<string, any>).method ?? 'GET')
-    const normalizedMethod = method.toUpperCase()
-    const auth = options.auth
-    const headers: Record<string, string> = {}
-    if (options.headers) {
-      for (const [key, value] of Object.entries(options.headers as Record<string, string>)) {
-        if (typeof value === 'string') headers[key] = value
+    const p = toPath(path)
+    const method = getMethod(options.method)
+    const headers = buildJsonHeaders(p, method, options)
+    const cfg = buildJsonRequestConfig({...options, method}, headers)
+    try {
+      return await basicFetch<T>(`/api/proxy${p}`, cfg)
+    } catch (e) {
+      const err = e as FetchErrorLike
+      const canRetry =
+        import.meta.client &&
+        hasAuthSessionHint() &&
+        getStatusCodeFromError(err) === 401 &&
+        canAutoRefreshByPath(p, method, options.auth, err)
+      if (!canRetry) {
+        handleJsonError(p, method, err)
+        throw err
       }
-    }
-    if (import.meta.server) {
-      const reqHeaders = useRequestHeaders([
-        'cookie',
-        'x-csrf-token',
-        'user-agent',
-        'accept-language',
-        'x-forwarded-for',
-        'x-real-ip'
-      ])
-      copyHeaderIfMissing(headers, reqHeaders, 'cookie')
-      copyHeaderIfMissing(headers, reqHeaders, 'x-csrf-token')
-      copyHeaderIfMissing(headers, reqHeaders, 'user-agent')
-      copyHeaderIfMissing(headers, reqHeaders, 'accept-language')
-      copyHeaderIfMissing(headers, reqHeaders, 'x-forwarded-for')
-      copyHeaderIfMissing(headers, reqHeaders, 'x-real-ip')
-      if (!headers['X-CSRF-Token'] && !headers['x-csrf-token']) {
-        const csrfToken = readCSRFFromCookieHeader(reqHeaders.cookie)
-        if (csrfToken) headers['X-CSRF-Token'] = csrfToken
-      }
-    }
-    if (import.meta.client && !headers['Accept-Language'] && !headers['accept-language']) {
-      const uiPreferences = useUiPreferencesStore()
-      headers['Accept-Language'] = interfaceLocaleToTag(normalizeInterfaceLocale(uiPreferences.interfaceLocale))
-    }
-    if (import.meta.client && !['GET', 'HEAD', 'OPTIONS'].includes(normalizedMethod)) {
-      const csrfToken = readCookieFromDocument(['csrf_token', '__Host-csrf_token']).trim()
-      if (csrfToken && !headers['X-CSRF-Token'] && !headers['x-csrf-token']) {
-        headers['X-CSRF-Token'] = csrfToken
-      }
-    }
-    const requestConfig = {
-      ...(options as Record<string, any>),
-      method: method as any,
-      credentials: 'include' as const,
-      headers
-    }
-    delete (requestConfig as Record<string, any>).auth
-    let retriedAfterRefresh = false
-    while (true) {
       try {
-        const response = await basicFetch<T>(`/api/proxy${p}`, requestConfig)
-        return response as T
-      } catch (err: any) {
-        const status = getStatusCodeFromError(err)
-        const sessionHint = import.meta.client ? hasAuthSessionHint() : false
-        const canRetry =
-          import.meta.client &&
-          status === 401 &&
-          !retriedAfterRefresh &&
-          sessionHint &&
-          canAutoRefreshByPath(p, normalizedMethod, auth, err)
-        if (!canRetry) {
-          if (
-            import.meta.client &&
-            sessionHint &&
-            status === 401 &&
-            isSessionStateError(getErrorMessage(err)) &&
-            shouldNotifyAuthStateStale(p, normalizedMethod)
-          ) {
-            notifyAuthStateStale()
-          }
-          throw err
-        }
-        retriedAfterRefresh = true
-        try {
-          const refreshRes = await basicFetch<ApiResponseWithData<{ user?: AuthUser }>>('/api/proxy/auth/refresh', {
-            method: 'POST',
-            credentials: 'include',
-            headers
-          })
-          const refreshedUser = refreshRes?.data?.user || null
-          if (import.meta.client) {
-            syncAuthSessionHint(Boolean(refreshedUser))
-            window.dispatchEvent(
-              new CustomEvent('auth-user-refreshed', {
-                detail: {
-                  user: refreshedUser
-                }
-              })
-            )
-            const csrfToken = readCookieFromDocument(['csrf_token', '__Host-csrf_token']).trim()
-            if (csrfToken) {
-              headers['X-CSRF-Token'] = csrfToken
-            }
-          }
-        } catch {
+        await refreshSession(basicFetch, headers)
+        return await basicFetch<T>(`/api/proxy${p}`, cfg)
+      } catch {
+        if (import.meta.client) {
           syncAuthSessionHint(false)
-          notifyAuthStateStale()
-          throw err
         }
+        notifyAuthStateStale()
+        throw err
       }
     }
   }
   /**
    * Executes a proxied NDJSON stream request and emits parsed lines.
    */
-  const stream = async (path: string, onLine: (line: Trait) => void, options: RequestInit = {}): Promise<void> => {
-    const p = path.startsWith('/') ? path : `/${path}`
+  const stream = async (path: string, onLine: (line: unknown) => void, options: RequestInit = {}): Promise<void> => {
+    const p = toPath(path)
     const config = useRuntimeConfig()
-    const base = import.meta.client ? '' : useRequestURL().origin || config.public.baseURL
-    const url = joinURL(base, '/api/proxy', p)
-    const headers: Record<string, string> = {
-      Accept: 'application/x-ndjson, application/json',
-      ...((options.headers as Record<string, string>) || {})
-    }
-    if (!import.meta.client) {
-      const req = useRequestHeaders(['cookie'])
-      if (req.cookie) headers.cookie = req.cookie
+    const base = import.meta.client ? "" : useRequestURL().origin || config.public.baseURL
+    const url = joinURL(base, "/api/proxy", p)
+    const headers = mergeHeaders(options.headers)
+    setHeaderIfMissing(headers, "accept", "application/x-ndjson, application/json")
+    if (import.meta.server) {
+      const req = useRequestHeaders(["cookie"])
+      setHeaderIfMissing(headers, "cookie", req.cookie)
     }
     const res = await fetch(url, {
       ...options,
-      method: options.method ?? 'GET',
-      credentials: 'include',
+      method: options.method ?? "GET",
+      credentials: "include",
       headers
     })
-    if (!res.ok) {
+    if (!res.ok) throw await createHttpError(res)
+    const ct = String(res.headers.get("content-type") || "").toLowerCase()
+    if (ct.includes("application/json") && !ct.includes("application/x-ndjson")) {
+      await parseJsonLikeStreamPayload(res, onLine)
       return
     }
-    const ct = res.headers.get('content-type') || ''
-    if (!ct.includes('application/x-ndjson')) return
+    if (!ct.includes("application/x-ndjson")) throw new Error(`Unexpected stream content-type: ${ct || "empty"}`)
     const reader = res.body?.getReader()
-    if (!reader) return
+    if (!reader) throw new Error("Response body reader is unavailable")
     const decoder = new TextDecoder()
-    let buffer = ''
+    let buf = ""
     while (true) {
-      const { value, done } = await reader.read()
+      const {value, done} = await reader.read()
       if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      let idx: number
-      while ((idx = buffer.indexOf('\n')) !== -1) {
-        const line = buffer.slice(0, idx).trim()
-        buffer = buffer.slice(idx + 1)
-        if (!line) continue
-        try {
-          const parsed = JSON.parse(line) as Trait
-          if (
-            parsed &&
-            typeof parsed.t_uuid === 'string' &&
-            typeof parsed.t_key === 'string' &&
-            typeof parsed.t_value === 'string'
-          ) {
-            onLine(parsed)
-          }
-        } catch {
-          // Ignore malformed NDJSON chunks and continue reading the stream.
+      buf += decoder.decode(value, {stream: true})
+      let i = buf.indexOf("\n")
+      while (i !== -1) {
+        const line = buf.slice(0, i).trim()
+        buf = buf.slice(i + 1)
+        if (line) {
+          onLine(JSON.parse(line))
         }
+        i = buf.indexOf("\n")
       }
     }
-    const tail = buffer.trim()
-    if (tail) {
-      try {
-        const parsed = JSON.parse(tail) as Trait
-        if (
-          parsed &&
-          typeof parsed.t_uuid === 'string' &&
-          typeof parsed.t_key === 'string' &&
-          typeof parsed.t_value === 'string'
-        ) {
-          onLine(parsed)
-        }
-      } catch {
-        // ignore
-      }
-    }
+    const tail = buf.trim()
+    if (!tail) return
+    onLine(JSON.parse(tail))
   }
-  return { json, stream }
+  return {json, stream}
 }

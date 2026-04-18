@@ -1,4 +1,8 @@
 <script setup lang="ts">
+definePageMeta({
+  path: '/kitchen/:tab(recipes|ingredients|my-recipes|create)?'
+})
+
 const title = 'Кухня'
 const runtimeConfig = useRuntimeConfig()
 const { effectiveTheme } = useInterfacePreferences()
@@ -6,7 +10,6 @@ usePageSeo({
   title,
   description: 'Каталог рецептов, ингредиентов, поиск и публикация рецептов.'
 })
-const activeKitchenTab = ref<KitchenMainTab>('recipes')
 const kitchenBaseTabItems: LabTabItem[] = [
   { value: 'recipes', label: 'Рецепты' },
   { value: 'ingredients', label: 'Ингредиенты' },
@@ -69,8 +72,8 @@ const KITCHEN_IMAGE_FORMATS_LABEL = 'jpg, jpeg, png, webp, gif, avif'
 const KITCHEN_STEP_IMAGE_RECOMMENDED_MIN_WIDTH = 1200
 const KITCHEN_STEP_IMAGE_RECOMMENDED_MIN_HEIGHT = 900
 const catalogIngredients = computed<KitchenCatalogItem[]>(() => {
-  const merged: KitchenCatalogItem[] = catalogStore.ingredientItems.map((item) => ({ ...item }))
-  const seen = new Set(merged.map((item) => `${item.category}:${item.name.toLowerCase()}`))
+  const merged: KitchenCatalogItem[] = catalogStore.ingredientItems.map(item => ({ ...item }))
+  const seen = new Set(merged.map(item => `${item.category}:${item.name.toLowerCase()}`))
   for (const item of customIngredients.value) {
     const key = `${item.category}:${item.name.toLowerCase()}`
     if (seen.has(key)) continue
@@ -149,21 +152,31 @@ const {
   favoriteIncludeIngredients,
   favoriteExcludeIngredients
 })
+watch(
+  () => route.query.sort,
+  next => {
+    catalogSortMode.value = normalizeTabRouteValue(next, ['alpha', 'alphaDesc', 'freq'], 'alpha') as
+      | 'alpha'
+      | 'alphaDesc'
+      | 'freq'
+  },
+  { immediate: true }
+)
 const customIngredientCategoryOptions = computed<SelectOptionInput[]>(() =>
-  catalogStore.categoryLabels.map((category) => ({
+  catalogStore.categoryLabels.map(category => ({
     value: category,
     label: category
   }))
 )
 const visibleRecipes = computed(() => {
   if (!showFavoriteRecipesOnly.value) return recipes.value
-  return recipes.value.filter((recipe) => isRecipeFavorite(recipe.id))
+  return recipes.value.filter(recipe => isRecipeFavorite(recipe.id))
 })
 const favoriteIncludeIngredientIds = computed(
-  () => new Set(favoriteIncludeIngredients.value.map((item) => item.ingredient_id))
+  () => new Set(favoriteIncludeIngredients.value.map(item => item.ingredient_id))
 )
 const favoriteExcludeIngredientIds = computed(
-  () => new Set(favoriteExcludeIngredients.value.map((item) => item.ingredient_id))
+  () => new Set(favoriteExcludeIngredients.value.map(item => item.ingredient_id))
 )
 const showCatalogFavoriteActions = computed(() => searchUiHydrated.value && isAuthenticated.value)
 const canManageRecipe = (recipe: KitchenRecipe) =>
@@ -250,8 +263,8 @@ const loadKitchenAccountIngredients = async () => {
     customIngredients.value = res?.data?.custom || []
     const includeRaw = res?.data?.favorites_include || res?.data?.favorites || []
     const excludeRaw = res?.data?.favorites_exclude || []
-    favoriteIncludeIngredients.value = includeRaw.map((item) => normalizeKitchenFavoriteIngredient(item, 'include'))
-    favoriteExcludeIngredients.value = excludeRaw.map((item) => normalizeKitchenFavoriteIngredient(item, 'exclude'))
+    favoriteIncludeIngredients.value = includeRaw.map(item => normalizeKitchenFavoriteIngredient(item, 'include'))
+    favoriteExcludeIngredients.value = excludeRaw.map(item => normalizeKitchenFavoriteIngredient(item, 'exclude'))
   } catch (err: any) {
     accountIngredientsError.value =
       err?.data?.message || err?.message || 'Не удалось загрузить персональные ингредиенты.'
@@ -263,6 +276,47 @@ const route = useRoute()
 const router = useRouter()
 const loginPath = computed(() => buildLoginPath(route.fullPath))
 const isKitchenEditRoute = computed(() => route.path.startsWith('/kitchen/edit/'))
+const kitchenTabValues: Array<Exclude<KitchenMainTab, 'edit'>> = ['recipes', 'ingredients', 'my-recipes', 'create']
+const routeKitchenTabParam = Array.isArray(route.params.tab) ? route.params.tab[0] : route.params.tab
+const routeKitchenTabQuery = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab
+const buildKitchenTabPath = (tab: Exclude<KitchenMainTab, 'edit'>) => `/kitchen/${tab}`
+const resolvedKitchenTab = normalizeTabRouteValue(
+  routeKitchenTabParam || routeKitchenTabQuery,
+  kitchenTabValues,
+  'recipes'
+) as Exclude<KitchenMainTab, 'edit'>
+if (!isKitchenEditRoute.value && (routeKitchenTabQuery || routeKitchenTabParam !== resolvedKitchenTab)) {
+  const { tab: _tab, ...query } = route.query
+  await navigateTo(
+    {
+      path: buildKitchenTabPath(resolvedKitchenTab),
+      query,
+      hash: route.hash
+    },
+    {
+      redirectCode: 301,
+      replace: true
+    }
+  )
+}
+const activeKitchenTab = computed<KitchenMainTab>({
+  get: () =>
+    isKitchenEditRoute.value
+      ? 'edit'
+      : (normalizeTabRouteValue(route.params.tab || route.query.tab, kitchenTabValues, 'recipes') as Exclude<
+          KitchenMainTab,
+          'edit'
+        >),
+  set: value => {
+    if (value === 'edit') return
+    const { tab: _tab, ...query } = route.query
+    void router.replace({
+      path: buildKitchenTabPath(value),
+      query,
+      hash: route.hash
+    })
+  }
+})
 const routeEditSlug = computed(() => {
   if (!isKitchenEditRoute.value) return ''
   const byParams = String(route.params.slug || '').trim()
@@ -270,10 +324,6 @@ const routeEditSlug = computed(() => {
   return extractKitchenEditSlug(route.path)
 })
 const routeEditRecipeId = computed(() => extractKitchenRecipeId(routeEditSlug.value))
-const requestedKitchenTab = computed(() => {
-  const raw = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab
-  return String(raw || '').trim()
-})
 const loadingRouteRecipeId = ref<string | null>(null)
 const {
   data: routeEditRecipeData,
@@ -291,7 +341,7 @@ const {
 )
 const kitchenTabItems = computed<LabTabItem[]>(() => {
   const items: LabTabItem[] = [...kitchenBaseTabItems]
-  if (!isKitchenEditRoute.value && (activeKitchenTab.value === 'create' || requestedKitchenTab.value === 'create')) {
+  if (!isKitchenEditRoute.value && activeKitchenTab.value === 'create') {
     items.push({ value: 'create', label: 'Новый рецепт' })
   }
   if (isKitchenEditRoute.value || activeKitchenTab.value === 'edit') {
@@ -299,25 +349,20 @@ const kitchenTabItems = computed<LabTabItem[]>(() => {
   }
   return items
 })
-const kitchenTabRouteMap = computed<Record<string, string | undefined>>(() => ({
-  edit: isKitchenEditRoute.value ? route.fullPath : undefined
+const kitchenTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
+  recipes: buildKitchenTabPath('recipes'),
+  ingredients: buildKitchenTabPath('ingredients'),
+  'my-recipes': buildKitchenTabPath('my-recipes'),
+  create: buildKitchenTabPath('create')
 }))
 const goToKitchenTab = async (tab: Exclude<KitchenMainTab, 'edit'>) => {
-  const nextQuery: Record<string, any> = { ...route.query }
-  if (tab === 'recipes') {
-    const { tab: _removed, ...restQuery } = nextQuery
-    await router.replace({ path: '/kitchen', query: restQuery })
-    return
-  }
-  nextQuery.tab = tab
-  await router.replace({ path: '/kitchen', query: nextQuery })
+  const { tab: _tab, ...query } = route.query
+  await router.replace({ path: buildKitchenTabPath(tab), query, hash: route.hash })
 }
 const openCreateRecipeTab = async () => {
-  activeKitchenTab.value = 'create'
   await goToKitchenTab('create')
 }
 const openMyRecipesTab = async () => {
-  activeKitchenTab.value = 'my-recipes'
   await goToKitchenTab('my-recipes')
 }
 const recipeEditor = useKitchenRecipeEditor({
@@ -330,7 +375,7 @@ const recipeEditor = useKitchenRecipeEditor({
   normalizeMealTypeInput,
   normalizeDietTypeInput,
   normalizeCookingMethodInput,
-  onOpenRecipeEdit: async (recipe) => {
+  onOpenRecipeEdit: async recipe => {
     await router.push(kitchenRecipeEditLink(recipe))
   },
   onResetEditRoute: async () => {
@@ -397,9 +442,11 @@ const visibleFavoriteStatusRecipeIds = computed(() => {
   return Array.from(ids)
 })
 const kitchenBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
-  const root =
-    activeKitchenTab.value === 'recipes' ? [{ label: 'Кухня', current: true }] : [{ label: 'Кухня', to: '/kitchen' }]
+  const root = [{ label: 'Кухня', to: buildKitchenTabPath('recipes') }]
   const recipeTitle = form.title.trim() || 'Рецепт'
+  if (activeKitchenTab.value === 'recipes') {
+    return [...root, { label: 'Рецепты', current: true, kind: 'tab' }]
+  }
   if (activeKitchenTab.value === 'ingredients') {
     return [...root, { label: 'Ингредиенты', current: true, kind: 'tab' }]
   }
@@ -412,7 +459,7 @@ const kitchenBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
   if (activeKitchenTab.value === 'edit') {
     return [...root, { label: 'Редактирование рецепта', kind: 'tab' }, { label: recipeTitle, current: true }]
   }
-  return root
+  return [...root, { label: 'Рецепты', current: true, kind: 'tab' }]
 })
 const activeSearchSummary = computed(() => {
   const count = visibleRecipes.value.length
@@ -489,7 +536,7 @@ const syncVisibleRecipeFavoriteStatuses = async () => {
   }
   if (!ids.length) return
   await Promise.all(
-    ids.map(async (id) => {
+    ids.map(async id => {
       try {
         const res = await getKitchenRecipeFavoriteStatus(id)
         recipeFavoriteMap[id] = Boolean(res?.data?.favorited)
@@ -563,20 +610,20 @@ const categoryTagStyle = (category: string) => {
 }
 const selectedTagStyle = (name: string) => categoryTagStyle(ingredientCategory(name))
 const customIngredientChipItems = computed(() =>
-  toKitchenChipItems(customIngredients.value, 'custom:').map((item) => ({
+  toKitchenChipItems(customIngredients.value, 'custom:').map(item => ({
     ...item,
     disabled: deletingCustomIngredientId.value === String((item.payload as KitchenUserIngredient).ingredient_id || '')
   }))
 )
 const favoriteIncludeChipItems = computed(() =>
-  toKitchenChipItems(favoriteIncludeIngredients.value, 'favorite:include:').map((item) => ({
+  toKitchenChipItems(favoriteIncludeIngredients.value, 'favorite:include:').map(item => ({
     ...item,
     disabled:
       deletingFavoriteKey.value === `include:${String((item.payload as KitchenFavoriteIngredient).ingredient_id || '')}`
   }))
 )
 const favoriteExcludeChipItems = computed(() =>
-  toKitchenChipItems(favoriteExcludeIngredients.value, 'favorite:exclude:').map((item) => ({
+  toKitchenChipItems(favoriteExcludeIngredients.value, 'favorite:exclude:').map(item => ({
     ...item,
     disabled:
       deletingFavoriteKey.value === `exclude:${String((item.payload as KitchenFavoriteIngredient).ingredient_id || '')}`
@@ -638,7 +685,7 @@ const catalogExcludeButtonClass = (active: boolean) =>
       ? 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-700 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
       : 'inline-flex h-6 w-6 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950/85 text-zinc-300 opacity-100 pointer-events-auto transition-colors duration-150 hover:border-rose-400/70 hover:bg-rose-400/10 hover:text-rose-200 lg:opacity-0 lg:pointer-events-none lg:group-hover:opacity-100 lg:group-hover:pointer-events-auto lg:focus-visible:opacity-100 lg:focus-visible:pointer-events-auto'
 const recipeDifficultyScaleOptions = computed(() =>
-  difficultyOptions.value.map((item) => ({
+  difficultyOptions.value.map(item => ({
     value: item.code,
     label: item.label
   }))
@@ -648,25 +695,25 @@ const mealTypeOptions = computed(() => catalogStore.getOptions('meal_type'))
 const dietTypeOptions = computed(() => catalogStore.getOptions('diet_type'))
 const mealTypeSelectOptions = computed<SelectOptionInput[]>(() => [
   { value: 'all', label: 'любой' },
-  ...mealTypeOptions.value.map((item) => ({
+  ...mealTypeOptions.value.map(item => ({
     value: item.code,
     label: item.label
   }))
 ])
 const dietTypeSelectOptions = computed<SelectOptionInput[]>(() => [
   { value: 'all', label: 'любой' },
-  ...dietTypeOptions.value.map((item) => ({
+  ...dietTypeOptions.value.map(item => ({
     value: item.code,
     label: item.label
   }))
 ])
 const cuisineOptions = computed(() => catalogStore.getOptions('cuisine'))
 const unitOptions = computed(() => catalogStore.getOptions('unit'))
-const KITCHEN_MEAL_TYPE_SUGGESTIONS = computed(() => mealTypeOptions.value.map((item) => item.label))
-const KITCHEN_DIET_TYPE_SUGGESTIONS = computed(() => dietTypeOptions.value.map((item) => item.label))
-const KITCHEN_COOKING_METHOD_SUGGESTIONS = computed(() => cookingMethodOptions.value.map((item) => item.label))
-const KITCHEN_UNIT_SUGGESTIONS = computed(() => unitOptions.value.map((item) => item.label))
-const KITCHEN_NATIONALITY_SUGGESTIONS = computed(() => cuisineOptions.value.map((item) => item.label))
+const KITCHEN_MEAL_TYPE_SUGGESTIONS = computed(() => mealTypeOptions.value.map(item => item.label))
+const KITCHEN_DIET_TYPE_SUGGESTIONS = computed(() => dietTypeOptions.value.map(item => item.label))
+const KITCHEN_COOKING_METHOD_SUGGESTIONS = computed(() => cookingMethodOptions.value.map(item => item.label))
+const KITCHEN_UNIT_SUGGESTIONS = computed(() => unitOptions.value.map(item => item.label))
+const KITCHEN_NATIONALITY_SUGGESTIONS = computed(() => cuisineOptions.value.map(item => item.label))
 function difficultyLabel(value: string) {
   return catalogStore.labelFor('difficulty', value) || value
 }
@@ -692,7 +739,7 @@ const userAttentionRecipes = computed(() => {
   const sinceTs = sinceRaw ? Date.parse(sinceRaw) : Number.NaN
   if (!Number.isFinite(sinceTs)) return [] as KitchenRecipe[]
   return myRecipes.value
-    .filter((recipe) => {
+    .filter(recipe => {
       if (recipe.moderation_status !== 'approved' && recipe.moderation_status !== 'rejected') return false
       const eventTs = recipeAttentionUpdatedAt(recipe)
       return Number.isFinite(eventTs) && eventTs > sinceTs
@@ -880,17 +927,17 @@ watch(
     scheduleRecipeAutoSearch()
   }
 )
-watch(recipesLoading, (loading) => {
+watch(recipesLoading, loading => {
   if (loading) return
   if (!queuedAutoSearchAfterLoading.value) return
   queuedAutoSearchAfterLoading.value = false
   scheduleRecipeAutoSearch()
 })
-watch(activeKitchenTab, (tab) => {
+watch(activeKitchenTab, tab => {
   if (tab === 'recipes') return
   queuedAutoSearchAfterLoading.value = false
 })
-watch(showMyRecipesList, async (next) => {
+watch(showMyRecipesList, async next => {
   if (!next || !isAuthenticated.value) return
   await Promise.all([loadMyRecipes(), loadUserAttentionSummary()])
 })
@@ -915,7 +962,6 @@ const cancelRecipeEditing = async () => {
 }
 async function syncEditRouteRecipe() {
   if (!isKitchenEditRoute.value) return
-  activeKitchenTab.value = 'edit'
   const id = routeEditRecipeId.value
   if (!id) {
     createError.value = 'Не удалось определить рецепт для редактирования.'
@@ -948,7 +994,7 @@ async function syncEditRouteRecipe() {
     return
   }
   const inMemoryRecipe =
-    myRecipes.value.find((item) => item.id === id) || recipes.value.find((item) => item.id === id) || null
+    myRecipes.value.find(item => item.id === id) || recipes.value.find(item => item.id === id) || null
   if (inMemoryRecipe) {
     if (!canManageRecipe(inMemoryRecipe)) {
       createError.value = 'У вас нет доступа к редактированию этого рецепта.'
@@ -987,11 +1033,11 @@ async function syncEditRouteRecipe() {
 const findExistingIngredient = (name: string) => {
   const normalized = normalizeTag(name)
   if (!normalized) return null
-  const customMatch = customIngredients.value.find((item) => normalizeTag(item.name) === normalized)
+  const customMatch = customIngredients.value.find(item => normalizeTag(item.name) === normalized)
   if (customMatch) {
     return { name: customMatch.name, category: customMatch.category }
   }
-  const catalogMatch = catalogStore.ingredientItems.find((item) => normalizeTag(item.name) === normalized)
+  const catalogMatch = catalogStore.ingredientItems.find(item => normalizeTag(item.name) === normalized)
   if (catalogMatch) {
     return { name: catalogMatch.name, category: catalogMatch.category }
   }
@@ -1154,14 +1200,9 @@ onBeforeUnmount(() => {
     <LabNavTabs
       v-model="activeKitchenTab"
       :items="kitchenTabItems"
-      :no-select="true"
       :render-panels="false"
-      route-query-key="tab"
-      route-default-value="recipes"
-      route-path="/kitchen"
-      :route-active-value="isKitchenEditRoute ? 'edit' : null"
-      :route-to-map="kitchenTabRouteMap"
-      container-class="w-full"
+      route-param-key="tab"
+      :route-target-map="kitchenTabRouteTargetMap"
     />
     <section v-show="activeKitchenTab === 'ingredients'" class="space-y-4 p-4">
       <LabNotify
@@ -1197,12 +1238,8 @@ onBeforeUnmount(() => {
             <LabNavTabs
               v-model="catalogSortMode"
               :items="catalogSortItems"
-              :no-select="true"
               :render-panels="false"
               route-query-key="sort"
-              route-default-value="alpha"
-              container-class="space-y-0"
-              list-class="flex flex-wrap gap-2"
             />
           </div>
           <KitchenGroupByCategoryToggle v-model="groupCatalogByCategory" mode="button" />
@@ -1314,7 +1351,7 @@ onBeforeUnmount(() => {
             v-if="accountIngredientsLoading"
             variant="inline"
             label="Загрузка персональных ингредиентов"
-            class="lab-text-muted"
+            class="text-(--lab-text-muted)"
           />
         </div>
         <div class="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
@@ -1348,9 +1385,9 @@ onBeforeUnmount(() => {
               <KitchenRemovableChipList
                 :items="customIngredientChipItems"
                 empty-text="Своих ингредиентов пока нет."
-                :item-style="(item) => selectedTagStyle(item.label)"
-                :item-title="(item) => `Удалить персональный ингредиент «${item.label}»`"
-                :item-aria-label="(item) => `Удалить персональный ингредиент ${item.label}`"
+                :item-style="item => selectedTagStyle(item.label)"
+                :item-title="item => `Удалить персональный ингредиент «${item.label}»`"
+                :item-aria-label="item => `Удалить персональный ингредиент ${item.label}`"
                 @remove="removeCustomIngredientChip"
               />
             </div>
@@ -1361,9 +1398,9 @@ onBeforeUnmount(() => {
               <KitchenRemovableChipList
                 :items="favoriteIncludeChipItems"
                 empty-text="Любимые пока пусто."
-                :item-style="(item) => selectedTagStyle(item.label)"
-                :item-title="(item) => `Убрать «${item.label}» из любимых`"
-                :item-aria-label="(item) => `Убрать ${item.label} из любимых`"
+                :item-style="item => selectedTagStyle(item.label)"
+                :item-title="item => `Убрать «${item.label}» из любимых`"
+                :item-aria-label="item => `Убрать ${item.label} из любимых`"
                 @remove="removeFavoriteIncludeChip"
               />
             </div>
@@ -1372,9 +1409,9 @@ onBeforeUnmount(() => {
               <KitchenRemovableChipList
                 :items="favoriteExcludeChipItems"
                 empty-text="Список исключений пока пуст."
-                :item-style="(item) => selectedTagStyle(item.label)"
-                :item-title="(item) => `Убрать «${item.label}» из исключаемых`"
-                :item-aria-label="(item) => `Убрать ${item.label} из исключаемых`"
+                :item-style="item => selectedTagStyle(item.label)"
+                :item-title="item => `Убрать «${item.label}» из исключаемых`"
+                :item-aria-label="item => `Убрать ${item.label} из исключаемых`"
                 @remove="removeFavoriteExcludeChip"
               />
             </div>
@@ -1736,9 +1773,9 @@ onBeforeUnmount(() => {
                         : 'rounded-[13px] border border-transparent bg-transparent p-2'
                       : ''
                   "
-                  :item-style="(item) => selectedTagStyle(item.label)"
-                  :item-title="(item) => `Нажмите, чтобы убрать «${item.label}» из фильтра`"
-                  :item-aria-label="(item) => `Убрать ${item.label} из фильтра`"
+                  :item-style="item => selectedTagStyle(item.label)"
+                  :item-title="item => `Нажмите, чтобы убрать «${item.label}» из фильтра`"
+                  :item-aria-label="item => `Убрать ${item.label} из фильтра`"
                   @update:toggle-value="includeFavoriteIngredientsInSearch = $event"
                   @remove="removeEffectiveSelectedIngredient($event.label)"
                 >
@@ -1774,9 +1811,9 @@ onBeforeUnmount(() => {
                   :toggle-label="excludeFavoriteSwitchLabel"
                   toggle-tone="rose"
                   :toggle-visual-state="excludeFavoriteToggleVisualState"
-                  :item-style="(item) => selectedTagStyle(item.label)"
-                  :item-title="(item) => `Нажмите, чтобы убрать «${item.label}» из исключений`"
-                  :item-aria-label="(item) => `Убрать ${item.label} из исключений`"
+                  :item-style="item => selectedTagStyle(item.label)"
+                  :item-title="item => `Нажмите, чтобы убрать «${item.label}» из исключений`"
+                  :item-aria-label="item => `Убрать ${item.label} из исключений`"
                   @update:toggle-value="excludeFavoriteIngredientsInSearch = $event"
                   @remove="removeEffectiveExcludedIngredient($event.label)"
                 />

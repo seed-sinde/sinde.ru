@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { localeCode } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('traits')
+await useAsyncData(key.value, load, { watch: [locale] })
 const formatShortUuid = shortUuid
 const props = withDefaults(
   defineProps<{
@@ -28,14 +29,13 @@ const emit = defineEmits<{
   (e: 'click'): void
 }>()
 const { copyFrom } = useClipboard()
-const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
 const isCopy = computed(() => props.action === 'copy')
 const resolvedDisabled = computed(() => props.disabled || (isCopy.value && !props.uuid))
 const iconName = computed(() => (isCopy.value ? 'ic:round-content-copy' : 'ic:round-content-paste'))
 const actionLabel = computed(
-  () => props.title || props.label || (isCopy.value ? copy.value.uuidButton.copyUuid : copy.value.uuidButton.pasteUuid)
+  () => props.title || props.label || (isCopy.value ? t('uuid_button.copy_uuid') : t('uuid_button.paste_uuid'))
 )
-const copyIdleLabel = computed(() => props.label || formatShortUuid(props.uuid, 5) || copy.value.uuidButton.emptyUuid)
+const copyIdleLabel = computed(() => props.label || formatShortUuid(props.uuid, 5) || t('detail.copy_uuid_idle'))
 const sharedButtonClass = computed(() =>
   ['text-zinc-200 hover:text-amber-300', isCopy.value ? 'truncate' : '', props.buttonClass].filter(Boolean).join(' ')
 )
@@ -53,8 +53,8 @@ const onPasteClick = () => {
   <LabCopyHover
     v-if="isCopy"
     :idle="copyIdleLabel"
-    :hover="copy.uuidButton.copyHover"
-    :done="copy.uuidButton.copied"
+    :hover="t('uuid_button.copy_hover')"
+    :done="t('uuid_button.copied')"
     :has-icon="true"
     @click="onCopyClick"
   >

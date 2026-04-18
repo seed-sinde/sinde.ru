@@ -1,5 +1,5 @@
 const AUTH_SYNC_COOLDOWN_MS = 3000
-const AUTH_SYNC_RUNTIME_KEY = '__traitsAuthSyncRuntime__'
+const AUTH_SYNC_RUNTIME_KEY = "__traitsAuthSyncRuntime__"
 type AuthSyncRuntime = {
   cleanup: (() => void) | null
 }
@@ -8,14 +8,14 @@ const authSyncRuntime = (() => {
     [AUTH_SYNC_RUNTIME_KEY]?: AuthSyncRuntime
   }
   if (!scope[AUTH_SYNC_RUNTIME_KEY]) {
-    scope[AUTH_SYNC_RUNTIME_KEY] = { cleanup: null }
+    scope[AUTH_SYNC_RUNTIME_KEY] = {cleanup: null}
   }
   return scope[AUTH_SYNC_RUNTIME_KEY]!
 })()
-export default defineNuxtPlugin((nuxtApp) => {
+export default defineNuxtPlugin(nuxtApp => {
   if (!import.meta.client) return
   authSyncRuntime.cleanup?.()
-  const { loadMe, loaded, refreshSharedSummaries, ensureSummaryRealtime } = useAuth()
+  const {loadMe, loaded, refreshSharedSummaries, ensureSummaryRealtime} = useAuth()
   let inFlight = false
   let syncReady = loaded.value
   let lastSyncAt = Date.now()
@@ -25,11 +25,11 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
   const stopLoadedWatch = watch(
     loaded,
-    (next) => {
+    next => {
       if (!next) return
       markSyncReady()
     },
-    { immediate: true }
+    {immediate: true}
   )
   ensureSummaryRealtime()
   const syncAuthState = async (force = false) => {
@@ -38,7 +38,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       const now = Date.now()
       if (!force && now - lastSyncAt < AUTH_SYNC_COOLDOWN_MS) return
       if (inFlight) return
-      const { canAttemptSessionRestore, isAuthenticated, setAnonymousState } = useAuth()
+      const {canAttemptSessionRestore, isAuthenticated, setAnonymousState} = useAuth()
       if (!canAttemptSessionRestore.value && !isAuthenticated.value) {
         setAnonymousState()
         markSyncReady()
@@ -55,17 +55,17 @@ export default defineNuxtPlugin((nuxtApp) => {
     })
   }
   const onVisibilityChange = () => {
-    if (document.visibilityState !== 'visible') return
+    if (document.visibilityState !== "visible") return
     void syncAuthState()
   }
   const onAuthStateStale = () => {
     void syncAuthState(true)
   }
   const onAuthUserRefreshed = (event: Event) => {
-    const customEvent = event as CustomEvent<{ user?: AuthUser | null }>
+    const customEvent = event as CustomEvent<{user?: AuthUser | null}>
     void nuxtApp.runWithContext(async () => {
       const payloadUser = customEvent.detail?.user ?? null
-      const { user, loaded } = useAuth()
+      const {user, loaded} = useAuth()
       user.value = payloadUser
       loaded.value = true
       markSyncReady()
@@ -78,18 +78,18 @@ export default defineNuxtPlugin((nuxtApp) => {
   const onPageFinish = () => {
     void syncAuthState()
   }
-  window.addEventListener('focus', onFocus)
-  window.addEventListener('auth-state-stale', onAuthStateStale)
-  window.addEventListener('auth-user-refreshed', onAuthUserRefreshed as EventListener)
-  document.addEventListener('visibilitychange', onVisibilityChange)
-  nuxtApp.hook('page:finish', onPageFinish)
+  window.addEventListener("focus", onFocus)
+  window.addEventListener("auth-state-stale", onAuthStateStale)
+  window.addEventListener("auth-user-refreshed", onAuthUserRefreshed as EventListener)
+  document.addEventListener("visibilitychange", onVisibilityChange)
+  nuxtApp.hook("page:finish", onPageFinish)
   const cleanup = () => {
     stopLoadedWatch()
-    window.removeEventListener('focus', onFocus)
-    window.removeEventListener('auth-state-stale', onAuthStateStale)
-    window.removeEventListener('auth-user-refreshed', onAuthUserRefreshed as EventListener)
-    document.removeEventListener('visibilitychange', onVisibilityChange)
-    nuxtApp.hooks.removeHook('page:finish', onPageFinish)
+    window.removeEventListener("focus", onFocus)
+    window.removeEventListener("auth-state-stale", onAuthStateStale)
+    window.removeEventListener("auth-user-refreshed", onAuthUserRefreshed as EventListener)
+    document.removeEventListener("visibilitychange", onVisibilityChange)
+    nuxtApp.hooks.removeHook("page:finish", onPageFinish)
     if (authSyncRuntime.cleanup === cleanup) {
       authSyncRuntime.cleanup = null
     }

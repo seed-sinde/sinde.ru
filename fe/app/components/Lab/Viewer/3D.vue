@@ -1,259 +1,209 @@
 <script setup lang="ts">
-defineOptions({
-  inheritAttrs: false
+import {AmbientLight, Box3, DirectionalLight, Group, PerspectiveCamera, Scene, Vector3, WebGLRenderer, type Material, type Object3D} from 'three'
+import {GLTFLoader, type GLTF} from 'three/examples/jsm/loaders/GLTFLoader.js'
+defineOptions({ inheritAttrs: false })
+const props = withDefaults(defineProps<{ src?: string | null; title?: string; downloadName?: string }>(), {
+  src: '',
+  title: '3D model',
+  downloadName: 'model.glb'
 })
-const props = withDefaults(
-  defineProps<{
-    title?: string
-    posterSrc?: string | null
-    modelSrc?: string | null
-    rotationPerSecond?: string | null
-    compact?: boolean
-  }>(),
-  {
-    title: '3D модель',
-    posterSrc: '',
-    modelSrc: '',
-    rotationPerSecond: '',
-    compact: false
-  }
-)
-const { effectiveTheme } = useInterfacePreferences()
-const inlineFrameRef = ref<HTMLIFrameElement | null>(null)
-const fullscreenFrameRef = ref<HTMLIFrameElement | null>(null)
-const viewerBackground = computed(() => (effectiveTheme.value === 'light' ? 'transparent' : 'transparent'))
-const fullscreenOpen = ref(false)
-const webglSupported = ref(true)
-const webglChecked = ref(false)
-const normalizedModelSrc = computed(() => String(props.modelSrc || '').trim())
-const normalizedRotationPerSecond = computed(() => String(props.rotationPerSecond || '').trim())
-const iframeClass = 'block h-full w-full border-0 bg-transparent outline-none'
-const detectWebGL = (): boolean => {
-  if (!import.meta.client) return true
-  try {
-    const canvas = document.createElement('canvas')
-    const gl2 = canvas.getContext('webgl2', {
-      antialias: false,
-      alpha: true,
-      depth: true,
-      stencil: false,
-      powerPreference: 'default'
-    })
-    if (gl2) return true
-    const gl1 =
-      canvas.getContext('webgl', {
-        antialias: false,
-        alpha: true,
-        depth: true,
-        stencil: false,
-        powerPreference: 'default'
-      }) || canvas.getContext('experimental-webgl')
-    return !!gl1
-  } catch {
-    return false
-  }
+const rootRef = ref<HTMLDivElement | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const loading = ref(false)
+const error = ref('')
+const isFullscreen = ref(false)
+let renderer: WebGLRenderer | null = null
+let scene: Scene | null = null
+let camera: PerspectiveCamera | null = null
+let resizeObserver: ResizeObserver | null = null
+let disposeModel = () => {}
+let frameId = 0
+const drag = { active: false, x: 0, y: 0 }
+const rotation = reactive({ x: -0.35, y: 0.55 })
+const zoom = ref(2.4)
+const src = computed(() => String(props.src || '').trim())
+const rootClass = computed(() => [
+  'overflow-hidden bg-(--lab-bg-canvas) select-none',
+  isFullscreen.value ? 'fixed inset-0 z-60 h-screen w-screen' : 'relative h-full w-full'
+])
+const toolbarClass = computed(() => [
+  'absolute top-2 right-2 z-10 flex items-center gap-1',
+  isFullscreen.value && 'top-3 right-3'
+])
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
 }
-const downloadableModelSrc = computed(() => {
-  return normalizedModelSrc.value
-})
-const modelFilename = computed(() => {
-  const raw = normalizedModelSrc.value
-  if (!raw) return 'model.glb'
-  try {
-    const base = import.meta.client ? window.location.origin : 'http://127.0.0.1'
-    const url = new URL(raw, base)
-    const name = url.pathname.split('/').filter(Boolean).pop() || 'model.glb'
-    return decodeURIComponent(name)
-  } catch {
-    return 'model.glb'
-  }
-})
-const viewerSrc = computed(() => {
-  if (!normalizedModelSrc.value || !webglSupported.value) return ''
-  const params = new URLSearchParams()
-  params.set('src', normalizedModelSrc.value)
-  if (props.title) params.set('title', props.title)
-  if (normalizedRotationPerSecond.value) {
-    params.set('rotationPerSecond', normalizedRotationPerSecond.value)
-  }
-  params.set('theme', effectiveTheme.value)
-  params.set('background', viewerBackground.value)
-  return `/api/3d-model-viewer?${params.toString()}`
-})
-const postViewerTheme = (frame: HTMLIFrameElement | null) => {
-  if (!import.meta.client) return
-  if (!frame?.contentWindow) return
-  frame.contentWindow.postMessage(
-    {
-      type: 'lab-3d-viewer-theme',
-      theme: effectiveTheme.value,
-      background: viewerBackground.value
-    },
-    window.location.origin
-  )
-}
-const syncViewerTheme = () => {
-  postViewerTheme(inlineFrameRef.value)
-  postViewerTheme(fullscreenFrameRef.value)
-}
-const frameHeightClass = computed(() => {
-  return props.compact ? 'h-full min-h-0' : 'h-80 md:h-90'
-})
 const closeFullscreen = () => {
-  fullscreenOpen.value = false
-}
-const openFullscreen = () => {
-  if (!viewerSrc.value) return
-  fullscreenOpen.value = true
+  isFullscreen.value = false
 }
 const onKeydown = (event: KeyboardEvent) => {
-  if (!fullscreenOpen.value) return
   if (event.key === 'Escape') closeFullscreen()
 }
-const onWindowMessage = (event: MessageEvent) => {
-  if (!fullscreenOpen.value) return
-  if (event.origin !== window.location.origin) return
-  if (event.data?.type !== 'lab-3d-viewer-close') return
-  closeFullscreen()
+const animate = () => {
+  if (!renderer || !scene || !camera) return
+  if (!drag.active) {
+    rotation.y += 0.004
+    render()
+  }
+  frameId = requestAnimationFrame(animate)
 }
-if (import.meta.client) {
-  onMounted(() => {
-    webglSupported.value = detectWebGL()
-    webglChecked.value = true
-    window.addEventListener('keydown', onKeydown)
-    window.addEventListener('message', onWindowMessage)
-  })
-  onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onKeydown)
-    window.removeEventListener('message', onWindowMessage)
-  })
+const render = () => {
+  if (!renderer || !scene || !camera) return
+  camera.position.z = zoom.value
+  scene.rotation.x = rotation.x
+  scene.rotation.y = rotation.y
+  renderer.render(scene, camera)
 }
-if (import.meta.client) {
-  watch(
-    () => effectiveTheme.value,
-    () => {
-      syncViewerTheme()
-    }
-  )
-
-  watch(
-    () => fullscreenOpen.value,
-    (opened) => {
-      if (!opened) return
-      nextTick(() => {
-        syncViewerTheme()
+const resize = () => {
+  if (!renderer || !camera || !rootRef.value) return
+  const { width, height } = rootRef.value.getBoundingClientRect()
+  if (!width || !height) return
+  renderer.setSize(width, height, false)
+  camera.aspect = width / height
+  camera.updateProjectionMatrix()
+  render()
+}
+const stop = () => {
+  if (frameId) cancelAnimationFrame(frameId)
+  frameId = 0
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  disposeModel()
+  disposeModel = () => {}
+  renderer?.dispose()
+  renderer = null
+  scene = null
+  camera = null
+}
+const mountModel = async () => {
+  stop()
+  error.value = ''
+  if (!import.meta.client || !rootRef.value || !canvasRef.value || !src.value) return
+  loading.value = true
+  const [{Mesh, MeshStandardMaterial}] = await Promise.all([
+    import('three')
+  ])
+  scene = new Scene()
+  camera = new PerspectiveCamera(45, 1, 0.01, 100)
+  renderer = new WebGLRenderer({ antialias: true, alpha: true, canvas: canvasRef.value, powerPreference: 'low-power' })
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+  scene.add(new AmbientLight(0xffffff, 2.6))
+  const light = new DirectionalLight(0xffffff, 2.4)
+  light.position.set(3, 4, 6)
+  scene.add(light)
+  const pivot = new Group()
+  scene.add(pivot)
+  try {
+    const gltf = await new Promise<GLTF>((resolve, reject) => {
+      new GLTFLoader().load(src.value, resolve, undefined, reject)
+    })
+    const model = gltf.scene
+    const box = new Box3().setFromObject(model)
+    const size = box.getSize(new Vector3())
+    const center = box.getCenter(new Vector3())
+    const scale = 1.8 / Math.max(size.x || 0, size.y || 0, size.z || 0, 1)
+    model.position.set(-center.x * scale, -center.y * scale, -center.z * scale)
+    model.scale.setScalar(scale)
+    model.traverse((node: Object3D) => {
+      if (!(node instanceof Mesh) || Array.isArray(node.material)) return
+      node.castShadow = false
+      node.receiveShadow = false
+      node.material = node.material instanceof MeshStandardMaterial ? node.material : new MeshStandardMaterial({ color: 0xd4d4d8 })
+    })
+    pivot.add(model)
+    disposeModel = () => {
+      pivot.remove(model)
+      model.traverse((node: Object3D) => {
+        if (!(node instanceof Mesh)) return
+        node.geometry.dispose()
+        ;(Array.isArray(node.material) ? node.material : [node.material]).forEach((material: Material) => material.dispose())
       })
     }
-  )
+    resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(rootRef.value)
+    resize()
+    frameId = requestAnimationFrame(animate)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить модель'
+    stop()
+  } finally {
+    loading.value = false
+  }
 }
+const onPointerDown = (event: PointerEvent) => {
+  drag.active = true
+  drag.x = event.clientX
+  drag.y = event.clientY
+}
+const onPointerMove = (event: PointerEvent) => {
+  if (!drag.active) return
+  rotation.y += (event.clientX - drag.x) * 0.01
+  rotation.x = Math.max(-1.4, Math.min(1.4, rotation.x + (event.clientY - drag.y) * 0.01))
+  drag.x = event.clientX
+  drag.y = event.clientY
+  render()
+}
+const onPointerUp = () => {
+  drag.active = false
+}
+const onWheel = (event: WheelEvent) => {
+  zoom.value = Math.max(1.2, Math.min(6, zoom.value + event.deltaY * 0.002))
+  render()
+}
+watch(src, () => void mountModel(), { immediate: true })
+watch(isFullscreen, () => nextTick(resize))
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  void mountModel()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  stop()
+})
 </script>
 <template>
   <div
     v-bind="$attrs"
-    class="overflow-hidden"
-    :class="props.compact ? 'h-full bg-(--lab-bg-canvas)' : 'border bg-(--lab-bg-surface)'"
-  >
-    <div v-if="!props.compact" class="flex items-center justify-between gap-3 border-b px-3 py-2">
-      <div class="text-[10px] tracking-widest uppercase opacity-60">3D Viewer</div>
-      <div class="flex items-center gap-2">
-        <LabViewerModelDownloadLink
-          v-if="downloadableModelSrc"
-          :href="downloadableModelSrc"
-          :filename="modelFilename"
-          class-name="border text-xs font-medium transition"
-        />
-        <LabBaseButton
-          v-if="viewerSrc"
-          icon-only
-          icon="ic:round-open-in-full"
-          button-class="inline-flex h-8 w-8 items-center justify-center rounded-full border transition"
-          aria-label="Открыть просмотр модели на весь экран"
-          title="Открыть на весь экран"
-          @click="openFullscreen"
-        />
-      </div>
-    </div>
-    <div class="relative bg-(--lab-bg-canvas)" :class="frameHeightClass">
-      <div v-if="props.compact" class="absolute top-3 right-3 z-10 flex items-center gap-2">
-        <LabViewerModelDownloadLink
-          v-if="downloadableModelSrc && webglChecked && webglSupported"
-          :href="downloadableModelSrc"
-          :filename="modelFilename"
-          icon-only
-          class-name="rounded-full border bg-[color-mix(in_srgb,var(--lab-bg-overlay)_80%,transparent)] text-(--lab-text-primary) transition"
-        />
-        <LabBaseButton
-          v-if="viewerSrc"
-          icon-only
-          icon="ic:round-open-in-full"
-          button-class="h-8 w-8 rounded-full border bg-[color-mix(in_srgb,var(--lab-bg-overlay)_80%,transparent)] transition"
-          aria-label="Открыть просмотр модели на весь экран"
-          title="Открыть на весь экран"
-          @click="openFullscreen"
-        />
-      </div>
-      <div v-if="!webglChecked" class="flex h-full w-full items-center justify-center p-2 text-sm opacity-70">
-        Проверка поддержки WebGL…
-      </div>
-      <div
-        v-else-if="!webglSupported"
-        class="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center"
+    ref="rootRef"
+    :class="rootClass"
+    @pointerdown="onPointerDown"
+    @pointermove="onPointerMove"
+    @pointerup="onPointerUp"
+    @pointerleave="onPointerUp"
+    @wheel.prevent="onWheel">
+    <canvas ref="canvasRef" class="h-full w-full touch-none" :aria-label="title" />
+    <div v-if="src" :class="toolbarClass" @pointerdown.stop>
+      <button
+        v-if="isFullscreen"
+        type="button"
+        class="lab-focus inline-flex h-10 w-10 items-center justify-center bg-(--lab-bg-control) text-(--lab-text-primary)"
+        :aria-label="`Закрыть ${title}`"
+        @click.stop="closeFullscreen"
       >
-        <Icon name="ic:round-warning-amber" class="h-8 w-8 text-amber-400" />
-        <div class="text-sm font-medium">3D-просмотр недоступен</div>
-        <p class="max-w-md text-sm leading-6 opacity-70">
-          В браузере отключён WebGL или аппаратное ускорение графики. Включите аппаратное ускорение и перезапустите
-          браузер.
-        </p>
-      </div>
-      <iframe
-        v-else-if="viewerSrc"
-        ref="inlineFrameRef"
-        :src="viewerSrc"
-        :title="`${title} 3D previewer`"
-        :class="iframeClass"
-        loading="lazy"
-        referrerpolicy="same-origin"
-        allowfullscreen
-      />
+        <Icon name="ic:round-close" class="text-xl" />
+      </button>
+      <button
+        v-else
+        type="button"
+        class="lab-focus inline-flex h-8 w-8 items-center justify-center text-(--lab-text-primary)"
+        :aria-label="`Открыть ${title} на весь экран`"
+        @click.stop="toggleFullscreen"
+      >
+        <Icon name="ic:round-fullscreen" class="text-base" />
+      </button>
+      <a
+        class="lab-focus inline-flex items-center justify-center text-(--lab-text-primary)"
+        :class="isFullscreen ? 'h-10 w-10 bg-(--lab-bg-control)' : 'h-8 w-8'"
+        :href="src"
+        :download="downloadName"
+        :aria-label="`Скачать ${title}`"
+        @click.stop
+      >
+        <Icon name="ic:round-download" class="text-base" />
+      </a>
+    </div>
+    <div v-if="loading || error || !src" class="absolute inset-0 grid place-items-center p-4 text-center text-sm text-(--lab-text-muted)">
+      {{ !src ? 'Нет модели' : loading ? 'Загрузка модели…' : error }}
     </div>
   </div>
-  <Teleport to="body">
-    <div v-if="fullscreenOpen && viewerSrc" class="fixed inset-0 z-70 bg-(--lab-bg-canvas)">
-      <div class="flex h-full flex-col">
-        <div class="z-10">
-          <div
-            class="flex max-w-full flex-wrap items-center justify-end gap-2.5 border-b bg-(--lab-bg-surface) px-2.5 py-1.5 sm:px-3"
-          >
-            <p class="min-w-0 flex-1 truncate text-sm font-semibold sm:text-base">
-              {{ title }}
-            </p>
-            <LabViewerModelDownloadLink
-              v-if="downloadableModelSrc"
-              :href="downloadableModelSrc"
-              :filename="modelFilename"
-              class-name="border bg-(--lab-bg-surface) text-(--lab-text-primary) transition"
-            />
-            <LabBaseButton
-              icon="ic:round-close"
-              label="Закрыть"
-              button-class="h-8 shrink-0 border bg-(--lab-bg-surface) px-2.5 text-sm transition"
-              @click="closeFullscreen"
-            />
-          </div>
-        </div>
-        <div class="relative min-h-0 flex-1 bg-(--lab-bg-canvas)">
-          <iframe
-            ref="fullscreenFrameRef"
-            :src="viewerSrc"
-            :title="`${title} fullscreen viewer`"
-            :class="`absolute inset-0 ${iframeClass}`"
-            loading="eager"
-            referrerpolicy="same-origin"
-            allowfullscreen
-          />
-        </div>
-      </div>
-    </div>
-  </Teleport>
 </template>

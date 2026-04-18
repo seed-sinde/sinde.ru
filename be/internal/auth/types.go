@@ -131,11 +131,12 @@ type UpdateProfileInput struct {
 	Settings    *json.RawMessage `json:"settings"`
 }
 type AuthUserPatch struct {
-	DisplayName *string `json:"display_name,omitempty"`
-	Locale      *string `json:"locale,omitempty"`
-	Timezone    *string `json:"timezone,omitempty"`
-	Profile     any     `json:"profile,omitempty"`
-	Settings    any     `json:"settings,omitempty"`
+	DisplayName      *string    `json:"display_name,omitempty"`
+	Locale           *string    `json:"locale,omitempty"`
+	Timezone         *string    `json:"timezone,omitempty"`
+	PrimaryTraitUUID *uuid.UUID `json:"primary_trait_uuid,omitempty"`
+	Profile          any        `json:"profile,omitempty"`
+	Settings         any        `json:"settings,omitempty"`
 }
 type SetPrimaryTraitInput struct {
 	SetUUID   string `json:"set_uuid"`
@@ -228,6 +229,9 @@ type VerifyEmailResult struct {
 	SessionHints bool   `json:"session_hints,omitempty"`
 }
 type UpdateProfileResult struct {
+	Changes AuthUserPatch `json:"changes"`
+}
+type SetPrimaryTraitResult struct {
 	Changes AuthUserPatch `json:"changes"`
 }
 type SavedTraitSetView struct {

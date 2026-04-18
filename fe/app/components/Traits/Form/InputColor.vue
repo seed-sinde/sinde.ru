@@ -13,7 +13,7 @@
           type="radio"
           :value="entry"
           class="accent-amber-400"
-        >
+        />
         <span>{{ modeLabels[entry] }}</span>
       </label>
     </div>
@@ -45,7 +45,7 @@
           step="1"
           class="h-2 w-full rounded-lg bg-zinc-800 accent-amber-400"
           :style="gradientL"
-        >
+        />
       </div>
       <div class="space-y-1">
         <div class="flex justify-between font-mono text-xs text-zinc-400">
@@ -61,7 +61,7 @@
           step="1"
           class="h-2 w-full rounded-lg bg-zinc-800 accent-amber-400"
           :style="gradientA"
-        >
+        />
       </div>
       <div class="space-y-1">
         <div class="flex justify-between font-mono text-xs text-zinc-400">
@@ -77,7 +77,7 @@
           step="1"
           class="h-2 w-full rounded-lg bg-zinc-800 accent-amber-400"
           :style="gradientB"
-        >
+        />
       </div>
       <p class="pt-1 text-xs font-medium tracking-[0.08em] text-zinc-500 uppercase">Ручной ввод LAB</p>
       <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -217,7 +217,7 @@ const gradientB = computed(() => {
 const labPreviewColor = computed(() => rgbToCss(labToRgb(lab.L, lab.a, lab.b)))
 const spectrumOptions = COLOR_SPECTRUM_OPTIONS
 const spectrumLabels = COLOR_SPECTRUM_LABELS
-const spectrumSelectOptions = spectrumOptions.map((option) => ({
+const spectrumSelectOptions = spectrumOptions.map(option => ({
   value: option,
   label: spectrumLabels[option]
 }))
@@ -236,7 +236,7 @@ watchEffect(() => {
         ? { mode: 'lab', lab: { L: lab.L, a: lab.a, b: lab.b } }
         : { mode: 'spectrum', spectrum: spectrum.value }
 })
-watch(model, (next) => {
+watch(model, next => {
   mode.value = lockedMode.value || next.mode
   hex.value = next.hex ?? ''
   lab.L = next.lab?.L ?? 50

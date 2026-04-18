@@ -25,7 +25,7 @@ const orderedElements = computed(() =>
   periodicTableElements.value.slice().sort((left, right) => left.number - right.number)
 )
 const currentElementIndex = computed(() =>
-  orderedElements.value.findIndex((item) => item.number === currentElement.value.number)
+  orderedElements.value.findIndex(item => item.number === currentElement.value.number)
 )
 const previousElement = computed(() => {
   const index = currentElementIndex.value
@@ -124,7 +124,7 @@ const heroStats = computed(() => {
     { label: 'Плотность', value: formatDensity(item.density) },
     { label: 'Плавление', value: formatKelvin(item.melt) },
     { label: 'Кипение', value: formatKelvin(item.boil) }
-  ].filter((stat) => stat.value !== NO_DATA)
+  ].filter(stat => stat.value !== NO_DATA)
 })
 const detailSections = computed<DetailSection[]>(() => {
   const item = currentElement.value
@@ -137,7 +137,7 @@ const detailSections = computed<DetailSection[]>(() => {
         { label: 'Блок', value: formatBlock(item.block) },
         { label: 'Фаза', value: formatPhase(item.phase) },
         { label: 'Внешний вид', value: formatText(item.appearance) }
-      ].filter((entry) => entry.value !== NO_DATA)
+      ].filter(entry => entry.value !== NO_DATA)
     },
     {
       title: 'Физические свойства',
@@ -146,7 +146,7 @@ const detailSections = computed<DetailSection[]>(() => {
         { label: 'Плавление', value: formatKelvin(item.melt) },
         { label: 'Кипение', value: formatKelvin(item.boil) },
         { label: 'Молярная теплоёмкость', value: formatMolarHeat(item.molarHeat) }
-      ].filter((entry) => entry.value !== NO_DATA)
+      ].filter(entry => entry.value !== NO_DATA)
     },
     {
       title: 'Электронная структура',
@@ -157,7 +157,7 @@ const detailSections = computed<DetailSection[]>(() => {
         { label: 'Электроотрицательность', value: formatNumber(item.electronegativityPauling) },
         { label: 'Сродство к электрону', value: formatNumber(item.electronAffinity) },
         { label: 'Энергии ионизации', value: formatNumberList(item.ionizationEnergies) }
-      ].filter((entry) => entry.value !== NO_DATA)
+      ].filter(entry => entry.value !== NO_DATA)
     },
     {
       title: 'История и источники',
@@ -169,7 +169,7 @@ const detailSections = computed<DetailSection[]>(() => {
           value: formatText(item.source),
           href: toLink(item.source)
         }
-      ].filter((entry) => entry.value !== NO_DATA)
+      ].filter(entry => entry.value !== NO_DATA)
     },
     {
       title: 'Положение',
@@ -178,9 +178,9 @@ const detailSections = computed<DetailSection[]>(() => {
         { label: 'Y', value: formatNumber(item.ypos) },
         { label: 'WX', value: formatNumber(item.wxpos) },
         { label: 'WY', value: formatNumber(item.wypos) }
-      ].filter((entry) => entry.value !== NO_DATA)
+      ].filter(entry => entry.value !== NO_DATA)
     }
-  ].filter((section) => section.items.length > 0)
+  ].filter(section => section.items.length > 0)
 })
 const viewerItems = computed<ViewerImageItem[]>(() => {
   const item = currentElement.value
@@ -233,7 +233,7 @@ const viewerItems = computed<ViewerImageItem[]>(() => {
   }
   return items
 })
-const spectralViewerIndex = computed(() => viewerItems.value.findIndex((item) => item.kind === 'spectral'))
+const spectralViewerIndex = computed(() => viewerItems.value.findIndex(item => item.kind === 'spectral'))
 const sampleImages = computed<SamplePreviewItem[]>(() => {
   return viewerItems.value
     .map((item, index) => ({ ...item, viewerIndex: index }))
@@ -246,9 +246,9 @@ const selectedSampleImage = computed(() => {
 const relatedElements = computed(() => {
   const item = currentElement.value
   return periodicTableElements.value
-    .filter((element) => element.number !== item.number)
+    .filter(element => element.number !== item.number)
     .filter(
-      (element) => element.group === item.group || element.period === item.period || element.category === item.category
+      element => element.group === item.group || element.period === item.period || element.category === item.category
     )
     .slice(0, 8)
 })
@@ -282,7 +282,7 @@ watch(
 )
 watch(
   sampleImages,
-  (items) => {
+  items => {
     if (!items.length) {
       selectedSampleImageIndex.value = 0
       return
@@ -306,68 +306,107 @@ watch(
       ]"
     />
 
-    <section class="flex max-h-80 gap-4 p-4">
-      <div class="min-w-0">
-        <div class="flex items-start gap-4">
-          <LabBaseButton
-            v-if="previousElement"
-            icon="ic:round-navigate-before"
-            :label="previousElement.russianName"
-            size="xl"
-            :title="`Предыдущий элемент: ${previousElement.russianName}`"
-            :aria-label="`Предыдущий элемент: ${previousElement.russianName}`"
-            variant="secondary"
-            button-class="hidden border-none lg:block"
-            @click="navigateToPreviousElement"
-          />
-          <div
-            class="grid shrink-0 place-items-center border text-4xl font-semibold sm:h-20 sm:w-20 sm:text-5xl"
-            :style="elementSymbolStyle"
-          >
-            {{ formattedCurrentSymbol }}
-          </div>
-          <div class="min-w-0 pt-1">
-            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {{ currentElement.russianName }}
-            </h1>
-            <p class="mt-1 text-sm text-(--lab-text-muted) sm:text-base">
-              {{ currentElement.name }}
-            </p>
-          </div>
-          <LabBaseButton
-            v-if="nextElement"
-            icon="ic:round-navigate-next"
-            :label="nextElement.russianName"
-            size="xl"
-            icon-position="right"
-            :title="`Следующий элемент: ${nextElement.russianName}`"
-            :aria-label="`Следующий элемент: ${nextElement.russianName}`"
-            variant="secondary"
-            button-class="hidden border-none lg:block"
-            @click="navigateToNextElement"
-          />
+    <section class="grid gap-4 p-4 xl:grid-cols-[22rem_minmax(0,1fr)]">
+      <div class="min-w-0 space-y-4">
+        <div v-if="resolvedBohrModel3d" class="aspect-square min-h-72">
+          <LabViewer3D :src="resolvedBohrModel3d" :title="currentElement.russianName" class="h-full w-full" />
         </div>
-        <p class="mt-4 max-w-4xl text-sm leading-6 text-(--lab-text-secondary) sm:text-base">
+        <section class="space-y-3">
+          <div>
+            <h2 class="text-sm font-semibold tracking-[0.07em] uppercase">Образцы вещества</h2>
+            <p class="mt-1 text-sm text-(--lab-text-muted)">Фото и материалы рядом с основной информацией.</p>
+          </div>
+          <div v-if="selectedSampleImage" class="space-y-3">
+            <LabViewerPreviewButton
+              :src="selectedSampleImage.src"
+              :alt="selectedSampleImage.alt"
+              :label="selectedSampleImage.title || 'Открыть образец'"
+              free-height
+              button-class="w-full"
+              frame-class="aspect-[16/9] max-h-none"
+              image-class="h-full w-full object-cover"
+              @preview="openImageViewer(selectedSampleImage.viewerIndex)"
+            />
+            <LabViewerImageThumbnails
+              :items="sampleImages"
+              :active-index="selectedSampleImageIndex"
+              @select="selectedSampleImageIndex = $event"
+            />
+          </div>
+          <section v-else-if="currentElement.sampleFallback" class="py-2">
+            <div class="text-xs tracking-[0.07em] uppercase">
+              {{ currentElement.sampleFallback.type }}
+            </div>
+            <div class="mt-2 text-sm font-semibold">
+              {{ currentElement.sampleFallback.label }}
+            </div>
+            <p class="mt-2 text-sm leading-6">
+              {{ currentElement.sampleFallback.description }}
+            </p>
+          </section>
+          <div v-else class="py-2 text-sm text-(--lab-text-muted)">
+            Для этого элемента изображения образцов пока не добавлено.
+          </div>
+        </section>
+      </div>
+
+      <div class="min-w-0 space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex min-w-0 items-start gap-4">
+            <div
+              class="grid shrink-0 place-items-center text-4xl font-semibold sm:h-20 sm:w-20 sm:text-5xl"
+              :style="elementSymbolStyle"
+            >
+              {{ formattedCurrentSymbol }}
+            </div>
+            <div class="min-w-0 pt-1">
+              <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+                {{ currentElement.russianName }}
+              </h1>
+              <p class="mt-1 text-sm text-(--lab-text-muted) sm:text-base">
+                {{ currentElement.name }}
+              </p>
+            </div>
+          </div>
+          <div class="flex shrink-0 items-center gap-1">
+            <LabBaseButton
+              v-if="previousElement"
+              icon="ic:round-navigate-before"
+              :title="`Предыдущий элемент: ${previousElement.russianName}`"
+              :aria-label="`Предыдущий элемент: ${previousElement.russianName}`"
+              variant="ghost"
+              size="sm"
+              icon-only
+              @click="navigateToPreviousElement"
+            />
+            <LabBaseButton
+              v-if="nextElement"
+              icon="ic:round-navigate-next"
+              :title="`Следующий элемент: ${nextElement.russianName}`"
+              :aria-label="`Следующий элемент: ${nextElement.russianName}`"
+              variant="ghost"
+              size="sm"
+              icon-only
+              @click="navigateToNextElement"
+            />
+          </div>
+        </div>
+        <p class="max-w-4xl text-sm leading-6 text-(--lab-text-secondary) sm:text-base">
           {{ headerDescription }}
         </p>
-        <div class="mt-4 flex flex-wrap gap-2 text-xs">
-          <span class="bg-(--lab-bg-surface-subtle) px-2.5 py-1">
+        <div class="flex flex-wrap gap-2 text-xs">
+          <span class="px-2 py-1">
             {{ currentElement.categoryLabel }}
           </span>
-          <span class="bg-(--lab-bg-surface-subtle) px-2.5 py-1">
+          <span class="px-2 py-1">
             {{ formatPhase(currentElement.phase) }}
           </span>
-          <span v-if="cpkChipStyle && cpkHexLabel" class="px-2.5 py-1 font-medium" :style="cpkChipStyle">
+          <span v-if="cpkChipStyle && cpkHexLabel" class="px-2 py-1 font-medium" :style="cpkChipStyle">
             CPK {{ cpkHexLabel }}
           </span>
         </div>
-
-        <dl class="mt-4 flex flex-wrap gap-2">
-          <div
-            v-for="stat in heroStats"
-            :key="stat.label"
-            class="max-w-full min-w-32 bg-(--lab-bg-surface-subtle) px-3 py-2"
-          >
+        <dl class="flex flex-wrap gap-2">
+          <div v-for="stat in heroStats" :key="stat.label" class="max-w-full min-w-32 px-2 py-1.5">
             <dt class="text-[11px] tracking-[0.07em] text-(--lab-text-muted) uppercase">
               {{ stat.label }}
             </dt>
@@ -376,20 +415,26 @@ watch(
             </dd>
           </div>
         </dl>
-      </div>
-      <div v-if="resolvedBohrModel3d" class="px-4 pb-4 sm:px-6 sm:pb-6 xl:pl-0">
-        <LabViewer3D
-          compact
-          :title="currentElement.russianName"
-          :poster-src="resolvedBohrModelImage"
-          :model-src="resolvedBohrModel3d"
-          class="aspect-square w-full"
-        />
+        <section v-if="resolvedSpectralImage" class="space-y-3">
+          <div>
+            <h2 class="text-sm font-semibold tracking-[0.07em] uppercase">Спектр</h2>
+            <p class="mt-1 text-sm text-(--lab-text-muted)">Видимый диапазон 380–780 нм и основные линии излучения.</p>
+          </div>
+          <LabViewerPreviewButton
+            :src="resolvedSpectralImage"
+            :alt="`Спектр ${currentElement.russianName}`"
+            label="Открыть спектр"
+            button-class="w-full max-w-xl"
+            frame-class="max-h-24"
+            image-class="h-full w-full object-contain"
+            @preview="openImageViewer(spectralViewerIndex)"
+          />
+        </section>
       </div>
     </section>
 
     <section>
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <article class="min-w-0 px-4 pb-4 sm:px-6 sm:pb-6">
           <div class="grid gap-x-6 gap-y-6 md:grid-cols-2 2xl:grid-cols-3">
             <section v-for="section in detailSections" :key="section.title" class="min-w-0">
@@ -431,119 +476,6 @@ watch(
           <article class="min-w-0">
             <section class="space-y-4">
               <div>
-                <h2 class="text-base font-semibold">Образцы вещества</h2>
-                <p class="mt-1 text-sm text-(--lab-text-muted)">
-                  Фотографии образцов и материалов, связанных с элементом.
-                </p>
-              </div>
-
-              <div v-if="selectedSampleImage" class="space-y-3">
-                <LabViewerPreviewButton
-                  :src="selectedSampleImage.src"
-                  :alt="selectedSampleImage.alt"
-                  :label="selectedSampleImage.title || 'Открыть образец'"
-                  free-height
-                  button-class="w-full"
-                  frame-class="aspect-[16/9] max-h-none"
-                  image-class="h-full w-full object-cover"
-                  @preview="openImageViewer(selectedSampleImage.viewerIndex)"
-                />
-
-                <div class="space-y-2">
-                  <p class="text-sm font-medium">
-                    {{ selectedSampleImage.title }}
-                  </p>
-
-                  <LabViewerImageCredits
-                    :author="selectedSampleImage.author"
-                    :attribution="selectedSampleImage.attribution"
-                    :source-url="selectedSampleImage.sourceUrl"
-                    :license-url="selectedSampleImage.licenseUrl"
-                    :license="selectedSampleImage.license"
-                  />
-
-                  <LabViewerImageThumbnails
-                    :items="sampleImages"
-                    :active-index="selectedSampleImageIndex"
-                    @select="selectedSampleImageIndex = $event"
-                  />
-                </div>
-              </div>
-
-              <section v-else-if="currentElement.sampleFallback" class="lab-surface-warning p-4">
-                <div class="text-xs tracking-[0.07em] uppercase">
-                  {{ currentElement.sampleFallback.type }}
-                </div>
-                <div class="mt-2 text-sm font-semibold">
-                  {{ currentElement.sampleFallback.label }}
-                </div>
-                <p class="mt-2 text-sm leading-6">
-                  {{ currentElement.sampleFallback.description }}
-                </p>
-              </section>
-
-              <div v-else class="bg-(--lab-bg-surface-subtle) px-4 py-5 text-sm text-(--lab-text-muted)">
-                Для этого элемента изображения образцов пока не добавлено.
-              </div>
-            </section>
-          </article>
-
-          <article v-if="resolvedSpectralImage" class="min-w-0">
-            <section class="space-y-4">
-              <div>
-                <h2 class="text-base font-semibold">Спектр</h2>
-                <p class="mt-1 text-sm text-(--lab-text-muted)">
-                  Видимый диапазон 380–780 нм и основные линии излучения.
-                </p>
-              </div>
-
-              <LabViewerPreviewButton
-                :src="resolvedSpectralImage"
-                :alt="`Спектр ${currentElement.russianName}`"
-                label="Открыть спектр"
-                button-class="w-full"
-                frame-class="max-h-24"
-                image-class="h-full w-full object-contain"
-                @preview="openImageViewer(spectralViewerIndex)"
-              />
-
-              <div class="space-y-2">
-                <div class="relative h-4 text-[11px] text-(--lab-text-muted)">
-                  <span class="absolute left-0">380</span>
-                  <span class="absolute left-[12.5%] -translate-x-1/2">430</span>
-                  <span class="absolute left-[25%] -translate-x-1/2">480</span>
-                  <span class="absolute left-[37.5%] -translate-x-1/2">530</span>
-                  <span class="absolute left-1/2 -translate-x-1/2">580</span>
-                  <span class="absolute left-[62.5%] -translate-x-1/2">630</span>
-                  <span class="absolute left-[75%] -translate-x-1/2">680</span>
-                  <span class="absolute left-[87.5%] -translate-x-1/2">730</span>
-                  <span class="absolute right-0">780 нм</span>
-                </div>
-
-                <div class="relative mt-1 h-2 overflow-hidden bg-(--lab-bg-canvas)">
-                  <div
-                    class="absolute inset-0 opacity-80"
-                    style="
-                      background: linear-gradient(
-                        90deg,
-                        #6a00ff 0%,
-                        #2440ff 18%,
-                        #00b7ff 32%,
-                        #00ff87 50%,
-                        #b7ff00 63%,
-                        #ffb300 79%,
-                        #ff3b00 100%
-                      );
-                    "
-                  />
-                </div>
-              </div>
-            </section>
-          </article>
-
-          <article class="min-w-0">
-            <section class="space-y-4">
-              <div>
                 <h2 class="text-base font-semibold">Связанные элементы</h2>
                 <p class="mt-1 text-sm text-(--lab-text-muted)">Та же группа, период или категория.</p>
               </div>
@@ -553,7 +485,7 @@ watch(
                   v-for="item in relatedElements"
                   :key="item.number"
                   :to="periodic_table_element_route(item)"
-                  class="lab-focus bg-(--lab-bg-surface-subtle) px-3 py-2 transition hover:opacity-75"
+                  class="lab-focus px-3 py-2"
                 >
                   <div class="text-sm font-semibold">{{ item.displaySymbol }} · {{ item.russianName }}</div>
                   <div class="mt-1 text-xs text-(--lab-text-muted)">№{{ item.number }} · {{ item.categoryLabel }}</div>

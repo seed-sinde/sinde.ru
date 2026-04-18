@@ -1,5 +1,5 @@
 <template>
-  <p :class="['lab-text-soft text-xs', hintClass]">
+  <p :class="['text-xs text-(--lab-text-soft)', hintClass]">
     <slot>{{ text }}</slot>
   </p>
 </template>

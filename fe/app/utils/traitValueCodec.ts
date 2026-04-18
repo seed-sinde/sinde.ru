@@ -4,30 +4,35 @@ import {
   currentDateText,
   isValidDateText,
   parseDateText
-} from '../composables/useDateText'
-import { isHexColor, ensureHexHash } from './traitColor'
-import { resolveColorMode } from './traitMeta'
+} from "../composables/useDateText"
+import {isHexColor, ensureHexHash} from "./traitColor"
+import {resolveColorMode, resolveDataType, resolveGeoType, resolveRangeValueType} from "./traitMeta"
 import type {
   Color,
   GeoCoordinateParseResult,
   KeyMeta,
+  TraitDynamicValueModel,
+  TraitGeoModel,
+  TraitGeoPolygonPoint,
   TraitIntervalModel,
   TraitIntervalUnit,
+  TraitListModel,
+  TraitRangeModel,
   TraitScheduleModel
-} from '../../shared/types/traits'
+} from "../../shared/types/traits"
 export const GEO_MIN_DECIMALS = 6
 /**
  * Parses one geo coordinate string into a validated numeric form.
  */
 export const parseGeoCoordinate = (value: string): GeoCoordinateParseResult | null => {
-  const trimmed = String(value || '').trim()
+  const trimmed = String(value || "").trim()
   if (!trimmed) return null
   if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return null
   const num = Number(trimmed)
   if (!Number.isFinite(num)) return null
-  const dot = trimmed.indexOf('.')
+  const dot = trimmed.indexOf(".")
   const decimals = dot >= 0 ? trimmed.length - dot - 1 : 0
-  return { trimmed, num, decimals }
+  return {trimmed, num, decimals}
 }
 /**
  * Formats a parsed geo coordinate while preserving meaningful precision.
@@ -41,7 +46,7 @@ const formatGeoCoordinate = (parsed: GeoCoordinateParseResult): string => {
 export const normalizeGeoPoint = (
   latRaw: string,
   lngRaw: string
-): { lat: string; lng: string; lowPrecision: boolean } | null => {
+): {lat: string; lng: string; lowPrecision: boolean} | null => {
   const lat = parseGeoCoordinate(latRaw)
   const lng = parseGeoCoordinate(lngRaw)
   if (!lat || !lng) return null
@@ -54,7 +59,7 @@ export const normalizeGeoPoint = (
 /**
  * Validates that both dates are canonical and ordered.
  */
-const isDatePairValid = (left: string, right: string, mode: 'datetime'): boolean => {
+const isDatePairValid = (left: string, right: string, mode: "datetime"): boolean => {
   if (!left || !right) return false
   if (!isValidDateText(left, mode) || !isValidDateText(right, mode)) return false
   const compare = compareDateText(left, right, mode)
@@ -67,6 +72,21 @@ const INTERVAL_UNIT_MS: Record<TraitIntervalUnit, number> = {
   days: 86_400_000,
   years: 31_536_000_000
 }
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return Boolean(value && typeof value === "object")
+}
+const parseIntervalUnit = (value: unknown): TraitIntervalUnit => {
+  const raw = String(value ?? "").trim() as TraitIntervalUnit
+  return raw in INTERVAL_UNIT_MS ? raw : "minutes"
+}
+const parseGeoPolygonPoint = (value: unknown): TraitGeoPolygonPoint | null => {
+  if (!isRecord(value)) return null
+  const normalized = normalizeGeoPoint(String(value.lat ?? "").trim(), String(value.lng ?? "").trim())
+  return normalized ? {lat: normalized.lat, lng: normalized.lng} : null
+}
+const isGeoPolygonPoint = (point: TraitGeoPolygonPoint | null): point is TraitGeoPolygonPoint => {
+  return point !== null
+}
 /**
  * Returns true when the value is a valid ISO-like weekday index from 1 to 7.
  */
@@ -77,113 +97,178 @@ const isWeekDayValue = (value: string): boolean => {
  * Parses and validates the schedule form model.
  */
 const parseIntervalSchedule = (value: unknown): TraitScheduleModel | null => {
-  if (!(value && typeof value === 'object')) return null
-  const fromDay = String((value as any).fromDay ?? '').trim()
-  const toDay = String((value as any).toDay ?? '').trim()
-  const fromTime = String((value as any).fromTime ?? '').trim()
-  const toTime = String((value as any).toTime ?? '').trim()
+  if (!(value && typeof value === "object")) return null
+  const fromDay = String((value as any).fromDay ?? "").trim()
+  const toDay = String((value as any).toDay ?? "").trim()
+  const fromTime = String((value as any).fromTime ?? "").trim()
+  const toTime = String((value as any).toTime ?? "").trim()
   if (!isWeekDayValue(fromDay) || !isWeekDayValue(toDay)) return null
-  if (!isValidDateText(fromTime, 'time') || !isValidDateText(toTime, 'time')) return null
+  if (!isValidDateText(fromTime, "time") || !isValidDateText(toTime, "time")) return null
   if (fromDay === toDay) {
-    const cmp = compareDateText(fromTime, toTime, 'time')
+    const cmp = compareDateText(fromTime, toTime, "time")
     if (cmp === null || cmp > 0) return null
   }
-  return { fromDay, toDay, fromTime, toTime }
+  return {fromDay, toDay, fromTime, toTime}
 }
 /**
  * Parses and validates the interval form model.
  */
 const parseIntervalDuration = (value: unknown): TraitIntervalModel | null => {
-  if (!(value && typeof value === 'object')) return null
-  const start = String((value as any).start ?? '').trim()
-  const end = String((value as any).end ?? '').trim()
-  const unit = String((value as any).unit ?? '').trim() as TraitIntervalUnit
-  if (!isValidDateText(start, 'datetime') || !isValidDateText(end, 'datetime')) return null
+  if (!(value && typeof value === "object")) return null
+  const start = String((value as any).start ?? "").trim()
+  const end = String((value as any).end ?? "").trim()
+  const unit = String((value as any).unit ?? "").trim() as TraitIntervalUnit
+  if (!isValidDateText(start, "datetime") || !isValidDateText(end, "datetime")) return null
   if (!Object.keys(INTERVAL_UNIT_MS).includes(unit)) return null
-  const cmp = compareDateText(start, end, 'datetime')
+  const cmp = compareDateText(start, end, "datetime")
   if (cmp === null || cmp > 0) return null
-  return { start, end, unit }
+  return {start, end, unit}
 }
 /**
  * Formats a duration amount without trailing zero noise.
  */
 const formatIntervalAmount = (value: number): string => {
   if (Number.isInteger(value)) return String(value)
-  return value.toFixed(6).replace(/\.?0+$/, '')
+  return value.toFixed(6).replace(/\.?0+$/, "")
+}
+const parseListItems = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map(item => String(item ?? "").trim()).filter(Boolean)
+  }
+  if (!(value && typeof value === "object")) return []
+  const items = Array.isArray((value as TraitListModel).items) ? (value as TraitListModel).items : []
+  return items.map(item => String(item ?? "").trim()).filter(Boolean)
+}
+const parseRangeValue = (meta: KeyMeta, value: unknown): TraitRangeModel | null => {
+  if (!(value && typeof value === "object")) return null
+  const start = String((value as any).start ?? "").trim()
+  const end = String((value as any).end ?? "").trim()
+  const rangeType = resolveRangeValueType(meta.rangeType)
+  if (!start || !end) return null
+  if (rangeType === "number") {
+    if (Number.isNaN(Number(start)) || Number.isNaN(Number(end)) || Number(start) > Number(end)) return null
+    return {start, end}
+  }
+  if (rangeType === "time") {
+    const cmp = compareDateText(start, end, "time")
+    return cmp === null || cmp > 0 ? null : {start, end}
+  }
+  if (rangeType === "date") {
+    if (!isValidDateText(start, "date") || !isValidDateText(end, "date") || start > end) return null
+    return {start, end}
+  }
+  return isDatePairValid(start, end, "datetime") ? {start, end} : null
+}
+const parseGeoValue = (meta: KeyMeta, value: unknown): TraitGeoModel | null => {
+  if (!(value && typeof value === "object")) return null
+  const type = resolveGeoType((value as any).type || meta.geoType)
+  if (type === "point") {
+    const lat = String((value as any).lat ?? "").trim()
+    const lng = String((value as any).lng ?? "").trim()
+    const normalized = normalizeGeoPoint(lat, lng)
+    if (!normalized) return null
+    return {
+      type,
+      lat: normalized.lat,
+      lng: normalized.lng,
+      height: String((value as any).height ?? "").trim(),
+      heightUnit: String((value as any).heightUnit ?? meta.heightUnit ?? "").trim()
+    }
+  }
+  if (type === "zone") {
+    const lat = String((value as any).lat ?? "").trim()
+    const lng = String((value as any).lng ?? "").trim()
+    const normalized = normalizeGeoPoint(lat, lng)
+    const radius = String((value as any).radius ?? "").trim()
+    if (!normalized || !radius || Number.isNaN(Number(radius))) return null
+    return {
+      type,
+      lat: normalized.lat,
+      lng: normalized.lng,
+      radius,
+      radiusUnit: String((value as any).radiusUnit ?? meta.radiusUnit ?? "").trim()
+    }
+  }
+  const points = Array.isArray((value as any).points) ? (value as any).points : []
+  const normalizedPoints = points
+    .map((point: unknown) => parseGeoPolygonPoint(point))
+    .filter(isGeoPolygonPoint)
+  return normalizedPoints.length >= 3 ? {type, points: normalizedPoints} : null
 }
 /**
  * Returns true when the form value satisfies the required shape for its meta.
  */
 export const isTraitFormValueFilled = (meta: KeyMeta, value: unknown): boolean => {
-  const type = meta.dataType
-  const dateMode = 'datetime'
+  const type = resolveDataType(meta.dataType)
+  const dateMode = "datetime"
   switch (type) {
-    case 'string':
-    case 'enum':
-      return typeof value === 'string' && value.trim().length > 0
-    case 'number':
-      if (typeof value === 'number') return !Number.isNaN(value)
-      if (typeof value === 'string') return value.trim().length > 0 && !Number.isNaN(Number(value))
+    case "string":
+      return typeof value === "string" && value.trim().length > 0
+    case "list":
+      return parseListItems(value).length >= Math.max(Number(meta.minItems || 0), 1)
+    case "number":
+      if (typeof value === "number") return !Number.isNaN(value)
+      if (typeof value === "string") return value.trim().length > 0 && !Number.isNaN(Number(value))
       return false
-    case 'boolean':
-      return typeof value === 'boolean'
-    case 'datetime':
-      return typeof value === 'string' && isValidDateText(value.trim(), dateMode)
-    case 'datetime-range': {
-      if (!(value && typeof value === 'object')) return false
-      const start = String((value as any).start ?? '').trim()
-      const end = String((value as any).end ?? '').trim()
-      return isDatePairValid(start, end, dateMode)
-    }
-    case 'interval': {
+    case "boolean":
+      return typeof value === "boolean"
+    case "datetime":
+      return typeof value === "string" && isValidDateText(value.trim(), dateMode)
+    case "range":
+      return Boolean(parseRangeValue(meta, value))
+    case "interval": {
       return Boolean(parseIntervalDuration(value))
     }
-    case 'schedule': {
+    case "schedule": {
       return Boolean(parseIntervalSchedule(value))
     }
-    case 'geo-point': {
-      if (!(value && typeof value === 'object')) return false
-      const lat = String((value as any).lat ?? '').trim()
-      const lng = String((value as any).lng ?? '').trim()
-      return Boolean(normalizeGeoPoint(lat, lng))
-    }
-    case 'validity': {
-      if (!(value && typeof value === 'object')) return false
-      const mode = String((value as any).mode || '').trim()
-      if (mode === 'temporary') {
-        const until = String((value as any).until ?? '').trim()
-        if (!isValidDateText(until, 'datetime')) return false
-        const cmp = compareDateText(until, currentDateText('datetime'), 'datetime')
+    case "geo":
+      return Boolean(parseGeoValue(meta, value))
+    case "validity": {
+      if (!(value && typeof value === "object")) return false
+      const mode = String((value as any).mode || "").trim()
+      if (mode === "temporary") {
+        const until = String((value as any).until ?? "").trim()
+        if (!isValidDateText(until, "datetime")) return false
+        const cmp = compareDateText(until, currentDateText("datetime"), "datetime")
         return cmp !== null && cmp >= 0
       }
-      if (mode === 'permanent') return isValidDateText(String((value as any).since ?? '').trim(), 'datetime')
+      if (mode === "permanent") return isValidDateText(String((value as any).since ?? "").trim(), "datetime")
       return false
     }
-    case 'color': {
+    case "color": {
       const configuredMode = resolveColorMode(meta)
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         const raw = value.trim()
         if (!raw) return false
-        if (configuredMode === 'hex') return isHexColor(raw)
-        if (configuredMode === 'lab') {
-          const parts = raw.split(',').map((part) => part.trim())
-          return parts.length === 3 && parts.every((part) => Number.isFinite(Number(part)))
+        if (configuredMode === "hex") return isHexColor(raw)
+        if (configuredMode === "lab") {
+          const parts = raw.split(",").map(part => part.trim())
+          return parts.length === 3 && parts.every(part => Number.isFinite(Number(part)))
         }
         return true
       }
-      if (!(value && typeof value === 'object')) return false
+      if (!(value && typeof value === "object")) return false
       const mode =
         configuredMode ||
-        String((value as any).mode || '')
+        String((value as any).mode || "")
           .trim()
           .toLowerCase()
-      if (mode === 'hex') return isHexColor(String((value as any).hex ?? '').trim())
-      if (mode === 'lab') {
+      if (mode === "hex") return isHexColor(String((value as any).hex ?? "").trim())
+      if (mode === "lab") {
         const lab = (value as any).lab
-        return Boolean(lab && ['L', 'a', 'b'].every((key) => Number.isFinite(Number(lab[key]))))
+        return Boolean(lab && ["L", "a", "b"].every(key => Number.isFinite(Number(lab[key]))))
       }
-      if (mode === 'spectrum') return Boolean(String((value as any).spectrum ?? '').trim())
-      return Boolean(String((value as any).hex ?? (value as any).spectrum ?? '').trim())
+      if (mode === "spectrum") return Boolean(String((value as any).spectrum ?? "").trim())
+      return Boolean(String((value as any).hex ?? (value as any).spectrum ?? "").trim())
+    }
+    case "surface": {
+      if (!(value && typeof value === "object")) return false
+      const glossCategory = String((value as any).glossCategory ?? "").trim()
+      const glossGU = String((value as any).glossGU ?? "").trim()
+      const reliefType = String((value as any).reliefType ?? "").trim()
+      const microReliefHeight = String((value as any).microReliefHeight ?? "").trim()
+      return Boolean((glossCategory && (glossGU ? !Number.isNaN(Number(glossGU)) : true)) || (reliefType && (microReliefHeight ? !Number.isNaN(Number(microReliefHeight)) : true)))
     }
     default:
       return false
@@ -194,162 +279,169 @@ export const isTraitFormValueFilled = (meta: KeyMeta, value: unknown): boolean =
  */
 const serializeColorValue = (meta: KeyMeta, value: unknown): string => {
   const configuredMode = resolveColorMode(meta)
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const raw = value.trim()
-    if (!raw) return ''
-    if (configuredMode === 'hex') return ensureHexHash(raw)
+    if (!raw) return ""
+    if (configuredMode === "hex") return ensureHexHash(raw)
     return raw
   }
-  if (!(value && typeof value === 'object')) return ''
+  if (!(value && typeof value === "object")) return ""
   const mode =
     configuredMode ||
-    String((value as any).mode || '')
+    String((value as any).mode || "")
       .trim()
       .toLowerCase()
-  if (mode === 'hex') {
-    const hex = String((value as any).hex ?? '').trim()
-    if (!hex) return ''
+  if (mode === "hex") {
+    const hex = String((value as any).hex ?? "").trim()
+    if (!hex) return ""
     return ensureHexHash(hex)
   }
-  if (mode === 'lab' && (value as any).lab) {
+  if (mode === "lab" && (value as any).lab) {
     const lab = (value as any).lab
-    if (!['L', 'a', 'b'].every((key) => Number.isFinite(Number(lab[key])))) return ''
+    if (!["L", "a", "b"].every(key => Number.isFinite(Number(lab[key])))) return ""
     return `${Number(lab.L)},${Number(lab.a)},${Number(lab.b)}`
   }
-  if (mode === 'spectrum') {
-    return String((value as any).spectrum ?? '').trim()
+  if (mode === "spectrum") {
+    return String((value as any).spectrum ?? "").trim()
   }
-  return ''
+  return ""
 }
 /**
  * Serializes one trait form model into the backend string payload.
  */
 export const serializeTraitFormValue = (meta: KeyMeta, value: unknown): string => {
-  const type = meta.dataType
-  const dateMode = 'datetime'
+  const type = resolveDataType(meta.dataType)
+  const dateMode = "datetime"
   switch (type) {
-    case 'number':
-      if (typeof value === 'string') return value.trim()
-      return Number.isFinite(value as any) ? String(value) : ''
-    case 'geo-point': {
-      if (!(value && typeof value === 'object')) return ''
-      const latRaw = String((value as any).lat ?? '').trim()
-      const lngRaw = String((value as any).lng ?? '').trim()
-      const normalized = normalizeGeoPoint(latRaw, lngRaw)
-      if (!normalized) return ''
-      return `${normalized.lat},${normalized.lng}`
+    case "list":
+      return JSON.stringify(parseListItems(value))
+    case "number":
+      if (typeof value === "string") return value.trim()
+      return Number.isFinite(value as any) ? String(value) : ""
+    case "geo": {
+      const parsed = parseGeoValue(meta, value)
+      return parsed ? JSON.stringify(parsed) : ""
     }
-    case 'datetime': {
-      if (typeof value !== 'string') return String(value ?? '').trim()
+    case "datetime": {
+      if (typeof value !== "string") return String(value ?? "").trim()
       const trimmed = value.trim()
-      if (!trimmed) return ''
+      if (!trimmed) return ""
       return canonicalDateText(trimmed, dateMode)
     }
-    case 'datetime-range': {
-      if (!(value && typeof value === 'object' && 'start' in value && 'end' in value)) return ''
-      const start = String((value as any).start ?? '').trim()
-      const end = String((value as any).end ?? '').trim()
-      if (!start || !end) return ''
-      return `${canonicalDateText(start, dateMode)} — ${canonicalDateText(end, dateMode)}`
+    case "range": {
+      const parsed = parseRangeValue(meta, value)
+      if (!parsed) return ""
+      const rangeType = resolveRangeValueType(meta.rangeType)
+      if (rangeType === "datetime") {
+        return JSON.stringify({
+          start: canonicalDateText(parsed.start, dateMode),
+          end: canonicalDateText(parsed.end, dateMode)
+        })
+      }
+      return JSON.stringify(parsed)
     }
-    case 'interval': {
+    case "interval": {
       const duration = parseIntervalDuration(value)
-      if (!duration) return ''
-      const startParsed = parseDateText(duration.start, 'datetime')
-      const endParsed = parseDateText(duration.end, 'datetime')
-      if (!startParsed || !endParsed) return ''
+      if (!duration) return ""
+      const startParsed = parseDateText(duration.start, "datetime")
+      const endParsed = parseDateText(duration.end, "datetime")
+      if (!startParsed || !endParsed) return ""
       const ms = endParsed.ts - startParsed.ts
       const unitMs = INTERVAL_UNIT_MS[duration.unit]
-      if (!unitMs || ms < 0) return ''
+      if (!unitMs || ms < 0) return ""
       const amount = formatIntervalAmount(ms / unitMs)
-      const startCanonical = canonicalDateText(duration.start, 'datetime')
-      const endCanonical = canonicalDateText(duration.end, 'datetime')
+      const startCanonical = canonicalDateText(duration.start, "datetime")
+      const endCanonical = canonicalDateText(duration.end, "datetime")
       return `duration:${startCanonical}/${endCanonical}|${amount}|${duration.unit}`
     }
-    case 'schedule': {
+    case "schedule": {
       const schedule = parseIntervalSchedule(value)
-      if (!schedule) return ''
-      const fromTime = canonicalDateText(schedule.fromTime, 'time')
-      const toTime = canonicalDateText(schedule.toTime, 'time')
+      if (!schedule) return ""
+      const fromTime = canonicalDateText(schedule.fromTime, "time")
+      const toTime = canonicalDateText(schedule.toTime, "time")
       return `weekly:${schedule.fromDay}-${schedule.toDay}/${fromTime}-${toTime}`
     }
-    case 'validity': {
-      if (!(value && typeof value === 'object')) return ''
-      const mode = String((value as any).mode || 'permanent').trim()
-      if (mode === 'permanent') {
-        const since = String((value as any).since ?? '').trim()
-        return since ? `permanent:${canonicalDateText(since, 'datetime')}` : 'permanent'
+    case "validity": {
+      if (!(value && typeof value === "object")) return ""
+      const mode = String((value as any).mode || "permanent").trim()
+      if (mode === "permanent") {
+        const since = String((value as any).since ?? "").trim()
+        return since ? `permanent:${canonicalDateText(since, "datetime")}` : "permanent"
       }
-      const until = String((value as any).until ?? '').trim()
-      return until ? `temporary:${canonicalDateText(until, 'datetime')}` : ''
+      const until = String((value as any).until ?? "").trim()
+      return until ? `temporary:${canonicalDateText(until, "datetime")}` : ""
     }
-    case 'color':
+    case "color":
       return serializeColorValue(meta, value)
+    case "surface":
+      return value && typeof value === "object" ? JSON.stringify(value) : ""
     default:
-      return Array.isArray(value) || typeof value === 'object' ? JSON.stringify(value) : String(value ?? '')
+      return Array.isArray(value) || typeof value === "object" ? JSON.stringify(value) : String(value ?? "")
   }
 }
 /**
  * Creates the default form model for the provided trait meta.
  */
-export const defaultTraitFormValue = (meta: KeyMeta): string | number | boolean | Record<string, any> => {
-  switch (meta.dataType) {
-    case 'number':
-      return ''
-    case 'boolean':
+export const defaultTraitFormValue = (meta: KeyMeta): TraitDynamicValueModel => {
+  switch (resolveDataType(meta.dataType)) {
+    case "number":
+      return ""
+    case "boolean":
       return false
-    case 'datetime':
-      return ''
-    case 'datetime-range':
-      return { start: '', end: '' }
-    case 'interval':
-      return { start: '', end: '', unit: 'minutes' }
-    case 'schedule':
-      return { fromDay: '1', toDay: '5', fromTime: '', toTime: '' }
-    case 'geo-point':
-      return { lat: '', lng: '' }
-    case 'enum':
-      return ''
-    case 'validity':
-      return { mode: 'permanent', since: '', until: '' }
-    case 'color': {
-      const mode = resolveColorMode(meta) || 'hex'
-      if (mode === 'lab') return { mode: 'lab', lab: { L: 50, a: 0, b: 0 } }
-      if (mode === 'spectrum') return { mode: 'spectrum', spectrum: '' }
-      return { mode: 'hex', hex: '' }
+    case "list":
+      return {items: ["", ""]}
+    case "datetime":
+      return ""
+    case "range":
+      return {start: "", end: ""}
+    case "interval":
+      return {start: "", end: "", unit: "minutes"}
+    case "schedule":
+      return {fromDay: "1", toDay: "5", fromTime: "", toTime: ""}
+    case "geo":
+      return {type: resolveGeoType(meta.geoType), lat: "", lng: "", points: [{lat: "", lng: ""}, {lat: "", lng: ""}, {lat: "", lng: ""}], radius: ""}
+    case "validity":
+      return {mode: "permanent", since: "", until: ""}
+    case "color": {
+      const mode = resolveColorMode(meta) || "hex"
+      if (mode === "lab") return {mode: "lab", lab: {L: 50, a: 0, b: 0}}
+      if (mode === "spectrum") return {mode: "spectrum", spectrum: ""}
+      return {mode: "hex", hex: ""}
     }
+    case "surface":
+      return {glossCategory: "", glossGU: "", reliefType: "", microReliefHeight: ""}
     default:
-      return ''
+      return ""
   }
 }
 /**
  * Converts a canonical datetime string into the editable text format.
  */
 const parseDateTimeCanonicalToText = (value: string): string => {
-  const match = String(value || '')
+  const match = String(value || "")
     .trim()
     .match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/)
-  if (!match) return String(value || '').trim()
+  if (!match) return String(value || "").trim()
   const text = `${match[3]}.${match[2]}.${match[1]} ${match[4]}:${match[5]}`
-  return isValidDateText(text, 'datetime') ? text : String(value || '').trim()
+  return isValidDateText(text, "datetime") ? text : String(value || "").trim()
 }
 /**
  * Parses a stored boolean string into a boolean value.
  */
 const parseBooleanStoredValue = (raw: string): boolean => {
-  const normalized = String(raw || '')
+  const normalized = String(raw || "")
     .trim()
     .toLowerCase()
-  return normalized === '1' || normalized === 'true'
+  return normalized === "1" || normalized === "true"
 }
 /**
  * Parses a stored color string into the color form model.
  */
 const parseColorStoredValue = (meta: KeyMeta, raw: string): Color => {
-  const value = String(raw || '').trim()
+  const value = String(raw || "").trim()
   const configuredMode = resolveColorMode(meta)
-  if (configuredMode === 'hex') {
-    return { mode: 'hex', hex: value ? ensureHexHash(value) : '' }
+  if (configuredMode === "hex") {
+    return {mode: "hex", hex: value ? ensureHexHash(value) : ""}
   }
   const labMatch = value.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/)
   const parsedLab = labMatch
@@ -359,107 +451,148 @@ const parseColorStoredValue = (meta: KeyMeta, raw: string): Color => {
         b: Number(labMatch[3])
       }
     : null
-  if (configuredMode === 'lab') {
-    return parsedLab ? { mode: 'lab', lab: parsedLab } : { mode: 'lab', lab: { L: 50, a: 0, b: 0 } }
+  if (configuredMode === "lab") {
+    return parsedLab ? {mode: "lab", lab: parsedLab} : {mode: "lab", lab: {L: 50, a: 0, b: 0}}
   }
-  if (configuredMode === 'spectrum') {
-    return { mode: 'spectrum', spectrum: value }
+  if (configuredMode === "spectrum") {
+    return {mode: "spectrum", spectrum: value}
   }
-  if (isHexColor(value)) return { mode: 'hex', hex: ensureHexHash(value) }
-  if (parsedLab) return { mode: 'lab', lab: parsedLab }
-  return { mode: 'spectrum', spectrum: value }
+  if (isHexColor(value)) return {mode: "hex", hex: ensureHexHash(value)}
+  if (parsedLab) return {mode: "lab", lab: parsedLab}
+  return {mode: "spectrum", spectrum: value}
 }
 /**
  * Parses the stored backend value into the corresponding trait form model.
  */
-export const parseTraitStoredValue = (
-  meta: KeyMeta,
-  rawValue: string
-): string | number | boolean | Record<string, any> => {
-  const raw = String(rawValue ?? '').trim()
-  switch (meta.dataType) {
-    case 'number':
-    case 'string':
-    case 'enum':
+export const parseTraitStoredValue = (meta: KeyMeta, rawValue: string): TraitDynamicValueModel => {
+  const raw = String(rawValue ?? "").trim()
+  switch (resolveDataType(meta.dataType)) {
+    case "number":
+    case "string":
       return raw
-    case 'boolean':
+    case "list":
+      if (!raw) return defaultTraitFormValue(meta)
+      try {
+        const parsed = JSON.parse(raw)
+        return {items: Array.isArray(parsed) ? parsed.map(item => String(item ?? "")) : []}
+      } catch {
+        return {items: raw.split("\n").map(item => item.trim()).filter(Boolean)}
+      }
+    case "boolean":
       return parseBooleanStoredValue(raw)
-    case 'datetime':
+    case "datetime":
       return parseDateTimeCanonicalToText(raw)
-    case 'datetime-range': {
+    case "range": {
+      if (raw.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(raw) as {start?: string; end?: string}
+          const rangeType = resolveRangeValueType(meta.rangeType)
+          if (rangeType === "datetime") {
+            return {
+              start: parseDateTimeCanonicalToText(String(parsed?.start || "").trim()),
+              end: parseDateTimeCanonicalToText(String(parsed?.end || "").trim())
+            }
+          }
+          return {
+            start: String(parsed?.start || "").trim(),
+            end: String(parsed?.end || "").trim()
+          }
+        } catch {
+          return defaultTraitFormValue(meta)
+        }
+      }
       const dashMatch = raw.match(/^(.+)\s—\s(.+)$/)
       if (dashMatch) {
         return {
-          start: parseDateTimeCanonicalToText(String(dashMatch[1] || '').trim()),
-          end: parseDateTimeCanonicalToText(String(dashMatch[2] || '').trim())
+          start: parseDateTimeCanonicalToText(String(dashMatch[1] || "").trim()),
+          end: parseDateTimeCanonicalToText(String(dashMatch[2] || "").trim())
         }
       }
       const slashMatch = raw.match(/^(.+)\/(.+)$/)
       if (slashMatch) {
         return {
-          start: parseDateTimeCanonicalToText(String(slashMatch[1] || '').trim()),
-          end: parseDateTimeCanonicalToText(String(slashMatch[2] || '').trim())
+          start: parseDateTimeCanonicalToText(String(slashMatch[1] || "").trim()),
+          end: parseDateTimeCanonicalToText(String(slashMatch[2] || "").trim())
         }
       }
       return defaultTraitFormValue(meta)
     }
-    case 'interval': {
+    case "interval": {
       const durationMatch = raw.match(
         /^duration:([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2})\/([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2})\|(-?\d+(?:\.\d+)?)\|(seconds|minutes|hours|days|years)$/
       )
       if (durationMatch) {
         return {
-          start: parseDateTimeCanonicalToText(String(durationMatch[1] || '')),
-          end: parseDateTimeCanonicalToText(String(durationMatch[2] || '')),
-          unit: String(durationMatch[4] || 'minutes')
+          start: parseDateTimeCanonicalToText(String(durationMatch[1] || "")),
+          end: parseDateTimeCanonicalToText(String(durationMatch[2] || "")),
+          unit: parseIntervalUnit(durationMatch[4])
         }
       }
       const slashMatch = raw.match(/^(.+)\/(.+)$/)
       if (slashMatch) {
         return {
-          start: parseDateTimeCanonicalToText(String(slashMatch[1] || '').trim()),
-          end: parseDateTimeCanonicalToText(String(slashMatch[2] || '').trim()),
-          unit: 'minutes'
+          start: parseDateTimeCanonicalToText(String(slashMatch[1] || "").trim()),
+          end: parseDateTimeCanonicalToText(String(slashMatch[2] || "").trim()),
+          unit: "minutes"
         }
       }
       return defaultTraitFormValue(meta)
     }
-    case 'schedule': {
+    case "schedule": {
       const weekly = raw.match(/^weekly:([1-7])-([1-7])\/([0-9]{2}:[0-9]{2})-([0-9]{2}:[0-9]{2})$/)
       if (!weekly) return defaultTraitFormValue(meta)
       return {
-        fromDay: String(weekly[1] || '1'),
-        toDay: String(weekly[2] || '5'),
-        fromTime: String(weekly[3] || ''),
-        toTime: String(weekly[4] || '')
+        fromDay: String(weekly[1] || "1"),
+        toDay: String(weekly[2] || "5"),
+        fromTime: String(weekly[3] || ""),
+        toTime: String(weekly[4] || "")
       }
     }
-    case 'geo-point': {
-      const parts = raw.split(',').map((part) => part.trim())
-      if (parts.length !== 2) return defaultTraitFormValue(meta)
-      return { lat: parts[0], lng: parts[1] }
+    case "geo": {
+      if (raw.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(raw)
+          const normalized = parseGeoValue(meta, parsed)
+          return normalized || defaultTraitFormValue(meta)
+        } catch {
+          return defaultTraitFormValue(meta)
+        }
+      }
+      const parts = raw.split(",").map(part => part.trim())
+      const [lat = "", lng = ""] = parts
+      if (!lat || !lng || parts.length !== 2) return defaultTraitFormValue(meta)
+      const normalized = parseGeoValue(meta, {type: "point", lat, lng})
+      return normalized || defaultTraitFormValue(meta)
     }
-    case 'validity': {
+    case "validity": {
       const permanent = raw.match(/^permanent(?::(.+))?$/)
       if (permanent) {
         return {
-          mode: 'permanent',
-          since: parseDateTimeCanonicalToText(String(permanent[1] || '').trim()),
-          until: ''
+          mode: "permanent",
+          since: parseDateTimeCanonicalToText(String(permanent[1] || "").trim()),
+          until: ""
         }
       }
       const temporary = raw.match(/^temporary:(.+)$/)
       if (temporary) {
         return {
-          mode: 'temporary',
-          since: '',
-          until: parseDateTimeCanonicalToText(String(temporary[1] || '').trim())
+          mode: "temporary",
+          since: "",
+          until: parseDateTimeCanonicalToText(String(temporary[1] || "").trim())
         }
       }
       return defaultTraitFormValue(meta)
     }
-    case 'color':
+    case "color":
       return parseColorStoredValue(meta, raw)
+    case "surface":
+      if (!raw.startsWith("{")) return defaultTraitFormValue(meta)
+      try {
+        const parsed = JSON.parse(raw)
+        return parsed && typeof parsed === "object" ? parsed : defaultTraitFormValue(meta)
+      } catch {
+        return defaultTraitFormValue(meta)
+      }
     default:
       return raw
   }

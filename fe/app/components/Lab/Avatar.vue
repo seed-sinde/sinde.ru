@@ -30,12 +30,13 @@ const {
   ensureSummaryRealtime
 } = useAuth()
 const route = useRoute()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('ui')
+await useAsyncData(key, load, { watch: [locale] })
 const resolvedUser = computed(() => (props.user === undefined ? authUser.value : props.user))
 const isStatusVersion = computed(() => props.version === 'status')
 const isProfileVersion = computed(() => props.version === 'profile')
 const isAuthenticated = computed(() => Boolean(resolvedUser.value))
-const authStatusTo = computed(() => (isAuthenticated.value ? '/auth/account' : buildLoginPath(route.fullPath)))
+const authStatusTo = computed(() => (isAuthenticated.value ? '/auth/account/profile' : buildLoginPath(route.fullPath)))
 const authStatusIcon = computed(() => (isAuthenticated.value ? 'ic:round-account-circle' : 'ic:round-login'))
 const avatarUrls = computed(() => getAuthAvatarUrls(resolvedUser.value))
 const avatarImageUrl = computed(() =>
@@ -49,11 +50,11 @@ const avatarAlt = computed(() => {
 })
 const previewRootClass = computed(() =>
   isProfileVersion.value
-    ? 'bg-(--lab-bg-surface-subtle) flex h-36 w-36 items-center justify-center overflow-hidden border sm:h-40 sm:w-40'
+    ? 'bg-(--lab-bg-surface-subtle) flex h-36 w-36 items-center justify-center overflow-hidden sm:h-40 sm:w-40'
     : 'relative inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full'
 )
 const previewImageClass = computed(() =>
-  isProfileVersion.value ? 'h-full w-full object-cover' : 'h-6 w-6 shrink-0 rounded-full border object-cover'
+  isProfileVersion.value ? 'h-full w-full object-cover' : 'h-6 w-6 shrink-0 rounded-full object-cover'
 )
 const fallbackIconClass = computed(() =>
   isProfileVersion.value ? 'text-(--lab-text-muted) h-20 w-20 text-6xl' : 'text-(--lab-text-muted) h-5 w-5 shrink-0'
@@ -107,10 +108,10 @@ const authStatusTitle = computed(() => {
   return parts.length ? `${base} · ${parts.join(' · ')}` : base
 })
 const isAdminPage = computed(() => route.path.startsWith('/auth/admin'))
-watch(isAdminPage, async (value) => {
-  if (!value || !isAdmin.value || props.user !== undefined) return
+watch([isAdminPage, isAdmin], async ([isPage, admin]) => {
+  if (!isPage || !admin || props.user !== undefined) return
   await loadSharedAdminSummary()
-})
+}, { immediate: true })
 const onAvatarClick = (event: MouseEvent) => {
   if (!isAuthenticated.value || !isAccountPage.value) return
   event.preventDefault()
@@ -140,8 +141,8 @@ onMounted(() => {
         v-if="hasAnyNotifications"
         class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-orange-400 ring-2 ring-(--lab-bg-overlay)"
       />
-      <img v-if="hasAvatarImage" :src="avatarImageUrl" alt="" :class="previewImageClass" >
-      <Icon v-else :name="fallbackIconName" :class="fallbackIconClass" />
+      <img v-show="hasAvatarImage" :src="avatarImageUrl" alt="" :class="previewImageClass" />
+      <Icon v-show="!hasAvatarImage" :name="fallbackIconName" :class="fallbackIconClass" />
     </span>
     <span v-if="showLabel" :class="labelClassList">{{ authStatusLabel }}</span>
   </NuxtLink>
@@ -153,11 +154,11 @@ onMounted(() => {
     :aria-label="avatarAlt"
     @click="onPreviewClick"
   >
-    <img :src="avatarImageUrl" :alt="avatarAlt" :class="previewImageClass" >
+    <img :src="avatarImageUrl" :alt="avatarAlt" :class="previewImageClass" />
   </button>
 
   <div v-else :class="previewRootClass" :aria-label="avatarAlt">
-    <img v-if="hasAvatarImage" :src="avatarImageUrl" :alt="avatarAlt" :class="previewImageClass" >
-    <Icon v-else :name="fallbackIconName" :class="fallbackIconClass" />
+    <img v-show="hasAvatarImage" :src="avatarImageUrl" :alt="avatarAlt" :class="previewImageClass" />
+    <Icon v-show="!hasAvatarImage" :name="fallbackIconName" :class="fallbackIconClass" />
   </div>
 </template>

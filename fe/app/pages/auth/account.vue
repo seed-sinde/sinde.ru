@@ -1,10 +1,66 @@
 <script setup lang="ts">
-const { t, readThemePreferenceFromSettings } = useInterfacePreferences()
-const title = t('auth.account.title')
+definePageMeta({
+  path: '/auth/account/:account?',
+  validate: route => {
+    const account = Array.isArray(route.params.account) ? route.params.account[0] : route.params.account
+    return !account || ['profile', 'balance', 'security', 'admin'].includes(String(account))
+  }
+})
+
+const { readThemePreferenceFromSettings } = useInterfacePreferences()
+const authI18n = useI18nSection('auth')
+const paymentsI18n = useI18nSection('payments')
+const uiI18n = useI18nSection('ui')
+await Promise.all([
+  useAsyncData(authI18n.key.value, authI18n.load, { watch: [authI18n.locale] }),
+  useAsyncData(paymentsI18n.key.value, paymentsI18n.load, { watch: [paymentsI18n.locale] }),
+  useAsyncData(uiI18n.key.value, uiI18n.load, { watch: [uiI18n.locale] })
+])
+const t = (messageKey: string, params?: Record<string, string | number>) => {
+  if (messageKey.startsWith('payments.')) return paymentsI18n.t(messageKey.slice(9), params)
+  if (messageKey.startsWith('settings.') || messageKey.startsWith('theme.')) return uiI18n.t(messageKey, params)
+  return authI18n.t(messageKey.startsWith('auth.') ? messageKey.slice(5) : messageKey, params)
+}
+const title = computed(() => t('auth.account.title'))
+const description = computed(() => t('auth.account.description'))
 usePageSeo({
   title,
-  description: t('auth.account.description')
+  description
 })
+const route = useRoute()
+const accountTabPathMap: Record<'profile' | 'balance' | 'security' | 'admin', string> = {
+  profile: '/auth/account/profile',
+  balance: '/auth/account/balance',
+  security: '/auth/account/security',
+  admin: '/auth/admin/users'
+}
+const routeAccountParam = Array.isArray(route.params.account) ? route.params.account[0] : route.params.account
+const routeAccountQuery = Array.isArray(route.query.account) ? route.query.account[0] : route.query.account
+const routeAccountTarget = normalizeTabRouteValue(
+  routeAccountParam || routeAccountQuery,
+  ['profile', 'balance', 'security', 'admin'],
+  'profile'
+) as 'profile' | 'balance' | 'security' | 'admin'
+if (routeAccountTarget === 'admin') {
+  await navigateTo('/auth/admin/users', {
+    redirectCode: 301,
+    replace: true
+  })
+}
+if (routeAccountQuery || routeAccountParam !== routeAccountTarget) {
+  const { account: _account, ...query } = route.query
+  await navigateTo(
+    {
+      path: accountTabPathMap[routeAccountTarget],
+      query,
+      hash: route.hash
+    },
+    {
+      redirectCode: 301,
+      replace: true
+    }
+  )
+}
 const router = useRouter()
 const runtimeConfig = useRuntimeConfig()
 const uiPreferences = useUiPreferencesStore()
@@ -56,20 +112,39 @@ const accountTabItems = computed<LabTabItem[]>(() => [
   { value: 'security', label: t('auth.account.tab.security') },
   ...(isAdmin.value ? [{ value: 'admin', label: t('auth.account.admin') }] : [])
 ])
-const accountTabRouteMap = computed<Record<string, string | undefined>>(() => ({
-  admin: isAdmin.value ? '/auth/admin' : undefined
+const accountTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
+  profile: '/auth/account/profile',
+  balance: '/auth/account/balance',
+  security: '/auth/account/security',
+  admin: '/auth/admin/users'
 }))
-const _activityTabItems: LabTabItem[] = [
+const accountTabValues = computed(() => accountTabItems.value.map(item => item.value))
+const _activityTabItems = computed<LabTabItem[]>(() => [
   { value: 'sessions', label: t('auth.account.activity.sessions') },
   { value: 'attempts', label: t('auth.account.activity.attempts') },
   { value: 'events', label: t('auth.account.activity.events') }
-]
-const _disableCodeTabItems: LabTabItem[] = [
+])
+const _disableCodeTabItems = computed<LabTabItem[]>(() => [
   { value: 'totp', label: t('auth.account.twofa.code_label') },
   { value: 'backup', label: t('auth.login.mfa_backup') }
-]
+])
 
-const accountTab = ref<'profile' | 'balance' | 'security' | 'admin'>('profile')
+const accountTab = computed<'profile' | 'balance' | 'security' | 'admin'>({
+  get: () =>
+    normalizeTabRouteValue(route.params.account || route.query.account, accountTabValues.value, 'profile') as
+      | 'profile'
+      | 'balance'
+      | 'security'
+      | 'admin',
+  set: () => {}
+})
+const accountBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
+  const currentLabel = accountTabItems.value.find(item => item.value === accountTab.value)?.label || title.value
+  return [
+    { label: title.value, to: '/auth/account/profile' },
+    { label: currentLabel, current: true, kind: 'tab' }
+  ]
+})
 const _activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
 const disableMethodTab = ref<'totp' | 'backup'>('totp')
 
@@ -181,7 +256,7 @@ const _paymentHistoryColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'refund', label: 'Возврат', nowrap: true }
 ])
 const _paymentHistoryRows = computed(() =>
-  history.value.map((item) => ({
+  history.value.map(item => ({
     id: item.order_id,
     orderId: item.order_id,
     createdAt: formatDateTime(item.created_at),
@@ -204,7 +279,7 @@ const _sessionActivityColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'action', label: 'Действие', nowrap: true }
 ])
 const _sessionActivityRows = computed(() =>
-  groupedSessions.value.map((item) => ({
+  groupedSessions.value.map(item => ({
     id: item.key,
     device: item.deviceLabel,
     ip: item.ip,
@@ -230,7 +305,7 @@ const _loginAttemptColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'details', label: 'Детали', cellClass: 'whitespace-normal wrap-break-word' }
 ])
 const _loginAttemptRows = computed(() =>
-  loginAttempts.value.map((item) => ({
+  loginAttempts.value.map(item => ({
     id: item.attempt_id,
     createdAt: formatDateTime(item.created_at),
     outcome: item.outcome || '—',
@@ -247,7 +322,7 @@ const _securityEventColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'payload', label: 'Payload', cellClass: 'whitespace-normal wrap-break-word' }
 ])
 const _securityEventRows = computed(() =>
-  securityEvents.value.map((item) => ({
+  securityEvents.value.map(item => ({
     id: item.event_id,
     createdAt: formatDateTime(item.created_at),
     event: `${item.event_type} · ${item.severity}`,
@@ -260,7 +335,7 @@ const avatarGallery = computed(() => getAuthAvatarGallery(user.value))
 const avatarGalleryItems = computed(() => avatarGallery.value.items)
 const avatarPrimaryItemId = computed(() => avatarGallery.value.primaryId)
 const avatarSecondaryGalleryItems = computed(() =>
-  avatarGalleryItems.value.filter((item) => item.id !== avatarPrimaryItemId.value)
+  avatarGalleryItems.value.filter(item => item.id !== avatarPrimaryItemId.value)
 )
 const { edges: avatarPreviewScrollState, sync: syncAvatarPreviewScrollState } = useScrollableEdges(
   avatarPreviewScrollerRef,
@@ -379,7 +454,7 @@ const resolveUploadedImageKey = (res: any) => String(res?.data?.image_key || res
 const findAvatarGalleryIndexById = (itemId?: string | null) => {
   const normalizedId = String(itemId || '').trim()
   if (!normalizedId) return 0
-  const foundIndex = avatarGalleryItems.value.findIndex((item) => item.id === normalizedId)
+  const foundIndex = avatarGalleryItems.value.findIndex(item => item.id === normalizedId)
   return foundIndex >= 0 ? foundIndex : 0
 }
 const clearSuccessNotice = (key: string, target?: { value: string }) => {
@@ -474,8 +549,8 @@ const makePreviewAvatarPrimary = async () => {
   await setPrimaryAvatar(itemId)
 }
 const removeAvatarItem = async (itemId: string) => {
-  const nextItems = avatarGalleryItems.value.filter((item) => item.id !== itemId)
-  const nextPrimaryId = nextItems.some((item) => item.id === avatarPrimaryItemId.value)
+  const nextItems = avatarGalleryItems.value.filter(item => item.id !== itemId)
+  const nextPrimaryId = nextItems.some(item => item.id === avatarPrimaryItemId.value)
     ? avatarPrimaryItemId.value
     : nextItems[0]?.id || ''
   await persistAvatarGallery(
@@ -772,7 +847,7 @@ const _revokeSessionGroup = async (group: AuthSessionGroupView) => {
   try {
     const currentSet = new Set(group.currentSessionIds)
     const revokeOrder = [
-      ...group.revokableSessionIds.filter((sessionId) => !currentSet.has(sessionId)),
+      ...group.revokableSessionIds.filter(sessionId => !currentSet.has(sessionId)),
       ...group.currentSessionIds
     ]
     for (const sessionId of revokeOrder) {
@@ -925,7 +1000,7 @@ onBeforeUnmount(() => {
 
 watch(
   () => Boolean(user.value?.is_two_factor_enabled),
-  (enabled) => {
+  enabled => {
     if (enabled) {
       setupSecret.value = ''
       setupOtpAuthUrl.value = ''
@@ -942,7 +1017,7 @@ watch(
 )
 watch(
   () => setupSecret.value,
-  async (value) => {
+  async value => {
     if (!value || user.value?.is_two_factor_enabled) return
     await nextTick()
     enableCodeInputRef.value?.focus()
@@ -974,7 +1049,7 @@ watch(
     }
   }
 )
-watch(editingDisplayName, async (value) => {
+watch(editingDisplayName, async value => {
   if (!value) return
   profileForm.display_name = user.value?.display_name || ''
   profileInputError.value = false
@@ -1006,7 +1081,7 @@ watch(
 )
 watch(
   () => avatarGalleryItems.value.length,
-  (length) => {
+  length => {
     if (!length) {
       avatarPreviewDialog.index = 0
       return
@@ -1025,7 +1100,7 @@ watch(
 </script>
 <template>
   <div>
-    <LabNavHeader :title />
+    <LabNavHeader :title :breadcrumb-items="accountBreadcrumbItems" />
     <LabLoader v-if="initialLoading" variant="inline" label="Загрузка аккаунта…" />
     <AuthFeatureGateNotice
       v-else-if="!user"
@@ -1035,213 +1110,207 @@ watch(
       <LabNavTabs
         v-model="accountTab"
         :items="accountTabItems"
-        :no-select="true"
-        route-query-key="account"
-        route-default-value="profile"
-        route-path="/auth/account"
-        :route-to-map="accountTabRouteMap"
-        panel-class="p-4"
+        route-param-key="account"
+        :route-target-map="accountTabRouteTargetMap"
       >
         <template #panel-profile>
-          <section class="space-y-4 text-(--lab-text-primary)">
-            <section class="flex flex-wrap items-start gap-4">
-              <div class="flex shrink-0 flex-col items-start gap-3">
-                <div class="relative overflow-hidden">
-                  <LabAvatar version="profile" :user="user" clickable @click="openAvatarPreview()" />
-                  <label
-                    class="absolute right-2 bottom-2"
-                    :class="avatarUploading ? 'cursor-not-allowed' : 'cursor-pointer'"
-                  >
-                    <LabBaseInput
-                      id="account-avatar-file"
-                      name="account_avatar_file"
-                      type="file"
-                      :accept="AVATAR_IMAGE_ACCEPT"
-                      class="hidden"
-                      :disabled="avatarUploading"
-                      @change="onAvatarFileChange"
-                    />
-                    <LabBaseButton
-                      tag="span"
-                      variant="secondary"
-                      size="lg"
-                      button-class="pointer-events-none"
-                      icon="ic:round-photo-camera"
-                      icon-only
-                      title="Загрузить новую аватарку"
-                      aria-label="Загрузить новую аватарку"
-                      :disabled="avatarUploading"
-                    />
-                  </label>
+          <section class="flex flex-wrap items-start gap-4">
+            <div class="flex shrink-0 flex-col items-start gap-3">
+              <div class="relative overflow-hidden">
+                <LabAvatar version="profile" :user="user" clickable @click="openAvatarPreview()" />
+                <label
+                  class="absolute right-2 bottom-2"
+                  :class="avatarUploading ? 'cursor-not-allowed' : 'cursor-pointer'"
+                >
+                  <LabBaseInput
+                    id="account-avatar-file"
+                    name="account_avatar_file"
+                    type="file"
+                    :accept="AVATAR_IMAGE_ACCEPT"
+                    class="hidden"
+                    :disabled="avatarUploading"
+                    @change="onAvatarFileChange"
+                  />
+                  <LabBaseButton
+                    tag="span"
+                    variant="secondary"
+                    size="lg"
+                    button-class="rounded-full pointer-events-none"
+                    icon="ic:round-photo-camera"
+                    icon-only
+                    title="Загрузить новую аватарку"
+                    aria-label="Загрузить новую аватарку"
+                    :disabled="avatarUploading"
+                  />
+                </label>
+              </div>
+              <div
+                v-if="avatarSecondaryGalleryItems.length"
+                class="relative w-36 [--avatar-preview-overlap:calc(var(--avatar-preview-size)/2)] [--avatar-preview-size:3rem] sm:w-40"
+              >
+                <div ref="avatarPreviewScrollerRef" class="lab-scroll-hidden overflow-x-auto">
+                  <div class="flex min-w-max items-center pr-6 pb-2">
+                    <button
+                      v-for="(item, index) in avatarSecondaryGalleryItems"
+                      :key="item.id"
+                      type="button"
+                      class="h-(--avatar-preview-size) w-(--avatar-preview-size) shrink-0 overflow-hidden rounded-full border-2 border-(--lab-bg-canvas) bg-(--lab-bg-canvas)"
+                      :style="{
+                        marginInlineStart: index === 0 ? '0' : 'calc(var(--avatar-preview-overlap) * -1)',
+                        zIndex: avatarSecondaryGalleryItems.length - index
+                      }"
+                      aria-label="Открыть фотографию профиля"
+                      @click="openAvatarPreview(findAvatarGalleryIndexById(item.id))"
+                    >
+                      <img
+                        :src="
+                          buildMediaFileUrl(item.profile_image_key || item.icon_image_key || item.original_image_key)
+                        "
+                        alt="Фотография профиля"
+                        class="h-full w-full object-cover"
+                      />
+                    </button>
+                  </div>
                 </div>
                 <div
-                  v-if="avatarSecondaryGalleryItems.length"
-                  class="relative w-36 [--avatar-preview-overlap:calc(var(--avatar-preview-size)/2)] [--avatar-preview-size:3rem] sm:w-40"
-                >
-                  <div ref="avatarPreviewScrollerRef" class="lab-scroll-hidden overflow-x-auto">
-                    <div class="flex min-w-max items-center pr-6 pb-2">
-                      <button
-                        v-for="(item, index) in avatarSecondaryGalleryItems"
-                        :key="item.id"
-                        type="button"
-                        class="h-(--avatar-preview-size) w-(--avatar-preview-size) shrink-0 overflow-hidden rounded-full border-2 border-(--lab-bg-canvas) bg-(--lab-bg-canvas)"
-                        :style="{
-                          marginInlineStart: index === 0 ? '0' : 'calc(var(--avatar-preview-overlap) * -1)',
-                          zIndex: avatarSecondaryGalleryItems.length - index
-                        }"
-                        aria-label="Открыть фотографию профиля"
-                        @click="openAvatarPreview(findAvatarGalleryIndexById(item.id))"
-                      >
-                        <img
-                          :src="
-                            buildMediaFileUrl(item.profile_image_key || item.icon_image_key || item.original_image_key)
-                          "
-                          alt="Фотография профиля"
-                          class="h-full w-full object-cover"
-                        >
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    class="lab-scroll-fade lab-scroll-fade-x-left bottom-2"
-                    :class="{ 'lab-scroll-fade-visible': avatarPreviewScrollState.left }"
-                    aria-hidden="true"
-                  />
-                  <div
-                    class="lab-scroll-fade lab-scroll-fade-x-right bottom-2"
-                    :class="{ 'lab-scroll-fade-visible': avatarPreviewScrollState.right }"
-                    aria-hidden="true"
-                  />
-                </div>
-                <LabNotify :text="avatarError" tone="error" size="xs" />
-                <LabNotify :text="avatarInfo" tone="success" size="xs" />
+                  class="lab-scroll-fade lab-scroll-fade-x-left bottom-2"
+                  :class="{ 'lab-scroll-fade-visible': avatarPreviewScrollState.left }"
+                  aria-hidden="true"
+                />
+                <div
+                  class="lab-scroll-fade lab-scroll-fade-x-right bottom-2"
+                  :class="{ 'lab-scroll-fade-visible': avatarPreviewScrollState.right }"
+                  aria-hidden="true"
+                />
               </div>
-              <div class="flex min-w-fit flex-1 flex-col gap-3">
-                <article class="flex flex-col gap-2">
-                  <div class="flex min-w-fit flex-wrap items-start justify-between gap-3">
-                    <div ref="profileNameEditorRef" class="flex min-w-fit flex-col gap-2">
-                      <div
-                        v-if="!editingDisplayName"
-                        class="inline-grid grid-cols-[max-content_max-content] items-start gap-1.5"
+              <LabNotify :text="avatarError" tone="error" size="xs" />
+              <LabNotify :text="avatarInfo" tone="success" size="xs" />
+            </div>
+            <div class="flex min-w-fit flex-1 flex-col gap-3">
+              <article class="flex flex-col gap-2">
+                <div class="flex min-w-fit flex-wrap items-start justify-between gap-3">
+                  <div ref="profileNameEditorRef" class="flex min-w-fit flex-col gap-2">
+                    <div
+                      v-if="!editingDisplayName"
+                      class="inline-grid grid-cols-[max-content_max-content] items-start gap-1.5"
+                    >
+                      <button
+                        type="button"
+                        class="lab-focus inline-flex items-center border-b border-transparent bg-transparent py-0 text-left text-xl font-semibold text-(--lab-text-primary) transition-colors"
+                        @click="editingDisplayName = true"
                       >
-                        <button
-                          type="button"
-                          class="lab-focus inline-flex items-center border-b border-transparent bg-transparent py-0 text-left text-xl font-semibold text-(--lab-text-primary) transition-colors"
-                          @click="editingDisplayName = true"
-                        >
-                          <span>{{ displayNameText }}</span>
-                        </button>
-                        <LabBaseTooltip
-                          v-if="profileSubscriptionTooltipText"
-                          :text="profileSubscriptionTooltipText"
-                          side="right"
-                          align="left"
-                          :offset="10"
-                          :cross-axis-offset="0"
-                        >
-                          <template #trigger>
-                            <LabBaseButton
-                              icon="ic:round-auto-awesome"
-                              icon-only
-                              variant="ghost"
-                              size="sm"
-                              button-class="h-8 w-8 rounded-full border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)"
-                              aria-label="Статус подписки"
-                            />
-                          </template>
-                        </LabBaseTooltip>
-                      </div>
-                      <div v-else class="min-w-fit" @focusout="onProfileEditorFocusout">
-                        <div class="inline-grid grid-cols-[max-content_2rem] items-start gap-1.5">
-                          <input
-                            id="account-profile-name"
-                            ref="displayNameInputRef"
-                            v-model="profileForm.display_name"
-                            name="profile_name"
-                            type="text"
-                            autocomplete="off"
-                            autocapitalize="words"
-                            autocorrect="off"
-                            spellcheck="false"
-                            data-form-type="other"
-                            data-lpignore="true"
-                            data-1p-ignore="true"
-                            :size="Math.max((profileForm.display_name || displayNameText).length, 1)"
-                            class="lab-focus w-auto appearance-none border-b bg-transparent p-0 text-xl font-semibold text-(--lab-text-primary)"
-                            :class="profileInputError ? 'text-(--lab-danger)' : ''"
-                            placeholder="Имя профиля"
-                            @keydown.enter="submitDisplayNameFromKeyboard"
-                            @keydown.esc.prevent="cancelProfileEdit"
-                          >
+                        <span>{{ displayNameText }}</span>
+                      </button>
+                      <LabBaseTooltip
+                        v-if="profileSubscriptionTooltipText"
+                        :text="profileSubscriptionTooltipText"
+                        side="right"
+                        align="left"
+                        :offset="10"
+                        :cross-axis-offset="0"
+                      >
+                        <template #trigger>
                           <LabBaseButton
-                            icon="ic:round-check"
+                            icon="ic:round-auto-awesome"
                             icon-only
-                            variant="secondary"
+                            variant="ghost"
                             size="sm"
-                            button-class="text-(--lab-text-secondary) hover:text-(--lab-info) focus-visible:text-(--lab-info) h-8 w-8"
-                            title="Сохранить никнейм"
-                            aria-label="Сохранить никнейм"
-                            @click="saveProfile"
+                            button-class="h-8 w-8 rounded-full border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)"
+                            aria-label="Статус подписки"
                           />
-                        </div>
-                      </div>
-                      <LabNotify
-                        :text="profileError || profileInfo"
-                        :tone="profileError ? 'error' : profileNoticeTone"
-                        :temporary="profileError ? false : profileNoticeTemporary"
-                        size="xs"
-                      />
+                        </template>
+                      </LabBaseTooltip>
                     </div>
-                  </div>
-                  <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span class="lab-text-muted shrink-0 text-xs tracking-wide uppercase">
-                      {{ t('auth.account.email_label') }}
-                    </span>
-                    <span class="min-w-56 flex-1 basis-56 text-sm wrap-break-word text-(--lab-text-primary)">
-                      {{ user.email }}
-                    </span>
-                  </div>
-                </article>
-                <article class="space-y-3">
-                  <LabNotify :text="interfaceError" tone="error" size="xs" />
-                  <LabNotify :text="interfaceInfo" tone="success" size="xs" />
-                </article>
-                <LabDropdown
-                  v-model="showLogoutActions"
-                  side="top"
-                  align="right"
-                  width-class="w-56"
-                  :match-trigger-width="false"
-                  :close-on-select="false"
-                >
-                  <template #trigger="{ toggle }">
-                    <LabBaseButton
-                      variant="danger"
-                      size="lg"
-                      :label="t('auth.account.logout')"
-                      button-class="text-xs"
-                      @click="toggle"
+                    <div v-else class="min-w-fit" @focusout="onProfileEditorFocusout">
+                      <div class="inline-grid grid-cols-[max-content_2rem] items-start gap-1.5">
+                        <input
+                          id="account-profile-name"
+                          ref="displayNameInputRef"
+                          v-model="profileForm.display_name"
+                          name="profile_name"
+                          type="text"
+                          autocomplete="off"
+                          autocapitalize="words"
+                          autocorrect="off"
+                          spellcheck="false"
+                          data-form-type="other"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                          :size="Math.max((profileForm.display_name || displayNameText).length, 1)"
+                          class="lab-focus w-auto appearance-none border-b bg-transparent p-0 text-xl font-semibold text-(--lab-text-primary)"
+                          :class="profileInputError ? 'text-(--lab-danger)' : ''"
+                          placeholder="Имя профиля"
+                          @keydown.enter="submitDisplayNameFromKeyboard"
+                          @keydown.esc.prevent="cancelProfileEdit"
+                        />
+                        <LabBaseButton
+                          icon="ic:round-check"
+                          icon-only
+                          variant="secondary"
+                          size="sm"
+                          button-class="text-(--lab-text-secondary) hover:text-(--lab-info) focus-visible:text-(--lab-info) h-8 w-8"
+                          title="Сохранить никнейм"
+                          aria-label="Сохранить никнейм"
+                          @click="saveProfile"
+                        />
+                      </div>
+                    </div>
+                    <LabNotify
+                      :text="profileError || profileInfo"
+                      :tone="profileError ? 'error' : profileNoticeTone"
+                      :temporary="profileError ? false : profileNoticeTemporary"
+                      size="xs"
                     />
-                  </template>
-                  <LabBaseButton
-                    variant="plain"
-                    size="lg"
-                    block
-                    :label="t('auth.account.logout.current')"
-                    button-class="justify-start text-xs"
-                    @click="leave(false)"
-                  />
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">
+                    {{ t('auth.account.email_label') }}
+                  </span>
+                  <span class="min-w-56 flex-1 basis-56 text-sm wrap-break-word text-(--lab-text-primary)">
+                    {{ user.email }}
+                  </span>
+                </div>
+              </article>
+              <article class="space-y-3">
+                <LabNotify :text="interfaceError" tone="error" size="xs" />
+                <LabNotify :text="interfaceInfo" tone="success" size="xs" />
+              </article>
+              <LabDropdown
+                v-model="showLogoutActions"
+                side="top"
+                align="right"
+                width-class="w-56"
+                :match-trigger-width="false"
+                :close-on-select="false"
+              >
+                <template #trigger="{ toggle }">
                   <LabBaseButton
                     variant="danger"
                     size="lg"
-                    block
-                    :label="t('auth.account.logout.all')"
-                    button-class="justify-start text-xs"
-                    @click="leave(true)"
+                    :label="t('auth.account.logout')"
+                    button-class="text-xs"
+                    @click="toggle"
                   />
-                </LabDropdown>
-              </div>
-            </section>
+                </template>
+                <LabBaseButton
+                  variant="plain"
+                  size="lg"
+                  block
+                  :label="t('auth.account.logout.current')"
+                  button-class="justify-start text-xs"
+                  @click="leave(false)"
+                />
+                <LabBaseButton
+                  variant="danger"
+                  size="lg"
+                  block
+                  :label="t('auth.account.logout.all')"
+                  button-class="justify-start text-xs"
+                  @click="leave(true)"
+                />
+              </LabDropdown>
+            </div>
           </section>
         </template>
         <template #panel-balance>

@@ -1,6 +1,6 @@
-ARG BUN_VERSION=1.3.12
-FROM oven/bun:${BUN_VERSION}-alpine
+ARG NODE_VERSION=24.15.0
+FROM node:${NODE_VERSION}-alpine
 WORKDIR /app
 COPY .output ./.output
 EXPOSE 3000
-CMD ["bun", ".output/server/index.mjs"]
+CMD ["node", ".output/server/index.mjs"]

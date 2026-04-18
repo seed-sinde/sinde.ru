@@ -20,6 +20,7 @@ export type AuthUserPatch = {
   display_name?: string
   locale?: string
   timezone?: string
+  primary_trait_uuid?: string | null
   profile?: Record<string, unknown>
   settings?: Record<string, unknown>
 }

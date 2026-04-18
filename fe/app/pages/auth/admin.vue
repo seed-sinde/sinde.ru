@@ -1,5 +1,10 @@
 <script setup lang="ts">
+type AdminUserRow = LabDataTableRow & AdminUserView
+type ModerationRow = LabDataTableRow & KitchenRecipe
+type AdminTraitKeyRow = LabDataTableRow & AdminTraitKeySearchItem
+
 definePageMeta({
+  path: '/auth/admin/:tab(users|moderation|keys|analysis)?',
   middleware: ['admin-only']
 })
 const title = 'Админка'
@@ -19,18 +24,47 @@ const {
   adminForceLogoutUser,
   adminDeleteUser,
   adminSearchKeys,
-  adminTraitsSetsAnalysis
+  adminTraitsSetsAnalysis,
+  adminListKitchenModerationRecipes,
+  adminModerateKitchenRecipe,
+  adminChangeKitchenRecipeOwner
 } = useAuth()
 const { adminSummary: loadPaymentsAdminSummary } = usePayments()
 const { formatAbsoluteDateTime } = useLocalizedDateTime()
 const { localeTag } = useInterfacePreferences()
+const ADMIN_TABS = ['users', 'moderation', 'keys', 'analysis'] as const
+const route = useRoute()
+const router = useRouter()
+const adminTabPathMap: Record<AdminTab, string> = {
+  users: '/auth/admin/users',
+  moderation: '/auth/admin/moderation',
+  keys: '/auth/admin/keys',
+  analysis: '/auth/admin/analysis'
+}
+const routeAdminTabParam = Array.isArray(route.params.tab) ? route.params.tab[0] : route.params.tab
+const routeAdminTabQuery = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab
+const routeAdminTab = normalizeAdminTab(routeAdminTabParam || routeAdminTabQuery)
+if (routeAdminTabQuery || routeAdminTabParam !== routeAdminTab) {
+  const { tab: _tab, ...query } = route.query
+  await navigateTo(
+    {
+      path: adminTabPathMap[routeAdminTab],
+      query,
+      hash: route.hash
+    },
+    {
+      redirectCode: 301,
+      replace: true
+    }
+  )
+}
+
 const users = ref<AdminUserView[]>([])
 const usersTotal = ref(0)
 const usersLimit = ref(50)
 const usersOffset = ref(0)
-const usersLoading = ref(false)
-const usersError = ref('')
 const usersInfo = ref('')
+const usersError = ref('')
 const userSearch = ref('')
 const userStatusFilter = ref('')
 const userRoleFilter = ref('')
@@ -51,35 +85,169 @@ const editableRoleOptions: SelectOptionInput[] = [
 ]
 const roleDrafts = reactive<Record<string, 'admin' | 'user'>>({})
 const roleSavingUserId = ref<string | null>(null)
-const keysLoading = ref(false)
-const keysError = ref('')
-const keysQuery = ref('')
-const keys = ref<AdminTraitKeySearchItem[]>([])
-let keysRequestId = 0
-const analysisLoading = ref(false)
-const analysisError = ref('')
-const analysis = ref<AdminTraitsSetsAnalysis | null>(null)
-const summaryLoading = ref(false)
-const summaryError = ref('')
 const summaryInfo = ref('')
-const paymentsSummaryLoading = ref(false)
-const paymentsSummaryError = ref('')
-const paymentsSummary = ref<PaymentAdminOrdersSummary | null>(null)
+const summaryActionError = ref('')
 const summary = computed(() => sharedAdminSummary.value)
 const summaryReadPending = ref(false)
-const adminTab = ref<AdminTab>('users')
-const adminBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
-  if (adminTab.value === 'users') {
-    return [{ label: 'Админка', current: true }]
+const adminTab = computed<AdminTab>({
+  get: () => normalizeAdminTab(route.params.tab || route.query.tab),
+  set: value => {
+    void router.replace(adminTabPathMap[value])
   }
+})
+const adminTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
+  users: adminTabPathMap.users,
+  moderation: adminTabPathMap.moderation,
+  keys: adminTabPathMap.keys,
+  analysis: adminTabPathMap.analysis
+}))
+const keysQuery = ref('')
+const keysQueryKey = computed(() => `admin-keys:${adminTab.value}:${keysQuery.value.trim()}`)
+const {
+  pending: summaryLoading,
+  error: summaryAsyncError,
+  refresh: refreshAdminSummary
+} = await useAsyncData(
+  () => `admin-summary:${adminTab.value}`,
+  async () => {
+    if (adminTab.value !== 'analysis') return null
+    return await loadSharedAdminSummary()
+  },
+  {
+    server: true,
+    watch: [adminTab],
+    default: () => null
+  }
+)
+const summaryLoadError = computed(() =>
+  String((summaryAsyncError.value as any)?.data?.message || (summaryAsyncError.value as any)?.message || '').trim()
+)
+const summaryError = computed(() => summaryActionError.value || summaryLoadError.value)
+const {
+  data: analysisResponse,
+  pending: analysisLoading,
+  error: analysisAsyncError
+} = await useAsyncData(
+  () => `admin-analysis:${adminTab.value}`,
+  async () => {
+    if (adminTab.value !== 'analysis') return null
+    const res = await adminTraitsSetsAnalysis()
+    return res
+  },
+  {
+    server: true,
+    watch: [adminTab],
+    default: () => null
+  }
+)
+const analysis = computed<AdminTraitsSetsAnalysis | null>(() => analysisResponse.value?.data || null)
+const analysisError = computed(() =>
+  String((analysisAsyncError.value as any)?.data?.message || (analysisAsyncError.value as any)?.message || '').trim()
+)
+const {
+  data: paymentsSummaryResponse,
+  pending: paymentsSummaryLoading,
+  error: paymentsSummaryAsyncError
+} = await useAsyncData(
+  () => `admin-payments-summary:${adminTab.value}`,
+  async () => {
+    if (adminTab.value !== 'analysis') return null
+    const res = await loadPaymentsAdminSummary()
+    return res
+  },
+  {
+    server: true,
+    watch: [adminTab],
+    default: () => null
+  }
+)
+const paymentsSummary = computed<PaymentAdminOrdersSummary | null>(() => paymentsSummaryResponse.value?.data || null)
+const paymentsSummaryError = computed(() =>
+  String(
+    (paymentsSummaryAsyncError.value as any)?.data?.message || (paymentsSummaryAsyncError.value as any)?.message || ''
+  ).trim()
+)
+const {
+  data: keysResponse,
+  pending: keysLoading,
+  error: keysAsyncError
+} = await useAsyncData(
+  () => keysQueryKey.value,
+  async () => {
+    if (adminTab.value !== 'keys') return null
+    const res = await adminSearchKeys(keysQuery.value.trim(), 50)
+    return res
+  },
+  {
+    server: true,
+    watch: [adminTab, keysQuery],
+    default: () => null
+  }
+)
+const keys = computed<AdminTraitKeySearchItem[]>(() => keysResponse.value?.data?.items || [])
+const keysError = computed(() =>
+  String((keysAsyncError.value as any)?.data?.message || (keysAsyncError.value as any)?.message || '').trim()
+)
+const usersQueryKey = computed(
+  () =>
+    `admin-users:${adminTab.value}:${userSearch.value}:${userStatusFilter.value}:${userRoleFilter.value}:${usersLimit.value}:${usersOffset.value}`
+)
+
+const {
+  data: usersResponse,
+  pending: usersLoading,
+  error: usersAsyncError,
+  refresh: refreshUsers
+} = await useAsyncData(
+  () => usersQueryKey.value,
+  async () => {
+    if (adminTab.value !== 'users') return null
+    return await adminListUsers({
+      q: userSearch.value.trim(),
+      status: userStatusFilter.value.trim(),
+      role: userRoleFilter.value.trim(),
+      limit: usersLimit.value,
+      offset: usersOffset.value
+    })
+  },
+  {
+    server: true,
+    watch: [adminTab, userSearch, userStatusFilter, userRoleFilter, usersLimit, usersOffset],
+    default: () => null
+  }
+)
+const loadUsers = async () => {
+  await refreshUsers()
+}
+
+watchEffect(() => {
+  const res = usersResponse.value
+  if (!res?.data) {
+    users.value = []
+    usersTotal.value = 0
+    return
+  }
+  users.value = res.data.items || []
+  usersTotal.value = Number(res.data.total || 0)
+  syncRoleDrafts(users.value)
+})
+
+watchEffect(() => {
+  usersError.value = (usersAsyncError.value as any)?.data?.message || (usersAsyncError.value as any)?.message || ''
+})
+const adminBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
   const labels: Record<Exclude<AdminTab, 'users'>, string> = {
     moderation: 'Модерация рецептов',
     keys: 'Ключи',
     analysis: 'Аналитика'
   }
   return [
-    { label: 'Админка', to: '/auth/admin' },
-    { label: labels[adminTab.value as Exclude<AdminTab, 'users'>], current: true, kind: 'tab' }
+    { label: 'Админка', to: adminTabPathMap.users },
+    {
+      label: adminTab.value === 'users' ? 'Пользователи' : labels[adminTab.value as Exclude<AdminTab, 'users'>],
+      current: true,
+      kind: 'tab'
+    }
   ]
 })
 const adminTabItems = computed<LabTabItem[]>(() => {
@@ -101,14 +269,9 @@ const adminTabItems = computed<LabTabItem[]>(() => {
 })
 const adminSectionClass = 'space-y-4 py-1'
 const adminSubsectionClass = 'space-y-3 py-1'
-const adminStatCardClass = 'space-y-1'
-const adminMetaTextClass = 'text-xs text-zinc-500'
 const adminConfirmButtonClass = 'h-8 min-w-28'
-const adminCompactButtonClass = ''
-const adminInlineHintClass = 'text-xs text-zinc-500'
-const moderationLoading = ref(false)
-const moderationError = ref('')
 const moderationInfo = ref('')
+const moderationError = ref('')
 const moderationStatus = ref<AdminModerationStatus | 'all'>('pending')
 const moderationItems = ref<KitchenRecipe[]>([])
 const moderationTotal = ref(0)
@@ -132,6 +295,27 @@ const moderationNoteDrafts = reactive<Record<string, string>>({})
 let moderationOwnerSearchRequestId = 0
 const moderationHasPrevPage = computed(() => moderationOffset.value > 0)
 const moderationHasNextPage = computed(() => moderationOffset.value + moderationLimit.value < moderationTotal.value)
+const analysisStats = computed(() => [
+  { label: 'Traits', value: displayNumber(analysis.value?.total_traits) },
+  { label: 'Уникальные пары (key+value)', value: displayNumber(analysis.value?.unique_trait_pairs) },
+  { label: 'Уникальные ключи', value: displayNumber(analysis.value?.unique_trait_keys) },
+  { label: 'Sets', value: displayNumber(analysis.value?.total_sets) },
+  { label: 'Уникальность наборов', value: analysis.value ? formatPercent(analysis.value.set_uniqueness_rate) : '—' },
+  {
+    label: 'Исхожесть (доля производных наборов)',
+    value: analysis.value ? formatPercent(analysis.value.derived_set_rate) : '—'
+  },
+  { label: 'Traits в наборах', value: displayNumber(analysis.value?.traits_referenced_in_sets) },
+  {
+    label: 'Покрытие traits наборами',
+    value: analysis.value ? formatPercent(analysis.value.trait_coverage_in_sets_rate) : '—'
+  },
+  { label: 'Traits вне наборов', value: displayNumber(analysis.value?.orphan_traits) }
+])
+function normalizeAdminTab(value: unknown): AdminTab {
+  const raw = typeof value === 'string' ? value : Array.isArray(value) ? value[0] : ''
+  return ADMIN_TABS.includes(raw as AdminTab) ? (raw as AdminTab) : 'users'
+}
 const normalizeModerationStatusTotals = (raw?: Record<string, number> | null) => {
   const base = {
     all: 0,
@@ -149,6 +333,11 @@ const normalizeModerationStatusTotals = (raw?: Record<string, number> | null) =>
 }
 const hasPrevPage = computed(() => usersOffset.value > 0)
 const hasNextPage = computed(() => usersOffset.value + usersLimit.value < usersTotal.value)
+const unreadAdminTotal = computed(
+  () =>
+    Number(summary?.value?.new_users_since_last_login || 0) +
+    Number(summary?.value?.new_pending_recipes_since_last_login || 0)
+)
 const formatPercent = (value?: number) => `${Math.round(Math.max(0, Number(value || 0)) * 100)}%`
 const displayNumber = (value?: number | null) => (value === null || value === undefined ? '—' : value)
 const displayMoney = (value?: number | null) => formatPaymentAmount(Number(value || 0), localeTag.value)
@@ -181,7 +370,9 @@ const paymentsStats = computed(() => [
   { key: 'churn_rate', label: 'Churn', value: formatPercent(paymentsSummary.value?.churn_rate) },
   { key: 'patron_share', label: 'Доля поддержавших', value: formatPercent(paymentsSummary.value?.patron_share) }
 ])
-const currentRole = (item: AdminUserView): 'admin' | 'user' => (item.roles.includes('admin') ? 'admin' : 'user')
+function currentRole(item: AdminUserView): 'admin' | 'user' {
+  return item.roles.includes('admin') ? 'admin' : 'user'
+}
 const isAdminAccount = (item: AdminUserView) => currentRole(item) === 'admin'
 const userStatusLabel = (value?: string) => {
   const key = String(value || '').trim()
@@ -190,7 +381,7 @@ const userStatusLabel = (value?: string) => {
   if (key === 'blocked') return 'Заблокирован'
   return key || '—'
 }
-const syncRoleDrafts = (items: AdminUserView[]) => {
+function syncRoleDrafts(items: AdminUserView[]) {
   for (const item of items) {
     roleDrafts[item.user_id] = currentRole(item)
   }
@@ -232,29 +423,6 @@ const moderationTableColumns: LabDataTableColumn[] = [
   { key: 'created', label: 'Создан', nowrap: true, widthClass: 'min-w-36' },
   { key: 'actions', label: 'Действия', nowrap: true, widthClass: 'min-w-44' }
 ]
-const loadUsers = async () => {
-  usersLoading.value = true
-  usersError.value = ''
-  usersInfo.value = ''
-  try {
-    const res = await adminListUsers({
-      q: userSearch.value.trim(),
-      status: userStatusFilter.value.trim(),
-      role: userRoleFilter.value.trim(),
-      limit: usersLimit.value,
-      offset: usersOffset.value
-    })
-    users.value = res.data.items || []
-    usersTotal.value = Number(res.data.total || 0)
-    syncRoleDrafts(users.value)
-  } catch (err: any) {
-    usersError.value = err?.data?.message || err?.message || 'Не удалось загрузить пользователей.'
-    users.value = []
-    usersTotal.value = 0
-  } finally {
-    usersLoading.value = false
-  }
-}
 const setRole = async (item: AdminUserView) => {
   const role = roleDrafts[item.user_id]
   if (!role) return
@@ -335,27 +503,6 @@ const deleteUser = async (item: AdminUserView) => {
     usersError.value = err?.data?.message || err?.message || 'Не удалось удалить пользователя.'
   }
 }
-const loadKeys = async (query?: string) => {
-  const requestId = ++keysRequestId
-  keysLoading.value = true
-  keysError.value = ''
-  try {
-    const res = await adminSearchKeys(String(query ?? keysQuery.value).trim(), 50)
-    if (requestId !== keysRequestId) return
-    keys.value = res.data.items || []
-  } catch (err: any) {
-    if (requestId !== keysRequestId) return
-    keysError.value = err?.data?.message || err?.message || 'Не удалось выполнить поиск ключей.'
-    keys.value = []
-  } finally {
-    if (requestId === keysRequestId) {
-      keysLoading.value = false
-    }
-  }
-}
-const debouncedLoadKeys = debounce((query: string) => {
-  void loadKeys(query)
-}, 300)
 const keyMetaRecord = (meta?: Record<string, any>) => {
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return {}
   return meta
@@ -521,7 +668,7 @@ const changeModerationRecipeOwner = async (item: KitchenRecipe, nextOwner: Admin
   moderationInfo.value = ''
   try {
     const res = await adminChangeKitchenRecipeOwner(recipeId, nextOwnerId)
-    moderationItems.value = moderationItems.value.map((row) => (row.id === recipeId ? res.data : row))
+    moderationItems.value = moderationItems.value.map(row => (row.id === recipeId ? res.data : row))
     cacheOwnerUsers([nextOwner])
     moderationInfo.value = `Владелец рецепта «${item.title}» изменён на ${nextOwner.email}.`
     closeModerationOwnerEditor()
@@ -533,44 +680,51 @@ const changeModerationRecipeOwner = async (item: KitchenRecipe, nextOwner: Admin
     }
   }
 }
-const loadModeration = async () => {
-  moderationLoading.value = true
-  moderationError.value = ''
-  try {
-    const res = await adminListKitchenModerationRecipes({
+const {
+  data: moderationResponse,
+  pending: moderationLoading,
+  refresh: refreshModeration
+} = await useAsyncData(
+  () =>
+    `admin-moderation:${adminTab.value}:${moderationStatus.value}:${moderationLimit.value}:${moderationOffset.value}`,
+  async () => {
+    if (adminTab.value !== 'moderation') return null
+    return await adminListKitchenModerationRecipes({
       status: moderationStatus.value,
       limit: moderationLimit.value,
       offset: moderationOffset.value
     })
-    moderationItems.value = res.data.items || []
-    for (const item of moderationItems.value) {
-      const recipeId = String(item.id || '').trim()
-      if (!recipeId) continue
-      moderationNoteDrafts[recipeId] = String(item.moderation_note || '').trim()
-    }
-    moderationTotal.value = Number(res.data.total || 0)
-    moderationStatusTotals.value = normalizeModerationStatusTotals(res.data.status_totals)
-  } catch (err: any) {
-    moderationError.value = err?.data?.message || err?.message || 'Не удалось загрузить рецепты для модерации.'
+  },
+  {
+    server: true,
+    watch: [adminTab, moderationStatus, moderationLimit, moderationOffset],
+    default: () => null
+  }
+)
+
+watchEffect(() => {
+  const res = moderationResponse.value
+  if (!res?.data) {
     moderationItems.value = []
     moderationTotal.value = 0
-  } finally {
-    moderationLoading.value = false
+    return
   }
-  if (moderationOwnerEditorRecipeId.value) {
-    const exists = moderationItems.value.some((item) => item.id === moderationOwnerEditorRecipeId.value)
-    if (!exists) closeModerationOwnerEditor()
+  moderationItems.value = res.data.items || []
+  moderationTotal.value = Number(res.data.total || 0)
+  moderationStatusTotals.value = normalizeModerationStatusTotals(res.data.status_totals)
+  for (const item of moderationItems.value) {
+    const recipeId = String(item.id || '').trim()
+    if (!recipeId) continue
+    moderationNoteDrafts[recipeId] = String(item.moderation_note || '').trim()
   }
-}
+})
 const moderationPrevPage = async () => {
   if (!moderationHasPrevPage.value) return
   moderationOffset.value = Math.max(0, moderationOffset.value - moderationLimit.value)
-  await loadModeration()
 }
 const moderationNextPage = async () => {
   if (!moderationHasNextPage.value) return
   moderationOffset.value = moderationOffset.value + moderationLimit.value
-  await loadModeration()
 }
 const moderateRecipe = async (item: KitchenRecipe, approve: boolean) => {
   moderationError.value = ''
@@ -585,61 +739,22 @@ const moderateRecipe = async (item: KitchenRecipe, approve: boolean) => {
     moderationInfo.value = approve
       ? `Рецепт «${item.title}» одобрен и опубликован.`
       : `Рецепт «${item.title}» отклонён.`
-    await loadModeration()
+    await refreshModeration()
   } catch (err: any) {
     moderationError.value = err?.data?.message || err?.message || 'Не удалось изменить статус модерации.'
-  }
-}
-const loadAnalysis = async () => {
-  analysisLoading.value = true
-  analysisError.value = ''
-  try {
-    const res = await adminTraitsSetsAnalysis()
-    analysis.value = res.data || null
-  } catch (err: any) {
-    analysisError.value = err?.data?.message || err?.message || 'Не удалось загрузить аналитику.'
-    analysis.value = null
-  } finally {
-    analysisLoading.value = false
-  }
-}
-const loadAdminSummary = async () => {
-  summaryLoading.value = true
-  summaryError.value = ''
-  try {
-    const nextSummary = await loadSharedAdminSummary()
-    if (nextSummary?.recipe_status_totals) {
-      moderationStatusTotals.value = normalizeModerationStatusTotals(nextSummary.recipe_status_totals)
-    }
-  } catch (err: any) {
-    summaryError.value = err?.data?.message || err?.message || 'Не удалось загрузить сводку.'
-  } finally {
-    summaryLoading.value = false
-  }
-}
-const loadPaymentsSummary = async () => {
-  paymentsSummaryLoading.value = true
-  paymentsSummaryError.value = ''
-  try {
-    const res = await loadPaymentsAdminSummary()
-    paymentsSummary.value = res.data || null
-  } catch (err: any) {
-    paymentsSummaryError.value = err?.data?.message || err?.message || 'Не удалось загрузить payments summary.'
-    paymentsSummary.value = null
-  } finally {
-    paymentsSummaryLoading.value = false
   }
 }
 const markSummaryRead = async () => {
   if (summaryReadPending.value) return
   summaryReadPending.value = true
-  summaryError.value = ''
+  summaryActionError.value = ''
   summaryInfo.value = ''
   try {
     await adminMarkSummaryRead()
+    await refreshAdminSummary()
     summaryInfo.value = 'Уведомления отмечены как прочитанные.'
   } catch (err: any) {
-    summaryError.value = err?.data?.message || err?.message || 'Не удалось отметить уведомления как прочитанные.'
+    summaryActionError.value = err?.data?.message || err?.message || 'Не удалось отметить уведомления как прочитанные.'
   } finally {
     summaryReadPending.value = false
   }
@@ -647,116 +762,67 @@ const markSummaryRead = async () => {
 const prevPage = async () => {
   if (!hasPrevPage.value) return
   usersOffset.value = Math.max(0, usersOffset.value - usersLimit.value)
-  await loadUsers()
 }
 const nextPage = async () => {
   if (!hasNextPage.value) return
   usersOffset.value = usersOffset.value + usersLimit.value
-  await loadUsers()
 }
 const applyUserFilters = async () => {
   usersOffset.value = 0
-  await loadUsers()
 }
 const debouncedApplyUserFilters = debounce(() => {
   void applyUserFilters()
 }, 300)
-watch(
-  adminTab,
-  async (tab) => {
-    if (tab !== 'moderation') {
-      closeModerationOwnerEditor()
-    }
-    if (tab === 'users') {
-      if (!users.value.length && !usersLoading.value) await loadUsers()
-      return
-    }
-    if (tab === 'moderation') {
-      if (!moderationItems.value.length && !moderationLoading.value) await loadModeration()
-      return
-    }
-    if (tab === 'keys') {
-      if (!keys.value.length && !keysLoading.value) await loadKeys()
-      return
-    }
-    if (!analysis.value && !analysisLoading.value) {
-      await loadAnalysis()
-    }
-    if (!summary.value && !summaryLoading.value) {
-      await loadAdminSummary()
-    }
-    if (!paymentsSummary.value && !paymentsSummaryLoading.value) {
-      await loadPaymentsSummary()
-    }
-  },
-  { immediate: true }
-)
 watch(moderationStatus, async (next, prev) => {
   if (next === prev) return
   moderationOffset.value = 0
   closeModerationOwnerEditor()
   if (adminTab.value === 'moderation') {
-    await loadModeration()
+    await refreshModeration()
   }
 })
-watch(moderationOwnerQuery, (next) => {
+watch(moderationOwnerQuery, next => {
   if (!moderationOwnerEditorRecipeId.value) return
   debouncedSearchModerationOwnerCandidates(String(next || ''))
-})
-watch(keysQuery, (next) => {
-  if (adminTab.value !== 'keys') return
-  debouncedLoadKeys(String(next || ''))
 })
 watch([userSearch, userStatusFilter, userRoleFilter], () => {
   if (adminTab.value !== 'users') return
   debouncedApplyUserFilters()
 })
-watch(users, (items) => {
+watch(users, items => {
   cacheOwnerUsers(items || [])
 })
 watch(
   sharedAdminSummary,
-  (nextSummary) => {
+  nextSummary => {
     if (!nextSummary?.recipe_status_totals) return
     moderationStatusTotals.value = normalizeModerationStatusTotals(nextSummary.recipe_status_totals)
   },
   { immediate: true }
 )
-onMounted(() => {
-  if (!summary.value && !summaryLoading.value) {
-    void loadAdminSummary()
-  }
-})
 </script>
 <template>
   <div>
     <LabNavHeader :title :breadcrumb-items="adminBreadcrumbItems">
       <template #actions>
         <LabBaseBadge v-if="summary?.has_unread" variant="warning" size="xs" :rounded="false">
-          новое
-          {{
-            Number(summary?.new_users_since_last_login || 0) +
-            Number(summary?.new_pending_recipes_since_last_login || 0)
-          }}
+          новое {{ unreadAdminTotal }}
         </LabBaseBadge>
       </template>
     </LabNavHeader>
     <LabNavTabs
       v-model="adminTab"
       :items="adminTabItems"
-      :no-select="true"
       :render-panels="false"
-      route-query-key="tab"
-      route-default-value="users"
+      route-param-key="tab"
+      :route-target-map="adminTabRouteTargetMap"
     />
     <div class="mt-4 space-y-4 px-3 md:px-4">
       <section v-show="adminTab === 'users'" :class="adminSectionClass">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="space-y-1">
-            <h2 class="text-base font-semibold text-zinc-100">Пользователи и роли</h2>
-            <p :class="adminMetaTextClass">Поиск, блокировки, смена роли и принудительный выход из сессий.</p>
-          </div>
-        </div>
+        <AdminSectionHeader
+          title="Пользователи и роли"
+          description="Поиск, блокировки, смена роли и принудительный выход из сессий."
+        />
         <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
           <LabField label="Поиск" for-id="admin_user_search">
             <LabBaseInput
@@ -784,56 +850,63 @@ onMounted(() => {
             />
           </LabField>
         </div>
-        <LabNotify :text="usersError" tone="error" size="xs" />
-        <LabNotify :text="usersInfo" tone="success" size="xs" />
+        <AdminNotifyStack
+          :items="[
+            { text: usersError, tone: 'error' },
+            { text: usersInfo, tone: 'success' }
+          ]"
+        />
         <LabDataTable
           :columns="usersTableColumns"
           :rows="users"
           :loading="usersLoading"
           empty-text="Пользователи не найдены."
-          :row-key="(row: AdminUserView) => row.user_id"
+          row-key="user_id"
         >
           <template #cell-avatar="{ row }">
-            <NuxtLink :to="`/users/${row.user_id}`" class="inline-flex">
-              <LabAvatar version="preview" :user="adminListUserToAuthUser(row)" :show-label="false" />
+            <NuxtLink :to="`/users/${(row as AdminUserRow).user_id}`" class="inline-flex">
+              <LabAvatar version="preview" :user="adminListUserToAuthUser(row as AdminUserRow)" :show-label="false" />
             </NuxtLink>
           </template>
           <template #cell-user="{ row }">
             <div class="space-y-1">
-              <NuxtLink :to="`/users/${row.user_id}`" class="text-(--lab-text-primary) hover:text-(--lab-accent)">
-                {{ row.email }}
+              <NuxtLink
+                :to="`/users/${(row as AdminUserRow).user_id}`"
+                class="text-(--lab-text-primary) hover:text-(--lab-accent)"
+              >
+                {{ (row as AdminUserRow).email }}
               </NuxtLink>
-              <p class="text-zinc-500">{{ row.display_name || '—' }}</p>
+              <p class="text-zinc-500">{{ (row as AdminUserRow).display_name || '—' }}</p>
             </div>
           </template>
           <template #cell-status="{ row }">
             <div class="space-y-1">
-              <LabBaseBadge :variant="userStatusTone(row.status)" size="xs" :rounded="false">
-                {{ userStatusLabel(row.status) }}
+              <LabBaseBadge :variant="userStatusTone((row as AdminUserRow).status)" size="xs" :rounded="false">
+                {{ userStatusLabel((row as AdminUserRow).status) }}
               </LabBaseBadge>
-              <p v-if="row.blocked_reason" :class="adminMetaTextClass">причина: {{ row.blocked_reason }}</p>
+              <p v-if="(row as AdminUserRow).blocked_reason">причина: {{ (row as AdminUserRow).blocked_reason }}</p>
             </div>
           </template>
           <template #cell-role="{ row }">
             <div class="flex items-center gap-2">
               <LabBaseSelect
-                v-model="roleDrafts[row.user_id]"
-                :name="`admin_user_role_${row.user_id}`"
+                v-model="roleDrafts[(row as AdminUserRow).user_id]"
+                :name="`admin_user_role_${(row as AdminUserRow).user_id}`"
                 :options="editableRoleOptions"
                 class="min-w-28"
-                :disabled="roleSavingUserId === row.user_id || row.user_id === user?.user_id"
-                @change="setRole(row)"
+                :disabled="roleSavingUserId === (row as AdminUserRow).user_id || (row as AdminUserRow).user_id === user?.user_id"
+                @change="setRole(row as AdminUserRow)"
               />
-              <span v-if="roleSavingUserId === row.user_id" :class="adminInlineHintClass">сохранение...</span>
-              <span v-else-if="row.user_id === user?.user_id" :class="adminInlineHintClass">текущий админ</span>
+              <span v-if="roleSavingUserId === (row as AdminUserRow).user_id">сохранение...</span>
+              <span v-else-if="(row as AdminUserRow).user_id === user?.user_id">текущий админ</span>
             </div>
           </template>
           <template #cell-login="{ row }">
-            <LabRelativeTime :datetime="row.last_login_at" compact />
+            <LabRelativeTime :datetime="(row as AdminUserRow).last_login_at" compact />
           </template>
           <template #cell-actions="{ row }">
             <div class="flex min-w-max items-center gap-1 whitespace-nowrap">
-              <span v-if="row.status !== 'blocked' && !isAdminAccount(row)" class="max-sm:hidden">
+              <span v-if="(row as AdminUserRow).status !== 'blocked' && !isAdminAccount(row as AdminUserRow)" class="max-sm:hidden">
                 <LabConfirmActionButton
                   label="Блок"
                   confirm-label="Подтвердить"
@@ -843,10 +916,10 @@ onMounted(() => {
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
-                  @confirm="blockUser(row)"
+                  @confirm="blockUser(row as AdminUserRow)"
                 />
               </span>
-              <span v-if="row.status !== 'blocked' && !isAdminAccount(row)" class="sm:hidden">
+              <span v-if="(row as AdminUserRow).status !== 'blocked' && !isAdminAccount(row as AdminUserRow)" class="sm:hidden">
                 <LabConfirmActionButton
                   icon-only
                   icon="ic:round-block"
@@ -858,31 +931,29 @@ onMounted(() => {
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
-                  @confirm="blockUser(row)"
+                  @confirm="blockUser(row as AdminUserRow)"
                 />
               </span>
               <LabBaseButton
-                v-if="row.status === 'blocked'"
+                v-if="(row as AdminUserRow).status === 'blocked'"
                 class="max-sm:hidden"
                 variant="secondary"
                 size="xs"
                 icon="ic:round-lock-open"
                 label="Разблок"
-                :button-class="`${adminCompactButtonClass} border-[color-mix(in_srgb,var(--lab-info)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-info)_10%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-info)_16%,var(--lab-bg-surface-hover))]`"
-                @click="unblockUser(row)"
+                @click="unblockUser(row as AdminUserRow)"
               />
               <LabBaseButton
-                v-if="row.status === 'blocked'"
+                v-if="(row as AdminUserRow).status === 'blocked'"
                 class="sm:hidden"
                 variant="secondary"
                 size="xs"
                 icon="ic:round-lock-open"
                 icon-only
                 aria-label="Разблокировать"
-                :button-class="`${adminCompactButtonClass} border-[color-mix(in_srgb,var(--lab-info)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-info)_10%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-info)_16%,var(--lab-bg-surface-hover))]`"
-                @click="unblockUser(row)"
+                @click="unblockUser(row as AdminUserRow)"
               />
-              <span v-if="!isAdminAccount(row)" class="max-sm:hidden">
+              <span v-if="!isAdminAccount(row as AdminUserRow)" class="max-sm:hidden">
                 <LabConfirmActionButton
                   label="Сброс сессий"
                   confirm-label="Подтвердить"
@@ -893,10 +964,10 @@ onMounted(() => {
                   confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
                   tooltip-class="border-[color-mix(in_srgb,var(--lab-warning)_52%,var(--lab-border))] text-(--lab-text-primary)"
-                  @confirm="forceLogoutUser(row)"
+                  @confirm="forceLogoutUser(row as AdminUserRow)"
                 />
               </span>
-              <span v-if="!isAdminAccount(row)" class="sm:hidden">
+              <span v-if="!isAdminAccount(row as AdminUserRow)" class="sm:hidden">
                 <LabConfirmActionButton
                   icon-only
                   icon="ic:round-logout"
@@ -909,10 +980,10 @@ onMounted(() => {
                   confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
                   tooltip-class="border-[color-mix(in_srgb,var(--lab-warning)_52%,var(--lab-border))] text-(--lab-text-primary)"
-                  @confirm="forceLogoutUser(row)"
+                  @confirm="forceLogoutUser(row as AdminUserRow)"
                 />
               </span>
-              <span v-if="!isAdminAccount(row)" class="max-sm:hidden">
+              <span v-if="!isAdminAccount(row as AdminUserRow)" class="max-sm:hidden">
                 <LabConfirmActionButton
                   label="Удалить"
                   confirm-label="Подтвердить"
@@ -922,10 +993,10 @@ onMounted(() => {
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
-                  @confirm="deleteUser(row)"
+                  @confirm="deleteUser(row as AdminUserRow)"
                 />
               </span>
-              <span v-if="!isAdminAccount(row)" class="sm:hidden">
+              <span v-if="!isAdminAccount(row as AdminUserRow)" class="sm:hidden">
                 <LabConfirmActionButton
                   icon-only
                   icon="ic:round-delete"
@@ -937,28 +1008,18 @@ onMounted(() => {
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
-                  @confirm="deleteUser(row)"
+                  @confirm="deleteUser(row as AdminUserRow)"
                 />
               </span>
             </div>
           </template>
         </LabDataTable>
-        <div class="flex items-center gap-2">
-          <LabBaseButton
-            label="Назад"
-            variant="secondary"
-            size="xs"
-            :disabled="!hasPrevPage || usersLoading"
-            @click="prevPage"
-          />
-          <LabBaseButton
-            label="Вперёд"
-            variant="secondary"
-            size="xs"
-            :disabled="!hasNextPage || usersLoading"
-            @click="nextPage"
-          />
-        </div>
+        <AdminPager
+          :prev-disabled="!hasPrevPage || usersLoading"
+          :next-disabled="!hasNextPage || usersLoading"
+          @prev="prevPage"
+          @next="nextPage"
+        />
       </section>
       <section v-show="adminTab === 'moderation'" :class="adminSectionClass">
         <div class="flex flex-wrap gap-2">
@@ -972,25 +1033,29 @@ onMounted(() => {
             {{ item.label }} {{ displayNumber(moderationStatusTotals[item.key]) }}
           </LabBaseButton>
         </div>
-        <LabNotify :text="moderationError" tone="error" size="xs" />
-        <LabNotify :text="moderationInfo" tone="success" size="xs" />
+        <AdminNotifyStack
+          :items="[
+            { text: moderationError, tone: 'error' },
+            { text: moderationInfo, tone: 'success' }
+          ]"
+        />
         <LabDataTable
           :columns="moderationTableColumns"
           :rows="moderationItems"
           :loading="moderationLoading"
           empty-text="Рецепты для выбранного статуса не найдены."
-          :row-key="(row: KitchenRecipe) => row.id"
+          row-key="id"
         >
           <template #cell-recipe="{ row }">
             <div class="min-w-0">
               <NuxtLink
-                :to="moderationRecipeLink(row)"
+                :to="moderationRecipeLink(row as ModerationRow)"
                 class="inline-flex max-w-full items-center gap-1 text-zinc-200 hover:text-zinc-100 hover:underline"
               >
-                <span class="truncate">{{ row.title }}</span>
+                <span class="truncate">{{ (row as ModerationRow).title }}</span>
                 <Icon name="ic:round-link" class="h-3.5 w-3.5 shrink-0 text-zinc-500" />
               </NuxtLink>
-              <p class="line-clamp-2 text-zinc-500">{{ row.description || '—' }}</p>
+              <p class="line-clamp-2 text-zinc-500">{{ (row as ModerationRow).description || '—' }}</p>
             </div>
           </template>
           <template #cell-owner="{ row }">
@@ -999,38 +1064,36 @@ onMounted(() => {
                 variant="ghost"
                 size="none"
                 button-class="truncate inline-flex max-w-full items-start justify-start px-0 text-left text-zinc-300 hover:text-zinc-100"
-                :disabled="moderationOwnerSavingRecipeId === row.id"
-                :label="moderationOwnerDisplay(row.owner_user_id)"
-                @click="openModerationOwnerEditor(row)"
+                :disabled="moderationOwnerSavingRecipeId === (row as ModerationRow).id"
+                :label="moderationOwnerDisplay((row as ModerationRow).owner_user_id)"
+                @click="openModerationOwnerEditor(row as ModerationRow)"
               />
               <p class="truncate text-xs text-zinc-500">
-                {{ moderationOwnerSubLabel(row.owner_user_id) }}
+                {{ moderationOwnerSubLabel((row as ModerationRow).owner_user_id) }}
               </p>
-              <div v-if="isModerationOwnerEditorOpen(row.id)" :class="adminSubsectionClass">
+              <div v-if="isModerationOwnerEditorOpen((row as ModerationRow).id)" :class="adminSubsectionClass">
                 <LabBaseInput
                   v-model="moderationOwnerQuery"
-                  :name="`moderation_owner_query_${row.id}`"
+                  :name="`moderation_owner_query_${(row as ModerationRow).id}`"
                   type="text"
                   placeholder="Поиск: email или имя"
                 />
                 <LabNotify :text="moderationOwnerCandidatesError" tone="error" size="xs" />
-                <p v-if="moderationOwnerCandidatesLoading" :class="adminInlineHintClass">Поиск...</p>
+                <p v-if="moderationOwnerCandidatesLoading">Поиск...</p>
                 <div v-else-if="moderationOwnerCandidates.length" class="max-h-36 space-y-1 overflow-y-auto pr-1">
                   <LabBaseButton
                     v-for="candidate in moderationOwnerCandidates"
-                    :key="`owner-candidate:${row.id}:${candidate.user_id}`"
+                    :key="`owner-candidate:${(row as ModerationRow).id}:${candidate.user_id}`"
                     variant="secondary"
                     size="none"
                     button-class="w-full justify-start px-2 py-1 text-left text-xs truncate"
-                    :disabled="moderationOwnerSavingRecipeId === row.id"
+                    :disabled="moderationOwnerSavingRecipeId === (row as ModerationRow).id"
                     :label="candidate.display_name || candidate.email"
-                    @click="changeModerationRecipeOwner(row, candidate)"
+                    @click="changeModerationRecipeOwner(row as ModerationRow, candidate)"
                   />
                 </div>
-                <p v-else-if="moderationOwnerQuery.trim().length >= 2" :class="adminInlineHintClass">
-                  Пользователи не найдены.
-                </p>
-                <p v-else :class="adminInlineHintClass">Введите минимум 2 символа для поиска.</p>
+                <p v-else-if="moderationOwnerQuery.trim().length >= 2">Пользователи не найдены.</p>
+                <p v-else>Введите минимум 2 символа для поиска.</p>
                 <LabBaseButton
                   variant="ghost"
                   size="xs"
@@ -1043,30 +1106,28 @@ onMounted(() => {
             </div>
           </template>
           <template #cell-status="{ row }">
-            <LabBaseBadge :variant="moderationStatusTone(row.moderation_status)" size="xs" :rounded="false">
-              {{ moderationStatusLabel(row.moderation_status) }}
+            <LabBaseBadge :variant="moderationStatusTone((row as ModerationRow).moderation_status)" size="xs" :rounded="false">
+              {{ moderationStatusLabel((row as ModerationRow).moderation_status) }}
             </LabBaseBadge>
           </template>
           <template #cell-created="{ row }">
-            <LabRelativeTime :datetime="row.created_at" compact />
+            <LabRelativeTime :datetime="(row as ModerationRow).created_at" compact />
           </template>
           <template #cell-actions="{ row }">
             <div class="min-w-64 space-y-2">
               <LabBaseTextarea
-                v-if="moderationCanReject(row)"
-                :model-value="moderationNoteDraft(row)"
-                :name="`moderation_note_${row.id}`"
+                v-if="moderationCanReject(row as ModerationRow)"
+                :model-value="moderationNoteDraft(row as ModerationRow)"
+                :name="`moderation_note_${(row as ModerationRow).id}`"
                 rows="2"
                 placeholder="Причина отклонения для автора"
                 class="w-full text-xs"
-                @update:model-value="moderationNoteDrafts[row.id] = String($event || '')"
+                @update:model-value="moderationNoteDrafts[(row as ModerationRow).id] = String($event || '')"
               />
-              <p v-else-if="row.moderation_note" :class="adminInlineHintClass">
-                Последняя причина: {{ row.moderation_note }}
-              </p>
+              <p v-else-if="(row as ModerationRow).moderation_note">Последняя причина: {{ (row as ModerationRow).moderation_note }}</p>
               <div class="flex flex-wrap gap-1">
                 <LabConfirmActionButton
-                  v-if="moderationCanApprove(row)"
+                  v-if="moderationCanApprove(row as ModerationRow)"
                   label="Одобрить"
                   confirm-label="Подтвердить"
                   tooltip="Подтвердить публикацию рецепта?"
@@ -1074,10 +1135,10 @@ onMounted(() => {
                   idle-class="border border-emerald-500/40 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
                   confirm-class="border border-emerald-300/90 bg-emerald-600 text-white hover:bg-emerald-500"
                   progress-class="bg-emerald-300/45"
-                  @confirm="moderateRecipe(row, true)"
+                  @confirm="moderateRecipe(row as ModerationRow, true)"
                 />
                 <LabConfirmActionButton
-                  v-if="moderationCanReject(row)"
+                  v-if="moderationCanReject(row as ModerationRow)"
                   label="Отклонить"
                   confirm-label="Подтвердить"
                   tooltip="Подтвердить отклонение рецепта?"
@@ -1085,34 +1146,24 @@ onMounted(() => {
                   idle-class="border border-rose-500/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
                   confirm-class="border border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500"
                   progress-class="bg-rose-300/45"
-                  @confirm="moderateRecipe(row, false)"
+                  @confirm="moderateRecipe(row as ModerationRow, false)"
                 />
               </div>
             </div>
           </template>
         </LabDataTable>
-        <div class="flex items-center gap-2">
-          <LabBaseButton
-            variant="secondary"
-            size="xs"
-            label="Назад"
-            :disabled="!moderationHasPrevPage || moderationLoading"
-            @click="moderationPrevPage"
-          />
-          <LabBaseButton
-            variant="secondary"
-            size="xs"
-            label="Вперёд"
-            :disabled="!moderationHasNextPage || moderationLoading"
-            @click="moderationNextPage"
-          />
-        </div>
+        <AdminPager
+          :prev-disabled="!moderationHasPrevPage || moderationLoading"
+          :next-disabled="!moderationHasNextPage || moderationLoading"
+          @prev="moderationPrevPage"
+          @next="moderationNextPage"
+        />
       </section>
       <section v-show="adminTab === 'keys'" :class="adminSectionClass">
-        <div class="space-y-1">
-          <h2 class="text-base font-semibold text-zinc-100">Поиск по ключам особенностей</h2>
-          <p :class="adminMetaTextClass">Проверка syn, meta и количества traits для ключа.</p>
-        </div>
+        <AdminSectionHeader
+          title="Поиск по ключам особенностей"
+          description="Проверка syn, meta и количества traits для ключа."
+        />
         <LabField label="Запрос" for-id="admin_keys_query" class="max-w-xl">
           <LabBaseInput
             id="admin_keys_query"
@@ -1128,52 +1179,59 @@ onMounted(() => {
           :rows="keys"
           :loading="keysLoading"
           empty-text="Ничего не найдено."
-          :row-key="(row: AdminTraitKeySearchItem) => row.key_id"
+          row-key="key_id"
         >
           <template #cell-id="{ row }">
-            <span class="text-zinc-400">{{ row.key_id }}</span>
+            <span class="text-zinc-400">{{ (row as AdminTraitKeyRow).key_id }}</span>
           </template>
           <template #cell-key="{ row }">
-            <span class="text-zinc-200">{{ row.syn }}</span>
+            <span class="text-zinc-200">{{ (row as AdminTraitKeyRow).syn }}</span>
           </template>
           <template #cell-meta="{ row }">
             <div class="space-y-1">
               <div class="flex flex-wrap gap-1">
                 <LabBaseBadge
-                  v-for="label in keyMetaSummaryItems(row.meta)"
-                  :key="`${row.key_id}:${label}`"
+                  v-for="label in keyMetaSummaryItems((row as AdminTraitKeyRow).meta)"
+                  :key="`${(row as AdminTraitKeyRow).key_id}:${label}`"
                   variant="muted"
                   size="xs"
                   :rounded="false"
                 >
                   {{ label }}
                 </LabBaseBadge>
-                <LabBaseBadge v-if="!keyMetaSummaryItems(row.meta).length" variant="muted" size="xs" :rounded="false">
+                <LabBaseBadge
+                  v-if="!keyMetaSummaryItems((row as AdminTraitKeyRow).meta).length"
+                  variant="muted"
+                  size="xs"
+                  :rounded="false"
+                >
                   —
                 </LabBaseBadge>
               </div>
               <pre class="max-w-80 overflow-x-auto p-2 text-xs leading-5 text-zinc-400">{{
-                keyMetaJson(row.meta)
+                keyMetaJson((row as AdminTraitKeyRow).meta)
               }}</pre>
             </div>
           </template>
           <template #cell-traits="{ row }">
-            <span class="text-zinc-300">{{ row.trait_count }}</span>
+            <span class="text-zinc-300">{{ (row as AdminTraitKeyRow).trait_count }}</span>
           </template>
         </LabDataTable>
       </section>
       <section v-show="adminTab === 'analysis'" :class="adminSectionClass">
-        <div class="space-y-1">
-          <h2 class="text-base font-semibold text-zinc-100">Аналитика</h2>
-          <p :class="adminMetaTextClass">Сводка по уведомлениям, coverage traits и ключам с максимальной нагрузкой.</p>
-        </div>
-        <LabNotify :text="analysisError" tone="error" size="xs" />
-        <LabNotify :text="summaryError" tone="error" size="xs" />
-        <LabNotify :text="paymentsSummaryError" tone="error" size="xs" />
-        <LabNotify :text="summaryInfo" tone="success" size="xs" />
-        <p v-if="analysisLoading || summaryLoading || paymentsSummaryLoading" class="text-xs text-zinc-400">
-          Обновление данных...
-        </p>
+        <AdminSectionHeader
+          title="Аналитика"
+          description="Сводка по уведомлениям, coverage traits и ключам с максимальной нагрузкой."
+        />
+        <AdminNotifyStack
+          :items="[
+            { text: analysisError, tone: 'error' },
+            { text: summaryError, tone: 'error' },
+            { text: paymentsSummaryError, tone: 'error' },
+            { text: summaryInfo, tone: 'success' }
+          ]"
+        />
+        <p v-if="analysisLoading || summaryLoading || paymentsSummaryLoading">Обновление данных...</p>
         <div :class="adminSubsectionClass">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <p class="text-zinc-200">Сводка уведомлений</p>
@@ -1188,11 +1246,11 @@ onMounted(() => {
           <div class="grid gap-2 sm:grid-cols-2">
             <div class="space-y-1 p-2.5">
               <p class="text-zinc-500">Новых регистраций</p>
-              <p class="text-zinc-100">{{ displayNumber(summary?.new_users_since_last_login) }}</p>
+              <p class="text-zinc-100">{{ Number(summary?.new_users_since_last_login || 0) }}</p>
             </div>
             <div class="space-y-1 p-2.5">
               <p class="text-zinc-500">Новых рецептов на модерации</p>
-              <p class="text-zinc-100">{{ displayNumber(summary?.new_pending_recipes_since_last_login) }}</p>
+              <p class="text-zinc-100">{{ Number(summary?.new_pending_recipes_since_last_login || 0) }}</p>
             </div>
           </div>
         </div>
@@ -1200,57 +1258,19 @@ onMounted(() => {
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="space-y-1">
               <p class="text-zinc-200">Payments</p>
-              <p :class="adminMetaTextClass">Сводка заказов, выручки, активного доступа и доли поддержки проекта.</p>
+              <p>Сводка заказов, выручки, активного доступа и доли поддержки проекта.</p>
             </div>
-            <p :class="adminMetaTextClass">
+            <p>
               Последний успешный платёж:
               <span class="text-zinc-300">{{ displayDateTime(paymentsSummary?.last_successful_paid) }}</span>
             </p>
           </div>
-          <div class="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <div v-for="item in paymentsStats" :key="item.key" :class="adminStatCardClass">
-              <p class="text-zinc-500">{{ item.label }}</p>
-              <p class="text-zinc-100">{{ item.value }}</p>
-            </div>
-          </div>
+        </div>
+        <div class="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <AdminStatCard v-for="item in paymentsStats" :key="item.key" :label="item.label" :value="item.value" />
         </div>
         <div class="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Traits</p>
-            <p class="text-zinc-100">{{ displayNumber(analysis?.total_traits) }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Уникальные пары (key+value)</p>
-            <p class="text-zinc-100">{{ displayNumber(analysis?.unique_trait_pairs) }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Уникальные ключи</p>
-            <p class="text-zinc-100">{{ displayNumber(analysis?.unique_trait_keys) }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Sets</p>
-            <p class="text-zinc-100">{{ displayNumber(analysis?.total_sets) }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Уникальность наборов</p>
-            <p class="text-zinc-100">{{ analysis ? formatPercent(analysis.set_uniqueness_rate) : '—' }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Исхожесть (доля производных наборов)</p>
-            <p class="text-zinc-100">{{ analysis ? formatPercent(analysis.derived_set_rate) : '—' }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Traits в наборах</p>
-            <p class="text-zinc-100">{{ displayNumber(analysis?.traits_referenced_in_sets) }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Покрытие traits наборами</p>
-            <p class="text-zinc-100">{{ analysis ? formatPercent(analysis.trait_coverage_in_sets_rate) : '—' }}</p>
-          </div>
-          <div :class="adminStatCardClass">
-            <p class="text-zinc-500">Traits вне наборов</p>
-            <p class="text-zinc-100">{{ displayNumber(analysis?.orphan_traits) }}</p>
-          </div>
+          <AdminStatCard v-for="item in analysisStats" :key="item.label" :label="item.label" :value="item.value" />
         </div>
         <div :class="adminSubsectionClass">
           <p class="text-zinc-400">Топ ключей по количеству traits:</p>

@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 type StorageObject struct {
@@ -116,41 +117,56 @@ func detectContentType(storageKey string, data []byte) string {
 	return "application/octet-stream"
 }
 func PutObjectBytes(ctx context.Context, storageKey string, data []byte, contentType string) error {
-	key := NormalizeStorageKey(storageKey)
-	if key == "" {
-		return errors.New("invalid media key")
-	}
-	if !MinIOEnabled() {
-		path, err := AbsPath(key)
-		if err != nil {
-			return err
-		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return err
-		}
-		return os.WriteFile(path, data, 0o644)
-	}
-	if err := ensureMinIOBucket(ctx); err != nil {
-		return err
+	return PutObjectBytesToBucket(ctx, MinIOBucket(), storageKey, data, contentType)
+}
+
+func OpenObject(ctx context.Context, storageKey string) (*StorageObject, error) {
+	return OpenObjectFromBucket(ctx, MinIOBucket(), storageKey)
+}
+
+func ReadObjectBytes(ctx context.Context, storageKey string) ([]byte, error) {
+	return ReadObjectBytesFromBucket(ctx, MinIOBucket(), storageKey)
+}
+
+func ObjectExists(ctx context.Context, storageKey string) (bool, error) {
+	return ObjectExistsInBucket(ctx, MinIOBucket(), storageKey)
+}
+
+func DeleteObject(ctx context.Context, storageKey string) error {
+	return DeleteObjectFromBucket(ctx, MinIOBucket(), storageKey)
+}
+func ensureBucket(ctx context.Context, bucket string) error {
+	name := strings.TrimSpace(bucket)
+	if name == "" {
+		return errors.New("bucket is required")
 	}
 	client, err := storageClient()
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(contentType) == "" {
-		contentType = detectContentType(key, data)
+	exists, err := client.BucketExists(ctx, name)
+	if err != nil {
+		return err
 	}
-	_, err = client.PutObject(ctx, MinIOBucket(), key, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
-		ContentType: contentType,
-	})
-	return err
+	if exists {
+		return nil
+	}
+	return client.MakeBucket(ctx, name, minio.MakeBucketOptions{})
 }
-func OpenObject(ctx context.Context, storageKey string) (*StorageObject, error) {
+
+func OpenObjectFromBucket(ctx context.Context, bucket string, storageKey string) (*StorageObject, error) {
+	name := strings.TrimSpace(bucket)
 	key := NormalizeStorageKey(storageKey)
+	if name == "" {
+		return nil, errors.New("bucket is required")
+	}
 	if key == "" {
 		return nil, errors.New("invalid media key")
 	}
 	if !MinIOEnabled() {
+		if name != MinIOBucket() {
+			return nil, errors.New("custom bucket is not supported without minio")
+		}
 		path, err := ResolveFilePath(key)
 		if err != nil {
 			return nil, err
@@ -174,7 +190,7 @@ func OpenObject(ctx context.Context, storageKey string) (*StorageObject, error) 
 	if err != nil {
 		return nil, err
 	}
-	object, err := client.GetObject(ctx, MinIOBucket(), key, minio.GetObjectOptions{})
+	object, err := client.GetObject(ctx, name, key, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -189,20 +205,26 @@ func OpenObject(ctx context.Context, storageKey string) (*StorageObject, error) 
 		Size:        info.Size,
 	}, nil
 }
-func ReadObjectBytes(ctx context.Context, storageKey string) ([]byte, error) {
-	object, err := OpenObject(ctx, storageKey)
+
+func ReadObjectBytesFromBucket(ctx context.Context, bucket string, storageKey string) ([]byte, error) {
+	object, err := OpenObjectFromBucket(ctx, bucket, storageKey)
 	if err != nil {
 		return nil, err
 	}
 	defer object.Body.Close()
 	return io.ReadAll(object.Body)
 }
-func ObjectExists(ctx context.Context, storageKey string) (bool, error) {
+
+func ObjectExistsInBucket(ctx context.Context, bucket string, storageKey string) (bool, error) {
+	name := strings.TrimSpace(bucket)
 	key := NormalizeStorageKey(storageKey)
-	if key == "" {
+	if name == "" || key == "" {
 		return false, nil
 	}
 	if !MinIOEnabled() {
+		if name != MinIOBucket() {
+			return false, nil
+		}
 		path, err := ResolveFilePath(key)
 		if err != nil {
 			return false, err
@@ -220,7 +242,7 @@ func ObjectExists(ctx context.Context, storageKey string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	_, err = client.StatObject(ctx, MinIOBucket(), key, minio.StatObjectOptions{})
+	_, err = client.StatObject(ctx, name, key, minio.StatObjectOptions{})
 	if err == nil {
 		return true, nil
 	}
@@ -230,17 +252,60 @@ func ObjectExists(ctx context.Context, storageKey string) (bool, error) {
 	}
 	return false, err
 }
-func DeleteObject(ctx context.Context, storageKey string) error {
+
+func PutObjectBytesToBucket(ctx context.Context, bucket string, storageKey string, data []byte, contentType string) error {
+	name := strings.TrimSpace(bucket)
 	key := NormalizeStorageKey(storageKey)
+	if name == "" {
+		return errors.New("bucket is required")
+	}
 	if key == "" {
+		return errors.New("invalid media key")
+	}
+	if !MinIOEnabled() {
+		if name != MinIOBucket() {
+			return errors.New("custom bucket is not supported without minio")
+		}
+		path, err := AbsPath(key)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(path, data, 0o644)
+	}
+	if err := ensureBucket(ctx, name); err != nil {
+		return err
+	}
+	client, err := storageClient()
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(contentType) == "" {
+		contentType = detectContentType(key, data)
+	}
+	_, err = client.PutObject(ctx, name, key, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	return err
+}
+
+func DeleteObjectFromBucket(ctx context.Context, bucket string, storageKey string) error {
+	name := strings.TrimSpace(bucket)
+	key := NormalizeStorageKey(storageKey)
+	if name == "" || key == "" {
 		return nil
 	}
 	if !MinIOEnabled() {
+		if name != MinIOBucket() {
+			return nil
+		}
 		return removeFileAndEmptyParents(key)
 	}
 	client, err := storageClient()
 	if err != nil {
 		return err
 	}
-	return client.RemoveObject(ctx, MinIOBucket(), key, minio.RemoveObjectOptions{})
+	return client.RemoveObject(ctx, name, key, minio.RemoveObjectOptions{})
 }

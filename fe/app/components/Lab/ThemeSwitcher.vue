@@ -1,12 +1,14 @@
 <script setup lang="ts">
-const { t, themePreference } = useInterfacePreferences()
+const { themePreference } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('ui')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { saveInterfacePreferences } = useInterfacePreferencesSync()
 const hydrated = ref(false)
 onMounted(() => {
   hydrated.value = true
 })
 const themeButtons = computed(() =>
-  INTERFACE_THEME_OPTIONS.map((value) => ({
+  INTERFACE_THEME_OPTIONS.map(value => ({
     value,
     label: t(`theme.${value}`)
   }))
@@ -33,13 +35,7 @@ const selectTheme = async (value: ThemePreference) => {
   if (pendingTheme.value || themePreference.value === value) return
   open.value = false
   pendingTheme.value = value
-  try {
-    await saveInterfacePreferences({ theme: value })
-  } catch {
-    // Rollback is handled by the shared sync composable.
-  } finally {
-    pendingTheme.value = null
-  }
+  await saveInterfacePreferences({ theme: value }).finally(() => (pendingTheme.value = null))
 }
 </script>
 <template>

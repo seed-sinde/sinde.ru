@@ -5,7 +5,8 @@ defineOptions({
 
 const route = useRoute()
 const attrs = useAttrs()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('nav')
+await useAsyncData(key.value, load, { watch: [locale] })
 const translatedSidebarItems = useSidebarItems()
 const props = withDefaults(
   defineProps<{
@@ -36,7 +37,7 @@ const props = withDefaults(
 const containerRef = ref<HTMLElement | null>(null)
 const { edges: scrollEdges, sync: syncScrollEdges } = useScrollableEdges(containerRef, { axis: 'x' })
 const normalizedItems = computed(() => props.items || [])
-const ariaLabel = computed(() => props.ariaLabel || t('nav.breadcrumbs'))
+const ariaLabel = computed(() => props.ariaLabel || t('breadcrumbs'))
 const rootClass = computed(() => [attrs.class, 'relative min-w-0'].filter(Boolean))
 const resolvedContainerClass = computed(() =>
   [props.containerClass, 'lab-scroll-hidden min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain'].filter(
@@ -60,14 +61,14 @@ const routeSectionItem = computed(() => {
   if (!path || path === '/') return null
   return (
     translatedSidebarItems.value
-      .filter((item) => path === item.to || path.startsWith(`${item.to}/`))
+      .filter(item => path === item.to || path.startsWith(`${item.to}/`))
       .sort((left, right) => right.to.length - left.to.length)[0] || null
   )
 })
 const matchedSidebarItem = computed(() => {
   const firstPath = firstItemPath.value
   if (!firstPath) return routeSectionItem.value || null
-  return translatedSidebarItems.value.find((item) => item.to === firstPath) || routeSectionItem.value || null
+  return translatedSidebarItems.value.find(item => item.to === firstPath) || routeSectionItem.value || null
 })
 const leadingSectionTo = computed(() => matchedSidebarItem.value?.to || '')
 const canLinkToSection = computed(() => {
@@ -138,7 +139,7 @@ watch(
               v-if="leadingSectionIcon && canLinkToSection"
               :to="leadingSectionTo"
               class="inline-flex shrink-0 items-center"
-              :aria-label="t('nav.open_section', { label: matchedSidebarItem?.label || item.label })"
+              :aria-label="t('open_section', { label: matchedSidebarItem?.label || item.label })"
             >
               <Icon :name="leadingSectionIcon" :class="leadingSectionIconClass" aria-hidden="true" />
             </NuxtLink>

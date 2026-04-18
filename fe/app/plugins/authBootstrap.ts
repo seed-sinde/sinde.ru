@@ -1,7 +1,7 @@
 export default defineNuxtPlugin(() => {
   const interfacePreferences = useInterfacePreferences()
   const uiPreferences = useUiPreferencesStore()
-  const { user, loaded, sharedUserSummary, sharedAdminSummary, ensureLoaded, isAuthenticated, loadSharedUserSummary } =
+  const {user, loaded, sharedUserSummary, sharedAdminSummary, ensureLoaded, isAuthenticated, loadSharedUserSummary} =
     useAuth()
   if (import.meta.server && import.meta.prerender) {
     user.value = null
@@ -25,11 +25,11 @@ export default defineNuxtPlugin(() => {
   }
   watch(
     () => user.value,
-    (nextUser) => {
+    nextUser => {
       if (!nextUser) return
       interfacePreferences.applyAccountPreferences(nextUser)
     },
-    { deep: true }
+    {deep: true}
   )
   if (import.meta.client) {
     void bootstrapAuth()

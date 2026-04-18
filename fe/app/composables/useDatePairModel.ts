@@ -1,15 +1,15 @@
-import type { Ref } from 'vue'
-import { compareDateText, datePlaceholder, isValidDateText, maskDateText } from './useDateText'
+import type {Ref} from "vue"
+import {compareDateText, datePlaceholder, isValidDateText, maskDateText} from "./useDateText"
 type DatePairModel = Record<string, string>
 type DatePairOptions = {
   leftKey: string
   rightKey: string
 }
 export const useDatePairModel = (model: Ref<DatePairModel>, options: DatePairOptions) => {
-  const mode = 'datetime'
+  const mode = "datetime"
   const placeholder = computed(() => datePlaceholder(mode))
-  const left = ref(String(model.value?.[options.leftKey] ?? ''))
-  const right = ref(String(model.value?.[options.rightKey] ?? ''))
+  const left = ref(String(model.value?.[options.leftKey] ?? ""))
+  const right = ref(String(model.value?.[options.rightKey] ?? ""))
   const leftValid = computed(() => !left.value || isValidDateText(left.value, mode))
   const rightValid = computed(() => !right.value || isValidDateText(right.value, mode))
   const isRangeInvalid = computed(() => {
@@ -26,8 +26,8 @@ export const useDatePairModel = (model: Ref<DatePairModel>, options: DatePairOpt
   watch([left, right], ([leftValue, rightValue]) => {
     const current = model.value ?? {}
     if (
-      String(current?.[options.leftKey] ?? '') === leftValue &&
-      String(current?.[options.rightKey] ?? '') === rightValue
+      String(current?.[options.leftKey] ?? "") === leftValue &&
+      String(current?.[options.rightKey] ?? "") === rightValue
     )
       return
     model.value = {
@@ -38,8 +38,8 @@ export const useDatePairModel = (model: Ref<DatePairModel>, options: DatePairOpt
   })
   watch(
     (): [string, string] => [
-      String(model.value?.[options.leftKey] ?? ''),
-      String(model.value?.[options.rightKey] ?? '')
+      String(model.value?.[options.leftKey] ?? ""),
+      String(model.value?.[options.rightKey] ?? "")
     ],
     ([nextLeft, nextRight]) => {
       if (left.value !== nextLeft) left.value = nextLeft

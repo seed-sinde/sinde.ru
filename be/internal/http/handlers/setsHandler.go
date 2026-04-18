@@ -59,6 +59,7 @@ func CreateSetHandler() fiber.Handler {
 		if !leftExists {
 			return responses.Error(c, 400, "левый потомок должен существовать как t_uuid или s_uuid")
 		}
+		out := fiber.Map{}
 		// --- RIGHT: либо UUID-строка (существующая особенность), либо объект {t_key,t_value} без лишних полей
 		var rightTUUID uuid.UUID
 		var echoTraitUUID string
@@ -90,7 +91,15 @@ func CreateSetHandler() fiber.Handler {
 			}
 			// нормализуем value к строке
 			val := fmt.Sprintf("%v", kv.TValue)
-			key, err := services.PdbGetOrCreateCanonicalKeyBySyn(c, kv.TKey)
+			metaJSON := "{}"
+			if kv.Meta != nil {
+				metaBytes, err := json.Marshal(kv.Meta)
+				if err != nil {
+					return responses.Error(c, 400, "Некорректная meta правого потомка", err.Error())
+				}
+				metaJSON = string(metaBytes)
+			}
+			key, err := services.PdbGetOrCreateKeyBySynMeta(c, kv.TKey, metaJSON)
 			if err != nil {
 				return responses.Error(c, 500, "Не удалось сохранить ключ правого потомка", err.Error())
 			}
@@ -108,6 +117,7 @@ func CreateSetHandler() fiber.Handler {
 			store.SyncTrait(trait)
 			rightTUUID = trait.TUUID
 			echoTraitUUID = trait.TUUID.String()
+			out["trait"] = store.SyncTrait(trait)
 		}
 		setItem, err := services.PdbGetOrCreateSet(c, []uuid.UUID{left, rightTUUID})
 		if err != nil {
@@ -117,7 +127,7 @@ func CreateSetHandler() fiber.Handler {
 			return responses.Error(c, 500, "Не удалось создать или найти набор")
 		}
 		store.SyncSet(setItem)
-		out := fiber.Map{"s_uuid": setItem.SUUID.String()}
+		out["s_uuid"] = setItem.SUUID.String()
 		if echoTraitUUID != "" {
 			out["t_uuid"] = echoTraitUUID
 		}

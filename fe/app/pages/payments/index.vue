@@ -1,10 +1,13 @@
 <script setup lang="ts">
-const { t, localeTag } = useInterfacePreferences()
-const title = t('payments.index.seo_title')
+const { localeTag, effectiveTheme } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('payments')
+await useAsyncData(key.value, load, { watch: [locale] })
+const title = computed(() => t('index.seo_title'))
+const description = computed(() => t('index.seo_description'))
 
 usePageSeo({
   title,
-  description: t('payments.index.seo_description')
+  description
 })
 
 const nuxtApp = useNuxtApp()
@@ -30,6 +33,7 @@ const donationPresetAdds = [100, 500, 1000] as const
 
 const donationAnimating = ref(false)
 const donationEditing = ref(false)
+const donationSwitchOn = ref(false)
 const donationHasInput = ref(true)
 const donationPresetBaseRubles = ref(minDonationRubles)
 const donationCurrentRubles = ref(minDonationRubles)
@@ -42,28 +46,29 @@ const donationInputRef = ref<HTMLElement | null>(null)
 let donationAnimationFrameId: number | null = null
 
 const featureKeys = [
-  'payments.index.feature_roles',
-  'payments.index.feature_deep_workshop',
-  'payments.index.feature_chain_links',
-  'payments.index.feature_timeline',
-  'payments.index.feature_person_views',
-  'payments.index.feature_planning',
-  'payments.index.feature_collaboration',
-  'payments.index.feature_rbac',
-  'payments.index.feature_early_access'
-] as const satisfies ReadonlyArray<InterfaceMessageKey>
+  'index.feature_roles',
+  'index.feature_deep_workshop',
+  'index.feature_chain_links',
+  'index.feature_timeline',
+  'index.feature_person_views',
+  'index.feature_planning',
+  'index.feature_collaboration',
+  'index.feature_rbac',
+  'index.feature_early_access'
+] as const
 
-const featureItems = computed(() => featureKeys.map((key) => t(key)))
+const featureItems = computed(() => featureKeys.map(key => t(key)))
 const donationPresetChips = computed(() =>
-  donationPresetAdds.map((add) => ({
+  donationPresetAdds.map(add => ({
     key: `preset:${add}`,
     add,
     label: `+${add}`
   }))
 )
 const donationEnabled = computed(() => donationHasInput.value && donationCurrentRubles.value > minDonationRubles)
+const donationToggleChecked = computed(() => donationSwitchOn.value || donationEnabled.value)
 const donationSelectedPresetAdd = computed<(typeof donationPresetAdds)[number] | null>(
-  () => donationPresetAdds.find((add) => donationCurrentRubles.value === donationPresetBaseRubles.value + add) ?? null
+  () => donationPresetAdds.find(add => donationCurrentRubles.value === donationPresetBaseRubles.value + add) ?? null
 )
 const showDonationChips = computed(() => donationEnabled.value || donationEditing.value)
 const paymentActionDisabled = computed(
@@ -74,6 +79,11 @@ const paymentActionDisabled = computed(
 const showElectrifiedEffect = computed(
   () => donationEnabled.value && donationCurrentRubles.value >= donationPresetBaseRubles.value + 1000
 )
+const electrifiedStyle = computed<Record<string, string>>(() => ({
+  '--payments-gold-primary': effectiveTheme.value === 'light' ? '#f59e0b' : '#fbbf24',
+  '--payments-gold-glow': effectiveTheme.value === 'light' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(217, 119, 6, 0.6)',
+  '--payments-gold-inner': effectiveTheme.value === 'light' ? '#ffffff' : '#fffbeb'
+}))
 
 const currentPath = computed(() => {
   const query = new URLSearchParams()
@@ -96,9 +106,9 @@ const currentAmountKopecks = computed(() => {
 })
 
 const accessSummaryText = computed(() => {
-  if (accessLoading.value) return t('payments.index.loading')
+  if (accessLoading.value) return t('index.loading')
   if (access.value?.has_active_access && access.value.access_until) {
-    return t('payments.index.access_active_description', { date: formatAbsoluteDateTime(access.value.access_until) })
+    return t('index.access_active_description', { date: formatAbsoluteDateTime(access.value.access_until) })
   }
   return ''
 })
@@ -106,7 +116,7 @@ const accessSummaryText = computed(() => {
 const latestOrderLine = computed(() => {
   const order = access.value?.latest_order
   if (!order) return ''
-  return t('payments.index.latest_order_line', {
+  return t('index.latest_order_line', {
     amount: formatPaymentAmount(order.amount || 0, localeTag.value),
     status: paymentStatusLabel(String(order.status || '').trim())
   })
@@ -115,17 +125,17 @@ const latestOrderLine = computed(() => {
 function paymentStatusLabel(status: string) {
   switch (status) {
     case 'success':
-      return t('payments.status.success')
+      return t('status.success')
     case 'pending':
-      return t('payments.status.pending')
+      return t('status.pending')
     case 'failed':
-      return t('payments.status.failed')
+      return t('status.failed')
     case 'canceled':
-      return t('payments.status.canceled')
+      return t('status.canceled')
     case 'refunded':
-      return t('payments.status.refunded')
+      return t('status.refunded')
     default:
-      return t('payments.status.unknown')
+      return t('status.unknown')
   }
 }
 
@@ -162,7 +172,7 @@ function handleDonationKeydown(event: KeyboardEvent) {
 function handleDonationToggleKeydown(event: KeyboardEvent) {
   if (event.key !== 'Enter' && event.key !== ' ') return
   event.preventDefault()
-  toggleDonation(!donationEnabled.value)
+  toggleDonation(!donationToggleChecked.value)
 }
 
 function stopDonationAnimation() {
@@ -221,6 +231,7 @@ function handleDonationBlur() {
   donationEditing.value = false
   if (!hasDonationValue()) {
     donationPresetBaseRubles.value = minDonationRubles
+    donationSwitchOn.value = false
     setDonationEditableText(defaultDonationRubles)
     return
   }
@@ -230,6 +241,7 @@ function handleDonationBlur() {
     animateDonation(currentRubles, minDonationRubles)
     return
   }
+  donationSwitchOn.value = currentRubles > minDonationRubles
   setDonationEditableText(String(currentRubles))
 }
 
@@ -249,6 +261,7 @@ function focusDonationInput(options?: { preservePresetBase?: boolean }) {
 function toggleDonation(nextValue: boolean) {
   stopDonationAnimation()
   donationEditing.value = false
+  donationSwitchOn.value = nextValue
   if (nextValue) {
     donationPresetBaseRubles.value = minDonationRubles
     animateDonation(readDonationRubles(), minDonationRubles + 100)
@@ -287,7 +300,7 @@ async function submitOrder() {
     return
   }
   if (!offerAccepted.value) {
-    paymentError.value = t('payments.index.offer_required')
+    paymentError.value = t('index.offer_required')
     paymentErrorKey.value += 1
     return
   }
@@ -300,11 +313,11 @@ async function submitOrder() {
       return_to: currentPath.value
     })
     const paymentURL = String(res?.data?.payment_url || '').trim()
-    if (!paymentURL) throw new Error(t('payments.lookup.error_generic'))
+    if (!paymentURL) throw new Error(t('lookup.error_generic'))
     await navigateTo(paymentURL, { external: true })
   } catch (error: any) {
     paymentError.value =
-      String(error?.data?.message || error?.message || '').trim() || t('payments.lookup.error_generic')
+      String(error?.data?.message || error?.message || '').trim() || t('lookup.error_generic')
     paymentErrorKey.value += 1
   } finally {
     creatingPlan.value = ''
@@ -316,17 +329,50 @@ onBeforeUnmount(() => stopDonationAnimation())
 
 <template>
   <div class="selection:bg-amber-500/30">
-    <LabNavHeader :title="t('payments.index.title')" />
+    <LabNavHeader :title="t('index.title')" />
     <main class="relative max-w-6xl p-4">
       <section
         class="relative z-10 max-w-4xl border border-transparent bg-(--lab-bg-surface) transition-all duration-300"
-        :class="{ 'electrified-border': showElectrifiedEffect }"
+        :class="
+          showElectrifiedEffect
+            ? 'animate-[payments-gold-flicker_0.1s_infinite_steps(2)] border-(--payments-gold-primary) ring-4 ring-[color-mix(in_srgb,var(--payments-gold-glow)_45%,transparent)]'
+            : ''
+        "
+        :style="electrifiedStyle"
       >
         <div v-if="showElectrifiedEffect" class="pointer-events-none absolute inset-0 z-0 overflow-hidden select-none">
-          <div class="lightning-path top-wire golden-energy" />
-          <div class="lightning-path bottom-wire golden-energy" />
-          <div class="lightning-path left-wire golden-energy" />
-          <div class="lightning-path right-wire golden-energy" />
+          <div
+            class="absolute top-0 z-20 h-0.75 bg-(--payments-gold-inner) opacity-90 drop-shadow-[0_0_15px_var(--payments-gold-primary)]"
+            style="
+              animation:
+                payments-move-h 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite,
+                payments-size-p-h 0.2s infinite alternate;
+            "
+          />
+          <div
+            class="absolute bottom-0 z-20 h-0.75 bg-(--payments-gold-inner) opacity-90 drop-shadow-[0_0_15px_var(--payments-gold-primary)]"
+            style="
+              animation:
+                payments-move-h 1s cubic-bezier(1, 0, 0, 1) infinite reverse,
+                payments-size-p-h 0.3s infinite alternate-reverse;
+            "
+          />
+          <div
+            class="absolute left-0 z-20 w-0.75 bg-(--payments-gold-inner) opacity-90 drop-shadow-[0_0_15px_var(--payments-gold-primary)]"
+            style="
+              animation:
+                payments-move-v 0.9s cubic-bezier(0.47, 0, 0.745, 0.715) infinite reverse,
+                payments-size-p-v 0.25s infinite alternate;
+            "
+          />
+          <div
+            class="absolute right-0 z-20 w-0.75 bg-(--payments-gold-inner) opacity-90 drop-shadow-[0_0_15px_var(--payments-gold-primary)]"
+            style="
+              animation:
+                payments-move-v 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite,
+                payments-size-p-v 0.2s infinite alternate-reverse;
+            "
+          />
         </div>
 
         <div class="relative z-10 px-6 py-10 text-center sm:px-12 sm:py-14">
@@ -334,7 +380,7 @@ onBeforeUnmount(() => stopDonationAnimation())
             <h1
               class="mx-auto max-w-3xl text-3xl font-black tracking-tight text-(--lab-text-primary) uppercase sm:text-5xl"
             >
-              {{ t('payments.index.hero_title') }}
+              {{ t('index.hero_title') }}
             </h1>
             <p
               v-if="accessSummaryText"
@@ -357,7 +403,7 @@ onBeforeUnmount(() => stopDonationAnimation())
                 tabindex="0"
                 role="textbox"
                 class="relative block min-w-[1ch] border-b-2 border-transparent bg-transparent px-4 py-2 text-right text-7xl font-black tracking-tighter text-(--lab-text-primary) tabular-nums outline-none focus-visible:border-(--lab-accent) sm:text-8xl"
-                :class="[donationEnabled ? 'text-(--lab-accent)' : '']"
+                :class="[donationToggleChecked ? 'text-(--lab-accent)' : '']"
                 @beforeinput="handleDonationBeforeInput"
                 @input="handleDonationInput"
                 @keydown="handleDonationKeydown"
@@ -370,19 +416,19 @@ onBeforeUnmount(() => stopDonationAnimation())
               <span class="relative ml-2 text-xl font-black text-(--lab-text-muted) uppercase sm:text-2xl">₽</span>
             </div>
 
-            <p
-              v-if="isAdmin"
-              class="text-[10px] font-black tracking-[0.18em] text-(--lab-text-secondary) uppercase"
-            >
-              {{ t('payments.index.admin_manual_amount_hint') }}
+            <p v-if="isAdmin" class="text-[10px] font-black tracking-[0.18em] text-(--lab-text-secondary) uppercase">
+              {{ t('index.admin_manual_amount_hint') }}
             </p>
 
-            <div v-if="showDonationChips" class="animate-fade-in flex flex-wrap items-center justify-center gap-1">
+            <div
+              v-if="showDonationChips"
+              class="flex animate-[payments-fade-in_0.3s_ease-out_forwards] flex-wrap items-center justify-center gap-1"
+            >
               <button
                 v-for="chip in donationPresetChips"
                 :key="chip.key"
                 type="button"
-                class="lab-focus inline-flex h-8 items-center justify-center border px-4 text-xs font-black uppercase tabular-nums transition-all"
+                class="lab-focus inline-flex h-8 items-center justify-center rounded-full border px-4 text-xs font-black uppercase tabular-nums transition-all"
                 :class="
                   donationSelectedPresetAdd === chip.add
                     ? 'border-(--lab-accent) bg-(--lab-accent) text-black'
@@ -398,27 +444,30 @@ onBeforeUnmount(() => stopDonationAnimation())
               <label
                 tabindex="0"
                 role="switch"
-                :aria-checked="donationEnabled"
-                class="group flex cursor-pointer items-center gap-3 border bg-(--lab-bg-control) p-1 pr-4 transition-colors hover:bg-(--lab-bg-control-hover)"
+                :aria-checked="donationToggleChecked"
+                class="group flex cursor-pointer items-center gap-3 rounded-full bg-(--lab-bg-control) p-1 pr-4 transition-colors"
                 @keydown="handleDonationToggleKeydown"
               >
                 <input
                   type="checkbox"
                   class="peer lab-focus sr-only"
                   tabindex="-1"
-                  :checked="donationEnabled"
-                  @change="(event) => toggleDonation((event.target as HTMLInputElement).checked)"
-                >
+                  :checked="donationToggleChecked"
+                  @change="event => toggleDonation((event.target as HTMLInputElement).checked)"
+                />
                 <div
-                  class="lab-focus-peer relative h-6 w-11 border bg-(--lab-border) transition-colors"
-                  :class="{ 'bg-(--lab-accent)': donationEnabled }"
+                  class="lab-focus-peer relative h-6 w-11 rounded-full bg-(--lab-border) transition-colors"
+                  :class="{ 'bg-(--lab-accent)': donationToggleChecked }"
                 >
-                  <div class="absolute top-0.5 left-0.5 h-5 w-5 bg-white transition-all peer-checked:left-5.5" />
+                  <div
+                    class="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all"
+                    :class="donationToggleChecked ? 'left-5.5' : 'left-0.5'"
+                  />
                 </div>
                 <span
                   class="text-[10px] font-black tracking-widest text-(--lab-text-secondary) uppercase group-hover:text-(--lab-text-primary)"
                 >
-                  {{ t('payments.index.donation_toggle') }}
+                  {{ t('index.donation_toggle') }}
                 </span>
               </label>
             </div>
@@ -432,13 +481,13 @@ onBeforeUnmount(() => stopDonationAnimation())
                 v-model="offerAccepted"
                 type="checkbox"
                 class="lab-focus mt-0.5 h-4 w-4 shrink-0 border border-(--lab-border-strong) bg-transparent"
-              >
+              />
               <span>
-                {{ t('payments.index.offer_accept_prefix') }}
+                {{ t('index.offer_accept_prefix') }}
                 <NuxtLink to="/docs/offer" class="lab-focus text-(--lab-accent) transition-colors hover:underline">
-                  {{ t('payments.index.offer_accept_link') }}
+                  {{ t('index.offer_accept_link') }}
                 </NuxtLink>
-                {{ t('payments.index.offer_accept_suffix') }}
+                {{ t('index.offer_accept_suffix') }}
               </span>
             </label>
 
@@ -447,7 +496,7 @@ onBeforeUnmount(() => stopDonationAnimation())
               size="xl"
               :loading="creatingPlan !== ''"
               :disabled="paymentActionDisabled"
-              :label="t('payments.index.submit')"
+              :label="t('index.submit')"
               button-class="w-full !rounded-none border-none font-black uppercase tracking-widest sm:w-80"
               @click="submitOrder()"
             />
@@ -467,11 +516,11 @@ onBeforeUnmount(() => stopDonationAnimation())
           <footer class="mt-8 flex flex-col items-center gap-4">
             <div
               v-if="latestOrderLine"
-              class="inline-flex items-center gap-2 border bg-(--lab-bg-surface-subtle) px-3 py-1 text-[10px] font-bold text-(--lab-text-secondary) uppercase"
+              class="inline-flex items-center gap-2 rounded-full bg-(--lab-bg-surface-subtle) px-3 py-1 text-[10px] font-bold text-(--lab-text-secondary) uppercase"
             >
               <span class="relative flex h-1.5 w-1.5">
-                <span class="absolute inline-flex h-full w-full animate-ping bg-green-400 opacity-75" />
-                <span class="relative inline-flex h-1.5 w-1.5 bg-green-500" />
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
               </span>
               {{ latestOrderLine }}
             </div>
@@ -491,74 +540,7 @@ onBeforeUnmount(() => stopDonationAnimation())
   </div>
 </template>
 
-<style>
-/* Общие правила для "острого" дизайна */
-.electrified-border,
-.electrified-border *,
-button,
-label,
-.lightning-path,
-div[role='switch'] > div {
-  border-radius: 0 !important;
-}
-
-/* Состояние при активации режима Райдена */
-.electrified-border {
-  border-color: var(--gold-primary) !important;
-  box-shadow: 0 0 40px -10px var(--gold-glow);
-  animation: gold-flicker 0.1s infinite steps(2);
-}
-
-/* Переменные для адаптивного золотого эффекта */
-:root {
-  --gold-primary: #f59e0b;
-  --gold-glow: rgba(245, 158, 11, 0.4);
-  --gold-inner: #fff;
-}
-.theme-dark {
-  --gold-primary: #fbbf24;
-  --gold-glow: rgba(217, 119, 6, 0.6);
-  --gold-inner: #fffbeb;
-}
-
-.lightning-path.golden-energy {
-  position: absolute;
-  background: var(--gold-inner);
-  box-shadow: 0 0 15px var(--gold-primary);
-  z-index: 20;
-  opacity: 0.9;
-}
-
-/* Позиционирование и анимации молний по периметру */
-.top-wire {
-  top: 0;
-  height: 3px;
-  animation:
-    move-h 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite,
-    size-p-h 0.2s infinite alternate;
-}
-.bottom-wire {
-  bottom: 0;
-  height: 3px;
-  animation:
-    move-h 1s cubic-bezier(1, 0, 0, 1) infinite reverse,
-    size-p-h 0.3s infinite alternate-reverse;
-}
-.left-wire {
-  left: 0;
-  width: 3px;
-  animation:
-    move-v 0.9s cubic-bezier(0.47, 0, 0.745, 0.715) infinite reverse,
-    size-p-v 0.25s infinite alternate;
-}
-.right-wire {
-  right: 0;
-  width: 3px;
-  animation:
-    move-v 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite,
-    size-p-v 0.2s infinite alternate-reverse;
-}
-
+<style scoped>
 @keyframes move-h {
   0% {
     left: -20%;
@@ -614,15 +596,11 @@ div[role='switch'] > div {
 @keyframes gold-flicker {
   0%,
   100% {
-    border-color: var(--gold-glow);
+    border-color: var(--payments-gold-glow);
   }
   50% {
-    border-color: var(--gold-primary);
+    border-color: var(--payments-gold-primary);
   }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
 }
 @keyframes fadeIn {
   from {
@@ -633,10 +611,5 @@ div[role='switch'] > div {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Контраст текста для светлой темы на активных элементах */
-html.theme-light .bg-\(--lab-accent\) {
-  color: #000 !important;
 }
 </style>

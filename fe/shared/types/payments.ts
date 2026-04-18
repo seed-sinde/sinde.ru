@@ -3,13 +3,13 @@ export type PaymentOrderView = {
   user_id: string
   user_email: string
   user_display_name: string
-  plan_code: 'pro' | 'donation' | string
+  plan_code: "pro" | "donation" | string
   base_amount: number
   amount: number
   tip_amount: number
   currency: string
-  subscription_type: 'one_time' | 'recurring' | string
-  status: 'pending' | 'success' | 'failed' | 'refunded' | 'canceled' | string
+  subscription_type: "one_time" | "recurring" | string
+  status: "pending" | "success" | "failed" | "refunded" | "canceled" | string
   provider: string
   provider_status: string
   provider_payment_id: string

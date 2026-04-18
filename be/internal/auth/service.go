@@ -983,17 +983,17 @@ func (s *Service) ListSavedTraitSets(ctx context.Context, userID uuid.UUID) (*Sa
 		Items:            out,
 	}, nil
 }
-func (s *Service) SetPrimaryTrait(ctx context.Context, userID uuid.UUID, rawTraitUUID string) (*MeResult, error) {
+func (s *Service) SetPrimaryTrait(ctx context.Context, userID uuid.UUID, rawTraitUUID string) (*SetPrimaryTraitResult, error) {
 	trimmed := strings.TrimSpace(rawTraitUUID)
 	if trimmed == "" {
 		if err := s.repo.UpdatePrimaryTraitUUID(ctx, userID, nil); err != nil {
 			return nil, err
 		}
-		updated, err := s.repo.GetUserByID(ctx, userID)
-		if err != nil {
-			return nil, err
-		}
-		return &MeResult{User: ToAuthUser(updated)}, nil
+		return &SetPrimaryTraitResult{
+			Changes: AuthUserPatch{
+				PrimaryTraitUUID: nil,
+			},
+		}, nil
 	}
 	traitUUID, err := uuid.Parse(trimmed)
 	if err != nil {
@@ -1012,11 +1012,11 @@ func (s *Service) SetPrimaryTrait(ctx context.Context, userID uuid.UUID, rawTrai
 	if err := s.repo.UpdatePrimaryTraitUUID(ctx, userID, &traitUUID); err != nil {
 		return nil, err
 	}
-	updated, err := s.repo.GetUserByID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	return &MeResult{User: ToAuthUser(updated)}, nil
+	return &SetPrimaryTraitResult{
+		Changes: AuthUserPatch{
+			PrimaryTraitUUID: &traitUUID,
+		},
+	}, nil
 }
 func (s *Service) SaveTraitSet(ctx context.Context, userID uuid.UUID, input SaveTraitSetInput) (*SavedTraitSetView, error) {
 	traitUUID, name, description, err := validateSavedTraitSetInput(input.TraitUUID, input.Name, input.Description)

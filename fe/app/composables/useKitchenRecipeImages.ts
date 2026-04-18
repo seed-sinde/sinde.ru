@@ -1,7 +1,7 @@
-import { reactive, ref, type ComputedRef, type Ref } from 'vue'
-import { uploadMediaFile } from '~/composables/useMediaUpload'
-import { buildMediaFileUrl } from '~/utils/mediaUrl'
-import type { KitchenRecipeImageDraft, KitchenRecipeStepDraft } from './useKitchenRecipeEditor'
+import {reactive, ref, type ComputedRef, type Ref} from "vue"
+import {uploadMediaFile} from "~/composables/useMediaUpload"
+import {buildMediaFileUrl} from "~/utils/mediaUrl"
+import type {KitchenRecipeImageDraft, KitchenRecipeStepDraft} from "./useKitchenRecipeEditor"
 type MaybeReadonlyRef<T> = Ref<T> | ComputedRef<T>
 export type UseKitchenRecipeImagesOptions = {
   activeRecipeUploadId: MaybeReadonlyRef<string>
@@ -16,8 +16,8 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
   const coverImageError = ref<string | null>(null)
   const imagePreviewDialog = reactive({
     open: false,
-    url: '',
-    title: ''
+    url: "",
+    title: ""
   })
   const imageCropDialog = reactive<{
     open: boolean
@@ -27,20 +27,20 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
   }>({
     open: false,
     file: null,
-    target: 'cover',
-    title: ''
+    target: "cover",
+    title: ""
   })
   const imageCropUploading = ref(false)
-  const stepImageTargetMode = ref<KitchenStepImageTarget>('draft')
+  const stepImageTargetMode = ref<KitchenStepImageTarget>("draft")
   const stepImageTargetIndex = ref<number | null>(null)
   const buildStepImageUrl = (imageKey?: string) => buildMediaFileUrl(imageKey)
-  const stepImageSrc = (step: { image_key?: string }) => buildStepImageUrl(step.image_key)
+  const stepImageSrc = (step: {image_key?: string}) => buildStepImageUrl(step.image_key)
   const resolveUploadedImageKey = (response: any) =>
-    String(response?.data?.image_key || response?.image_key || '').trim()
+    String(response?.data?.image_key || response?.image_key || "").trim()
   const openImageCropDialog = (file: File, target: ImageCropTarget) => {
     if (!file) return
     imageCropDialog.target = target
-    imageCropDialog.title = target === 'cover' ? 'Кадрирование фото блюда' : 'Кадрирование изображения шага'
+    imageCropDialog.title = target === "cover" ? "Кадрирование фото блюда" : "Кадрирование изображения шага"
     imageCropDialog.file = file
     imageCropDialog.open = true
   }
@@ -50,7 +50,7 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
     imageCropDialog.file = null
   }
   const openImagePreview = (url: string, title: string) => {
-    const cleanUrl = String(url || '').trim()
+    const cleanUrl = String(url || "").trim()
     if (!cleanUrl) return
     imagePreviewDialog.open = true
     imagePreviewDialog.url = cleanUrl
@@ -59,23 +59,23 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
   const onImagePreviewModelUpdate = (value: boolean) => {
     imagePreviewDialog.open = value
     if (value) return
-    imagePreviewDialog.url = ''
-    imagePreviewDialog.title = ''
+    imagePreviewDialog.url = ""
+    imagePreviewDialog.title = ""
   }
   const applyUploadedKitchenImage = (target: ImageCropTarget, imageKey: string) => {
-    if (target === 'cover') {
+    if (target === "cover") {
       options.coverImageDraft.image_key = imageKey
       options.coverImageDraft.image_url = buildStepImageUrl(imageKey)
       return
     }
     if (
-      stepImageTargetMode.value === 'item' &&
+      stepImageTargetMode.value === "item" &&
       stepImageTargetIndex.value !== null &&
       options.formSteps.value[stepImageTargetIndex.value]
     ) {
       const next = [...options.formSteps.value]
       next[stepImageTargetIndex.value] = {
-        text: next[stepImageTargetIndex.value]?.text ?? '',
+        text: next[stepImageTargetIndex.value]?.text ?? "",
         image_key: imageKey
       }
       options.formSteps.value = next
@@ -87,7 +87,7 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
   const onImageCropConfirm = async (file: File) => {
     const target = imageCropDialog.target
     imageCropUploading.value = true
-    if (target === 'cover') {
+    if (target === "cover") {
       coverImageError.value = null
       coverImageUploading.value = true
     } else {
@@ -95,29 +95,29 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
       stepImageUploading.value = true
     }
     try {
-      const recipeId = String(options.activeRecipeUploadId.value || '').trim()
+      const recipeId = String(options.activeRecipeUploadId.value || "").trim()
       const response = await uploadMediaFile(
         file,
         recipeId
           ? {
-              section: 'kitchen',
-              collection: 'recipes',
+              section: "kitchen",
+              collection: "recipes",
               recipeId
             }
           : {
-              section: 'kitchen',
-              collection: 'recipes'
+              section: "kitchen",
+              collection: "recipes"
             }
       )
       const imageKey = resolveUploadedImageKey(response)
       if (!imageKey) {
-        throw new Error('Сервер не вернул ключ изображения.')
+        throw new Error("Сервер не вернул ключ изображения.")
       }
       applyUploadedKitchenImage(target, imageKey)
       closeImageCropDialog(true)
     } catch (err: any) {
-      const message = err?.data?.message || err?.message || 'Не удалось загрузить изображение.'
-      if (target === 'cover') {
+      const message = err?.data?.message || err?.message || "Не удалось загрузить изображение."
+      if (target === "cover") {
         coverImageError.value = message
       } else {
         stepImageError.value = message
@@ -131,50 +131,50 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
   const onStepImageFileChange = (event: Event) => {
     const input = event.target as HTMLInputElement | null
     const file = input?.files?.[0] || null
-    if (input) input.value = ''
+    if (input) input.value = ""
     if (!file) return
     stepImageError.value = null
-    stepImageTargetMode.value = 'draft'
+    stepImageTargetMode.value = "draft"
     stepImageTargetIndex.value = null
-    openImageCropDialog(file, 'step')
+    openImageCropDialog(file, "step")
   }
   const onStepItemImageFileChange = (index: number, event: Event) => {
     const input = event.target as HTMLInputElement | null
     const file = input?.files?.[0] || null
-    if (input) input.value = ''
+    if (input) input.value = ""
     if (!file) return
     stepImageError.value = null
-    stepImageTargetMode.value = 'item'
+    stepImageTargetMode.value = "item"
     stepImageTargetIndex.value = index
-    openImageCropDialog(file, 'step')
+    openImageCropDialog(file, "step")
   }
   const onCoverImageFileChange = (event: Event) => {
     const input = event.target as HTMLInputElement | null
     const file = input?.files?.[0] || null
-    if (input) input.value = ''
+    if (input) input.value = ""
     if (!file) return
     coverImageError.value = null
-    openImageCropDialog(file, 'cover')
+    openImageCropDialog(file, "cover")
   }
   const clearStepDraftImage = () => {
-    options.stepDraft.image_key = ''
-    options.stepDraft.image_url = ''
+    options.stepDraft.image_key = ""
+    options.stepDraft.image_url = ""
     stepImageError.value = null
   }
   const clearFormStepImage = (index: number) => {
     if (!options.formSteps.value[index]) return
     const next = [...options.formSteps.value]
     next[index] = {
-      text: next[index]?.text ?? '',
-      image_key: ''
+      text: next[index]?.text ?? "",
+      image_key: ""
     }
     options.formSteps.value = next
     stepImageError.value = null
   }
   const clearCoverImage = () => {
-    const previousUrl = String(options.coverImageDraft.image_url || '')
-    options.coverImageDraft.image_key = ''
-    options.coverImageDraft.image_url = ''
+    const previousUrl = String(options.coverImageDraft.image_url || "")
+    options.coverImageDraft.image_key = ""
+    options.coverImageDraft.image_url = ""
     coverImageError.value = null
     if (imagePreviewDialog.url === previousUrl) {
       onImagePreviewModelUpdate(false)
@@ -186,7 +186,7 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
     stepImageUploading.value = false
     coverImageUploading.value = false
     imageCropUploading.value = false
-    stepImageTargetMode.value = 'draft'
+    stepImageTargetMode.value = "draft"
     stepImageTargetIndex.value = null
     closeImageCropDialog(true)
     onImagePreviewModelUpdate(false)

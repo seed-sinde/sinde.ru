@@ -12,7 +12,7 @@
           type="radio"
           value="permanent"
           class="accent-amber-400"
-        >
+        />
         <span>Постоянно</span>
       </label>
       <label
@@ -26,7 +26,7 @@
           type="radio"
           value="temporary"
           class="accent-amber-400"
-        >
+        />
         <span>Временно</span>
       </label>
     </div>
@@ -79,7 +79,7 @@ watchEffect(() => {
   model.value =
     mode.value === 'permanent' ? { mode: 'permanent', since: since.value } : { mode: 'temporary', until: until.value }
 })
-watch(model, (next) => {
+watch(model, next => {
   mode.value = next.mode
   since.value = next.since ?? ''
   until.value = next.until ?? ''

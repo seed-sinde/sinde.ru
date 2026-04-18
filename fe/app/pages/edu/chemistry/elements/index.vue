@@ -26,7 +26,7 @@ const tableShellStyle = computed(() => ({
 }))
 const categoryOptions = computed(() => [
   { value: '', label: 'Все категории' },
-  ...periodicTableCategoryCounts.value.map((entry) => ({
+  ...periodicTableCategoryCounts.value.map(entry => ({
     value: entry.category,
     label: `${entry.label} · ${entry.count}`
   }))
@@ -35,14 +35,14 @@ const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLowerCas
 const visibleElementIds = computed(() => {
   const query = normalizedSearchQuery.value
   if (!query) {
-    return new Set(periodicTableElements.value.map((element) => element.number))
+    return new Set(periodicTableElements.value.map(element => element.number))
   }
   return new Set(
-    periodicTableElements.value.filter((element) => element.searchText.includes(query)).map((element) => element.number)
+    periodicTableElements.value.filter(element => element.searchText.includes(query)).map(element => element.number)
   )
 })
 const selectedCategoryEntry = computed(() => {
-  return periodicTableCategoryCounts.value.find((entry) => entry.category === selectedCategory.value) || null
+  return periodicTableCategoryCounts.value.find(entry => entry.category === selectedCategory.value) || null
 })
 const categoryPanelDescription = computed(() => {
   return (
@@ -50,7 +50,7 @@ const categoryPanelDescription = computed(() => {
     'Выберите категорию, чтобы подсветить элементы в таблице и посмотреть краткое описание группы.'
   )
 })
-watch(isDesktopViewport, (isDesktop) => {
+watch(isDesktopViewport, isDesktop => {
   if (isDesktop) {
     searchQuery.value = ''
   }
@@ -114,8 +114,8 @@ const isElementDimmed = (number: number, category: string) => {
 }
 const dimmedElementNumbers = computed(() =>
   periodicTableElements.value
-    .filter((element) => isElementDimmed(element.number, element.category))
-    .map((element) => element.number)
+    .filter(element => isElementDimmed(element.number, element.category))
+    .map(element => element.number)
 )
 const isElementHighlighted = (number: number, category: string) => {
   if (!visibleElementIds.value.has(number)) return false
@@ -124,8 +124,8 @@ const isElementHighlighted = (number: number, category: string) => {
 }
 const highlightedElementNumbers = computed(() =>
   periodicTableElements.value
-    .filter((element) => isElementHighlighted(element.number, element.category))
-    .map((element) => element.number)
+    .filter(element => isElementHighlighted(element.number, element.category))
+    .map(element => element.number)
 )
 const onElementClick = (element: PeriodicTableElement) => {
   navigateTo(getPeriodicTableElementRoute(element))
@@ -151,7 +151,7 @@ usePageSeo({
       class="h-auto max-h-[calc(100dvh-var(--periodic-header-height,72px)-1rem)] min-h-0 overflow-auto sm:max-h-[calc(100dvh-var(--periodic-header-height,0px)-1.5rem)] sm:bg-(--lab-bg-surface-muted)"
       :style="tableShellStyle"
     >
-      <div :class="isMobileViewport ? 'p-1' : 'p-2'">
+      <div :class="isMobileViewport ? 'min-w-max p-1' : 'min-w-max p-2'">
         <div
           class="sticky top-0 z-20 border-b bg-(--lab-bg-overlay) p-2 lg:hidden"
           :class="isMobileViewport ? '-mx-1 px-1.5' : '-mx-2'"
@@ -187,19 +187,19 @@ usePageSeo({
         >
           <template #grid-overlay>
             <div
-              class="relative z-10 col-[3/span_10] row-[1/span_3] hidden border p-2 lg:block"
+              class="relative z-10 col-[3/span_10] row-[1/span_3] hidden max-w-full min-w-0 overflow-hidden border p-2 lg:block"
               :class="categoryPanelToneClass"
             >
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-44 shrink-0">
+              <div class="flex min-w-0 items-start justify-between gap-2">
+                <div class="w-44 max-w-full min-w-0 shrink-0">
                   <LabBaseSelect
                     v-model="selectedCategory"
                     :options="categoryOptions"
                     aria-label="Выбор категории элементов"
-                    select-class="bg-(--lab-bg-control) text-(--lab-text-primary) text-xs"
+                    select-class="bg-(--lab-bg-control) text-(--lab-text-primary) w-full text-xs"
                   />
                 </div>
-                <div class="flex items-center gap-2 text-xs text-(--lab-text-secondary) xl:hidden">
+                <div class="flex min-w-0 items-center gap-2 text-xs text-(--lab-text-secondary) xl:hidden">
                   <span
                     class="h-2.5 w-2.5 rounded-full"
                     :style="{
@@ -209,7 +209,7 @@ usePageSeo({
                   <LabHelpTooltip class="" :text="categoryPanelDescription" />
                 </div>
               </div>
-              <p class="hidden px-2 text-sm leading-6 text-(--lab-text-secondary) xl:block">
+              <p class="hidden min-w-0 px-2 text-sm leading-6 wrap-break-word text-(--lab-text-secondary)">
                 {{ categoryPanelDescription }}
               </p>
             </div>

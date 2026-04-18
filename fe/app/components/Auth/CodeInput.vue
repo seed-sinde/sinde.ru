@@ -20,7 +20,7 @@
         @input="onInput"
         @focus="isFocused = true"
         @blur="isFocused = false"
-      >
+      />
       <div class="grid gap-2" :style="{ gridTemplateColumns: `repeat(${length}, minmax(0, 1fr))` }">
         <div v-for="(digit, index) in digits" :key="index" :class="getDigitClass(index)">
           {{ digit }}
@@ -114,7 +114,7 @@ const onInput = (event: Event) => {
     lastCompletedValue.value = ''
   }
 }
-watch(normalizedValue, (nextValue) => {
+watch(normalizedValue, nextValue => {
   if (nextValue !== lastCompletedValue.value && nextValue.length < props.length) {
     lastCompletedValue.value = ''
   }

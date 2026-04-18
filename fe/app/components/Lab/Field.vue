@@ -38,7 +38,7 @@ const labelTag = computed(() => (props.forId ? 'label' : 'div'))
 const resolvedHint = computed(() => String(props.hint || '').trim())
 const resolvedError = computed(() => {
   if (Array.isArray(props.error)) {
-    return props.error.map((item) => String(item || '').trim()).find(Boolean) || ''
+    return props.error.map(item => String(item || '').trim()).find(Boolean) || ''
   }
   return String(props.error || '').trim()
 })

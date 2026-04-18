@@ -6,7 +6,8 @@ usePageSeo({
   description: 'Запрос ссылки на сброс пароля.'
 })
 const { forgotPassword } = useAuth()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('auth')
+await useAsyncData(key.value, load, { watch: [locale] })
 const email = ref('')
 const pending = ref(false)
 const errorText = ref('')
@@ -35,8 +36,8 @@ const submit = async () => {
   <div>
     <LabNavHeader :title />
     <section class="space-y-4 p-4">
-      <h1 class="text-2xl font-semibold">{{ t('auth.forgot.title') }}</h1>
-      <p class="lab-text-muted text-sm">{{ t('auth.forgot.description') }}</p>
+      <h1 class="text-2xl font-semibold">{{ t('forgot.title') }}</h1>
+      <p class="text-sm text-(--lab-text-muted)">{{ t('forgot.description') }}</p>
       <form class="space-y-4" @submit.prevent="submit">
         <LabField label="Email" for-id="forgot-password-email">
           <LabBaseInput
@@ -51,7 +52,7 @@ const submit = async () => {
           />
         </LabField>
         <LabBaseButton type="submit" variant="primary" size="xl" :disabled="pending">
-          {{ t('auth.forgot.submit') }}
+          {{ t('forgot.submit') }}
         </LabBaseButton>
       </form>
       <LabNotify :text="errorText" tone="error" temporary />

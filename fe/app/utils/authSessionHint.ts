@@ -1,19 +1,19 @@
 const AUTH_SERVER_COOKIE_NAMES = [
-  '__Host-access_token',
-  'access_token',
-  '__Host-refresh_token',
-  'refresh_token'
+  "__Host-access_token",
+  "access_token",
+  "__Host-refresh_token",
+  "refresh_token"
 ] as const
-const AUTH_CLIENT_COOKIE_NAMES = ['__Host-auth_session_hint', 'auth_session_hint'] as const
-const AUTH_SESSION_RUNTIME_KEY = '__traitsAuthSessionHint__'
+const AUTH_CLIENT_COOKIE_NAMES = ["__Host-auth_session_hint", "auth_session_hint"] as const
+const AUTH_SESSION_RUNTIME_KEY = "__traitsAuthSessionHint__"
 const hasNamedCookie = (cookieHeader: string | null | undefined, names: readonly string[]) => {
-  const raw = String(cookieHeader || '').trim()
+  const raw = String(cookieHeader || "").trim()
   if (!raw) return false
-  for (const chunk of raw.split(';')) {
-    const [namePart, ...valueParts] = chunk.split('=')
-    const name = String(namePart || '').trim()
+  for (const chunk of raw.split(";")) {
+    const [namePart, ...valueParts] = chunk.split("=")
+    const name = String(namePart || "").trim()
     if (!name || !names.includes(name)) continue
-    const value = valueParts.join('=').trim()
+    const value = valueParts.join("=").trim()
     if (value) return true
   }
   return false
@@ -33,8 +33,8 @@ export const syncAuthSessionHint = (enabled: boolean) => {
     [AUTH_SESSION_RUNTIME_KEY]?: boolean
   }
   scope[AUTH_SESSION_RUNTIME_KEY] = enabled
-  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
-  const preferredName = window.location.protocol === 'https:' ? '__Host-auth_session_hint' : 'auth_session_hint'
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  const preferredName = window.location.protocol === "https:" ? "__Host-auth_session_hint" : "auth_session_hint"
   if (enabled) {
     document.cookie = `${preferredName}=1; Path=/; SameSite=Strict${secure}`
     return

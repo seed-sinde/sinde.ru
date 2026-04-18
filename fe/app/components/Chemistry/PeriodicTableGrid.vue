@@ -41,10 +41,10 @@ const props = withDefaults(
 const emit = defineEmits<{
   elementClick: [element: PeriodicTableElement, event: MouseEvent]
 }>()
-const periodicTableGroups = computed(() => Math.max(...visibleElements.value.map((element) => element.xpos), 1))
+const periodicTableGroups = computed(() => Math.max(...visibleElements.value.map(element => element.xpos), 1))
 const groupHeaders = computed(() => Array.from({ length: periodicTableGroups.value }, (_, index) => index + 1))
 const periodHeaders = computed(() =>
-  visiblePeriodRows.value.map((row) => {
+  visiblePeriodRows.value.map(row => {
     if (row === 9) return '6'
     if (row === 10) return '7'
     return String(row)
@@ -53,9 +53,9 @@ const periodHeaders = computed(() =>
 const visiblePeriodRows = computed(() => {
   if (!isMineralsLayout.value) return [1, 2, 3, 4, 5, 6, 7, 9, 10]
   const rows = [1, 2, 3, 4, 5, 6]
-  const hasRow7 = visibleElements.value.some((element) => element.ypos === 7)
-  const hasLanthanidesRow = visibleElements.value.some((element) => element.ypos === 9)
-  const hasActinidesRow = visibleElements.value.some((element) => element.ypos === 10)
+  const hasRow7 = visibleElements.value.some(element => element.ypos === 7)
+  const hasLanthanidesRow = visibleElements.value.some(element => element.ypos === 9)
+  const hasActinidesRow = visibleElements.value.some(element => element.ypos === 10)
   if (hasRow7) rows.push(7)
   if (hasLanthanidesRow) rows.push(9)
   if (hasActinidesRow) rows.push(10)
@@ -77,8 +77,8 @@ const unavailableSet = computed(() => {
 const hasAvailabilityState = computed(() => Object.keys(availabilityMap.value).length > 0)
 const visibleElements = computed(() =>
   props.elements
-    .filter((element) => !hiddenSet.value.has(element.number))
-    .map((element) => {
+    .filter(element => !hiddenSet.value.has(element.number))
+    .map(element => {
       if (!isMineralsLayout.value) return element
       if (element.number === 90) {
         return { ...element, xpos: 4, ypos: 10 }
@@ -106,7 +106,6 @@ const tableGridStyle = computed(() => ({
 }))
 const frameStyle = computed(() => ({
   '--periodic-gap': '0.25rem',
-  '--periodic-highlight-reserve': '6px',
   '--periodic-mobile-cell-width': isMineralsLayout.value ? '2.45rem' : '2.85rem',
   '--periodic-mobile-cell-height': isMineralsLayout.value ? '2.1rem' : '2.2rem',
   '--periodic-compact-cell-height': props.compactCellHeight || undefined,
@@ -117,7 +116,7 @@ const frameStyle = computed(() => ({
   '--periodic-column-gap-count': String(Math.max(groupHeaders.value.length - 1, 0))
 }))
 const frameClass = computed(() => [
-  'box-border shrink-0 p-(--periodic-highlight-reserve) [--periodic-cell-width:var(--periodic-mobile-cell-width)] [--periodic-cell-height:var(--periodic-mobile-cell-height)] [--periodic-series-gap-height:0rem] [--periodic-row-label-size:0px] [--periodic-column-label-size:0px] w-[calc(var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] h-[calc(var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))]',
+  'box-border shrink-0 [--periodic-cell-width:var(--periodic-mobile-cell-width)] [--periodic-cell-height:var(--periodic-mobile-cell-height)] [--periodic-series-gap-height:0rem] [--periodic-row-label-size:0px] [--periodic-column-label-size:0px] w-[calc(var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] h-[calc(var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))]',
   props.compact
     ? 'lg:[--periodic-row-label-size:1rem] lg:[--periodic-column-label-size:1rem] lg:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] lg:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.2rem] lg:[--periodic-compact-cell-width:1.65rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.45rem)] xl:[--periodic-gap:0.24rem] xl:[--periodic-compact-cell-width:1.75rem] xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))] 2xl:[--periodic-cell-height:var(--periodic-compact-cell-height-wide,var(--periodic-compact-cell-height,1.55rem))]'
     : 'lg:[--periodic-row-label-size:1.5rem] lg:[--periodic-column-label-size:1.5rem] lg:w-[calc(var(--periodic-row-label-size)+var(--periodic-gap)+var(--periodic-column-count)*var(--periodic-cell-width)+var(--periodic-column-gap-count)*var(--periodic-gap))] lg:h-[calc(var(--periodic-column-label-size)+var(--periodic-gap)+var(--periodic-row-count)*var(--periodic-cell-height)+var(--periodic-series-gap-height)+var(--periodic-row-gap-count)*var(--periodic-gap))] lg:[--periodic-gap:0.35rem] lg:[--periodic-compact-cell-width:2.1rem] lg:[--periodic-cell-width:var(--periodic-compact-cell-width)] lg:[--periodic-cell-height:var(--periodic-compact-cell-height,1.8rem)] xl:[--periodic-gap:0.4rem] xl:[--periodic-compact-cell-width:2.2rem] 2xl:[--periodic-full-cell-height:4.75rem] 2xl:[--periodic-cell-height:var(--periodic-full-cell-height)]',
@@ -213,13 +212,13 @@ const onElementClick = (element: PeriodicTableElement, event: MouseEvent) => {
 const elementSelectionToneClass = (elementNumber: number) => {
   const tone = selectionToneMap.value[elementNumber]
   if (tone === 'all') {
-    return 'ring-2 ring-amber-300/80 bg-amber-200/18'
+    return 'ring-2 ring-inset ring-amber-300/80 bg-amber-200/18'
   }
   if (tone === 'any') {
-    return 'ring-2 ring-cyan-300/80 bg-cyan-200/18'
+    return 'ring-2 ring-inset ring-cyan-300/80 bg-cyan-200/18'
   }
   if (tone === 'none') {
-    return 'ring-2 ring-rose-300/80 bg-rose-200/18'
+    return 'ring-2 ring-inset ring-rose-300/80 bg-rose-200/18'
   }
   return ''
 }
@@ -294,10 +293,10 @@ const elementUnavailableClass = (elementNumber: number) => {
               selectionToneMap[element.number]
                 ? elementSelectionToneClass(element.number)
                 : highlightedSet.has(element.number)
-                  ? 'ring-2 ring-white/85 saturate-125'
+                  ? 'saturate-125'
                   : '',
               !isElementDisabled(element.number) && interactive
-                ? 'cursor-pointer hover:ring-1 hover:ring-(--lab-accent)'
+                ? 'cursor-pointer hover:ring-1 hover:ring-inset hover:ring-(--lab-accent)'
                 : !isElementDisabled(element.number)
                   ? 'cursor-default'
                   : ''

@@ -19,8 +19,9 @@ type Set struct {
 	SChilds []uuid.UUID `json:"s_childs"` // array of t_uuid or s_uuid (order matters)
 }
 type TraitKV struct {
-	TKey   string `json:"t_key"`
-	TValue any    `json:"t_value"`
+	TKey   string         `json:"t_key"`
+	TValue any            `json:"t_value"`
+	Meta   map[string]any `json:"meta,omitempty"`
 }
 type TraitResponse struct {
 	TUUID  uuid.UUID `json:"t_uuid"`

@@ -18,7 +18,7 @@
         class="h-full w-full object-cover"
         loading="lazy"
         decoding="async"
-      >
+      />
       <span class="absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-center text-xs font-medium text-white">
         {{ index + 1 }}
       </span>

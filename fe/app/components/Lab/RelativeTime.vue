@@ -18,12 +18,15 @@ const props = withDefaults(
     titleMode: 'datetime'
   }
 )
-const { localeTag, t } = useInterfacePreferences()
+const { localeTag } = useInterfacePreferences()
+const { locale: i18nLocale, key, load, t } = useI18nSection('ui')
+await useAsyncData(key, load, { watch: [i18nLocale] })
 const { normalizeLocalizedDate, formatRelativeTime } = useLocalizedDateTime()
 const resolvedLocale = computed(() => props.locale || localeTag.value)
 const date = computed(() => normalizeLocalizedDate(props.datetime))
 const rootClass = computed(() => (props.compact ? 'text-xs text-zinc-500' : 'text-sm text-zinc-400'))
-const nowTs = ref(Date.now())
+const hydrated = ref(false)
+const nowTs = ref(0)
 const titleText = computed(() => {
   if (!date.value || props.titleMode === 'none') return undefined
   return new Intl.DateTimeFormat(
@@ -49,6 +52,7 @@ const absoluteDateProps = computed(() => {
 })
 let nowTimer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
+  hydrated.value = true
   nowTs.value = Date.now()
   nowTimer = setInterval(() => {
     nowTs.value = Date.now()
@@ -64,7 +68,7 @@ const relativeText = computed(() => {
 </script>
 <template>
   <span v-if="date" :class="rootClass" :title="titleText">
-    <template v-if="relative">
+    <template v-if="relative && hydrated">
       {{ relativeText || t('time.less_than_minute_ago') }}
     </template>
     <NuxtTime v-else :datetime="date" :locale="resolvedLocale" v-bind="absoluteDateProps" />

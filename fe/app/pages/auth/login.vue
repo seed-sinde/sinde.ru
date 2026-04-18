@@ -17,14 +17,25 @@ usePageSeo({
 })
 const router = useRouter()
 const route = useRoute()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('auth')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { login, completeMfa, mfaTicket, mfaExpiresAt, requestEmailVerification, resetMfaTicket } = useAuth()
 resetMfaTicket()
 const email = ref('')
 const password = ref('')
 const mfaCode = ref('')
 const backupCode = ref('')
-const mfaMethodTab = ref<'totp' | 'backup'>('totp')
+const mfaMethodTab = computed<'totp' | 'backup'>({
+  get: () => normalizeTabRouteValue(route.query.mfa, ['totp', 'backup'], 'totp') as 'totp' | 'backup',
+  set: value => {
+    const target = buildTabRouteLocation(route, value, {
+      queryKey: 'mfa',
+      defaultValue: 'totp'
+    })
+    if (!target) return
+    void router.replace(target)
+  }
+})
 const emailInputRef = ref<{ focus: () => void } | null>(null)
 const mfaCodeInputRef = ref<{ focus: () => void } | null>(null)
 const backupCodeInputRef = ref<{ focus: () => void } | null>(null)
@@ -114,12 +125,24 @@ const resetExpiredMfaFlow = async () => {
 }
 const nextTarget = computed(() => {
   const next = typeof route.query.next === 'string' ? route.query.next : ''
-  return normalizeAuthNextPath(next) || '/auth/account'
+  return normalizeAuthNextPath(next) || '/auth/account/profile'
 })
 const mfaTabItems = computed<LabTabItem[]>(() => [
-  { value: 'totp', label: t('auth.login.mfa_totp') },
-  { value: 'backup', label: t('auth.login.mfa_backup') }
+  { value: 'totp', label: t('login.mfa_totp') },
+  { value: 'backup', label: t('login.mfa_backup') }
 ])
+const breadcrumbItems = computed<BreadcrumbItem[]>(() =>
+  mfaTicket.value
+    ? [
+        { label: title, to: '/auth/login' },
+        {
+          label: mfaTabItems.value.find(item => item.value === mfaMethodTab.value)?.label || t('login.mfa_totp'),
+          current: true,
+          kind: 'tab'
+        }
+      ]
+    : [{ label: title, current: true }]
+)
 const submitPassword = async () => {
   if (!isValidEmail(email.value)) {
     errorText.value = 'Укажите корректный email.'
@@ -175,7 +198,7 @@ const onBackupCodeInput = (nextValue: string) => {
     lastSubmittedBackupCode.value = ''
   }
 }
-watch(mfaTicket, async (ticket) => {
+watch(mfaTicket, async ticket => {
   clearMfaInputs()
   if (!ticket) {
     stopMfaCountdown()
@@ -315,12 +338,12 @@ onMounted(async () => {
 </script>
 <template>
   <div>
-    <LabNavHeader :title />
+    <LabNavHeader :title :breadcrumb-items="breadcrumbItems" />
     <section class="w-full space-y-4 p-4 sm:max-w-sm">
-      <h1 class="lab-text-primary text-2xl font-semibold">{{ t('auth.login.title') }}</h1>
+      <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ t('login.title') }}</h1>
       <template v-if="!mfaTicket">
         <form class="space-y-4" @submit.prevent="submitPassword">
-          <LabField :label="t('auth.login.email')" for-id="auth-email">
+          <LabField :label="t('login.email')" for-id="auth-email">
             <LabBaseInput
               id="auth-email"
               ref="emailInputRef"
@@ -336,7 +359,7 @@ onMounted(async () => {
               @input="clearVerificationState"
             />
           </LabField>
-          <LabField :label="t('auth.login.password')" for-id="auth-password">
+          <LabField :label="t('login.password')" for-id="auth-password">
             <LabBaseInput
               id="auth-password"
               v-model="password"
@@ -352,7 +375,7 @@ onMounted(async () => {
             variant="primary"
             size="xl"
             :disabled="pending"
-            :label="t('auth.login.submit')"
+            :label="t('login.submit')"
           />
         </form>
         <div
@@ -361,17 +384,17 @@ onMounted(async () => {
         >
           <div class="space-y-2">
             <p class="text-xs font-semibold tracking-[0.14em] text-(--lab-accent) uppercase">
-              {{ t('auth.verify.title') }}
+              {{ t('verify.title') }}
             </p>
-            <p class="text-sm">{{ t('auth.login.verify_email_description') }}</p>
+            <p class="text-sm">{{ t('login.verify_email_description') }}</p>
             <p class="text-2xl leading-tight font-semibold break-all md:text-3xl">{{ verificationEmail }}</p>
           </div>
           <LabBaseButton variant="secondary" size="xl" :disabled="!canResendVerification" @click="resendVerification">
-            <span v-if="resendPending">{{ t('auth.login.sending') }}</span>
+            <span v-if="resendPending">{{ t('login.sending') }}</span>
             <span v-else-if="resendCooldownLeft > 0">
-              {{ t('auth.login.resend_wait', { seconds: resendCooldownLeft }) }}
+              {{ t('login.resend_wait', { seconds: resendCooldownLeft }) }}
             </span>
-            <span v-else>{{ t('auth.login.resend') }}</span>
+            <span v-else>{{ t('login.resend') }}</span>
           </LabBaseButton>
           <LabNotify :text="resendFeedback" tone="warning" />
           <LabNotify :text="resendError" tone="error" />
@@ -381,14 +404,12 @@ onMounted(async () => {
         <div
           class="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_8%,var(--lab-bg-surface))] p-3 text-sm text-(--lab-text-primary)"
         >
-          <p>{{ t('auth.login.mfa_description') }}</p>
+          <p>{{ t('login.mfa_description') }}</p>
         </div>
         <LabNavTabs
           v-model="mfaMethodTab"
           :items="mfaTabItems"
           route-query-key="mfa"
-          route-default-value="totp"
-          panel-class="space-y-4"
         >
           <template #panel-totp>
             <AuthCodeInput
@@ -396,7 +417,7 @@ onMounted(async () => {
               ref="mfaCodeInputRef"
               :model-value="mfaCode"
               name="one_time_code"
-              :label="t('auth.login.mfa_totp')"
+              :label="t('login.mfa_totp')"
               hint="Проверка начнётся автоматически после ввода 6 цифр."
               :invalid="Boolean(errorText)"
               @update:model-value="onMfaCodeInput"
@@ -409,7 +430,7 @@ onMounted(async () => {
               ref="backupCodeInputRef"
               :model-value="backupCode"
               name="backup_code"
-              :label="t('auth.login.mfa_backup')"
+              :label="t('login.mfa_backup')"
               hint="Введите 8 символов. Проверка начнётся автоматически."
               :invalid="Boolean(errorText)"
               @update:model-value="onBackupCodeInput"
@@ -422,15 +443,15 @@ onMounted(async () => {
           tone="warning"
           class-name="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_10%,var(--lab-bg-surface))] px-3 py-2 font-mono text-(--lab-accent)"
         />
-        <p v-if="pending" class="lab-text-muted text-sm">Проверяем код…</p>
+        <p v-if="pending" class="text-sm text-(--lab-text-muted)">Проверяем код…</p>
       </div>
       <LabNotify :text="errorText" tone="error" />
-      <div class="lab-text-muted flex flex-wrap gap-3 text-sm">
+      <div class="flex flex-wrap gap-3 text-sm text-(--lab-text-muted)">
         <NuxtLink to="/auth/register" class="text-(--lab-accent) transition hover:text-(--lab-accent-hover)">
-          {{ t('auth.login.register') }}
+          {{ t('login.register') }}
         </NuxtLink>
         <NuxtLink to="/auth/forgot-password" class="text-(--lab-text-muted) transition hover:text-(--lab-text-primary)">
-          {{ t('auth.login.forgot') }}
+          {{ t('login.forgot') }}
         </NuxtLink>
       </div>
     </section>

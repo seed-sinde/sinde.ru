@@ -86,7 +86,7 @@ const canManageRecipe = computed(() => {
 })
 const recipeEditLink = computed(() => {
   const item = recipe.value
-  if (!item) return '/kitchen'
+  if (!item) return '/kitchen/recipes'
   return `/kitchen/edit/${kitchenRecipeSlug(item)}`
 })
 const recipeMetaItems = computed(() => {
@@ -153,7 +153,7 @@ const scaledIngredients = computed<KitchenIngredient[]>(() => {
   if (!item) return []
   const factor = servingsScale.value
   if (factor === 1) return item.ingredients
-  return item.ingredients.map((ingredient) => ({
+  return item.ingredients.map(ingredient => ({
     ...ingredient,
     amount: scaleIngredientAmount(ingredient.amount, factor)
   }))
@@ -186,7 +186,7 @@ const deleteRecipe = async () => {
   actionError.value = null
   try {
     await deleteKitchenRecipe(item.id)
-    await router.push({ path: '/kitchen', query: { tab: 'recipes' } })
+    await router.push('/kitchen/recipes')
   } catch (err: any) {
     actionError.value = err?.data?.message || err?.message || 'Не удалось удалить рецепт.'
   } finally {
@@ -272,7 +272,7 @@ useHead(() => {
       :title="recipe?.title || 'Кухня'"
       :description="recipe?.description || 'Полная версия рецепта.'"
       :breadcrumb-items="[
-        { label: 'Кухня', to: '/kitchen' },
+        { label: 'Кухня', to: '/kitchen/recipes' },
         { label: recipe?.title || 'Рецепт', current: true }
       ]"
     />
@@ -287,7 +287,7 @@ useHead(() => {
               'inline-flex h-9 items-center gap-2 border px-3 text-xs transition',
               isFavoriteRecipe
                 ? 'border-rose-500/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25'
-                : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800'
+                : 'border-(--lab-border) bg-zinc-900 text-zinc-200 hover:bg-zinc-800'
             ]"
             :disabled="favoritePending"
             :icon="isFavoriteRecipe ? 'ic:round-favorite' : 'ic:round-favorite-border'"
@@ -299,7 +299,7 @@ useHead(() => {
           <div v-if="canManageRecipe" class="flex flex-wrap items-center gap-2">
             <NuxtLink
               :to="recipeEditLink"
-              class="inline-flex h-9 items-center border border-zinc-700 bg-zinc-900 px-3 text-xs text-zinc-200 hover:bg-zinc-800"
+              class="inline-flex h-9 items-center border border-(--lab-border) bg-zinc-900 px-3 text-xs text-zinc-200 hover:bg-zinc-800"
             >
               Редактировать
             </NuxtLink>
@@ -319,7 +319,7 @@ useHead(() => {
         <LabNotify :text="actionError" tone="error" size="xs" />
         <div class="grid items-start gap-4 lg:grid-cols-3">
           <section class="order-2 space-y-2">
-            <div class="flex flex-wrap items-center gap-3 border-b border-zinc-700 pb-1">
+            <div class="flex flex-wrap items-center gap-3 border-b border-(--lab-border) pb-1">
               <h2 class="text-base font-semibold text-amber-300">Ингредиенты</h2>
               <KitchenGroupByCategoryToggle v-model="groupIngredientsByCategory" />
             </div>
@@ -332,7 +332,7 @@ useHead(() => {
             />
           </section>
           <section class="order-1 space-y-2">
-            <h2 class="border-b border-zinc-700 pb-1 text-base font-semibold text-amber-300">Фото блюда</h2>
+            <h2 class="border-b border-(--lab-border) pb-1 text-base font-semibold text-amber-300">Фото блюда</h2>
             <LabViewerPreviewButton
               v-if="recipe.cover_image_key"
               :src="buildStepImageUrl(recipe.cover_image_key)"
@@ -345,7 +345,7 @@ useHead(() => {
             <p v-else class="text-xs text-zinc-500">Фото готового блюда не добавлено.</p>
           </section>
           <section class="order-3 space-y-3">
-            <h2 class="border-b border-zinc-700 pb-1 text-base font-semibold text-amber-300">Детали рецепта</h2>
+            <h2 class="border-b border-(--lab-border) pb-1 text-base font-semibold text-amber-300">Детали рецепта</h2>
             <div class="grid grid-cols-2 gap-2">
               <div
                 v-for="item in recipeMetaItems"
@@ -387,7 +387,7 @@ useHead(() => {
               <span
                 v-for="tag in recipe.tags"
                 :key="`tag:${tag}`"
-                class="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-xs text-zinc-300"
+                class="rounded border border-(--lab-border) bg-zinc-900 px-2 py-0.5 text-xs text-zinc-300"
               >
                 {{ tag }}
               </span>
@@ -395,7 +395,7 @@ useHead(() => {
           </section>
         </div>
         <div class="space-y-2">
-          <h2 class="border-b border-zinc-700 pb-1 text-base font-semibold text-amber-300">Шаги приготовления</h2>
+          <h2 class="border-b border-(--lab-border) pb-1 text-base font-semibold text-amber-300">Шаги приготовления</h2>
           <ol class="space-y-4 text-sm text-zinc-300">
             <li
               v-for="step in recipe.steps"

@@ -1,7 +1,68 @@
 <script setup lang="ts">
+definePageMeta({
+  path: '/users/:user/:tab(profile|payments|activity)?/:activity(sessions|attempts|events)?',
+  validate: route => {
+    const tab = Array.isArray(route.params.tab) ? route.params.tab[0] : route.params.tab
+    const activity = Array.isArray(route.params.activity) ? route.params.activity[0] : route.params.activity
+    return !activity || tab === 'activity'
+  }
+})
+
+type SessionRow = LabDataTableRow & {
+  id: string
+  device: string
+  ip: string
+  status: string
+  count: number
+  lastSeenAt: string
+}
+type UserSessionGroupView = Omit<AuthSessionGroupView, 'currentSessionIds'>
+type UserTab = 'profile' | 'payments' | 'activity'
+type ActivityTab = 'sessions' | 'attempts' | 'events'
+type LoginAttemptRow = LabDataTableRow & {
+  id: string
+  createdAt: string
+  outcome: string
+  ip: string
+  risk: string
+  details: string
+  source: AuthLoginAttemptView
+}
+type SecurityEventRow = LabDataTableRow & {
+  id: string
+  createdAt: string
+  event: string
+  ip: string
+  payload: string
+  source: AuthSecurityEventView
+}
+
+type UserPageData = {
+  publicProfile: PublicUserProfileView | null
+  detail: AdminUserDetailView | null
+  access: PaymentAccessSummary | null
+}
+
+const USER_TAB_VALUES: UserTab[] = ['profile', 'payments', 'activity']
+const ACTIVITY_TAB_VALUES: ActivityTab[] = ['sessions', 'attempts', 'events']
 const route = useRoute()
 const router = useRouter()
-const targetUserId = computed(() => String(route.params.user || '').trim())
+const readRouteValue = (value: unknown) =>
+  typeof value === 'string' ? value : Array.isArray(value) ? String(value[0] || '') : ''
+const targetUserId = computed(() => readRouteValue(route.params.user).trim())
+const routeUserTab = computed(
+  () => normalizeTabRouteValue(readRouteValue(route.params.tab) || readRouteValue(route.query.tab), USER_TAB_VALUES, 'profile') as UserTab
+)
+const routeActivityTab = computed(
+  () =>
+    normalizeTabRouteValue(
+      readRouteValue(route.params.activity) || readRouteValue(route.query.activity),
+      ACTIVITY_TAB_VALUES,
+      'sessions'
+    ) as ActivityTab
+)
+const buildUserTabPath = (tab: UserTab, activity: ActivityTab = 'sessions') =>
+  tab === 'activity' ? `/users/${targetUserId.value}/activity/${activity}` : `/users/${targetUserId.value}/${tab}`
 const {
   ensureLoaded,
   isAdmin,
@@ -14,43 +75,165 @@ const {
 } = useAuth()
 const { adminUserAccess, adminUserOrders } = usePayments()
 const { formatAbsoluteDateTime } = useLocalizedDateTime()
+const { locale, key, load, t } = useI18nSection('auth')
+
+await useAsyncData(key, load, { watch: [locale] })
 
 await ensureLoaded()
 
-const adminTab = ref<'overview' | 'payments' | 'activity'>('overview')
-const activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
-const clientAdminView = ref(false)
-const noticesReady = ref(false)
+const adminTab = computed<UserTab>(() => (isAdmin.value ? routeUserTab.value : 'profile'))
+const activityTab = computed<ActivityTab>(() => routeActivityTab.value)
+const normalizeRoute = async () => {
+  if (
+    !(
+      readRouteValue(route.query.tab) ||
+      readRouteValue(route.query.activity) ||
+      readRouteValue(route.params.tab) !== adminTab.value ||
+      (adminTab.value === 'activity'
+        ? readRouteValue(route.params.activity) !== activityTab.value
+        : Boolean(readRouteValue(route.params.activity)))
+    )
+  ) {
+    return
+  }
+  const { tab: _tab, activity: _activity, ...query } = route.query
+  await navigateTo({ path: buildUserTabPath(adminTab.value, activityTab.value), query, hash: route.hash }, { redirectCode: 301, replace: true })
+}
 
-const loading = ref(true)
-const pageError = ref('')
+await normalizeRoute()
+watch([() => route.fullPath, () => isAdmin.value], () => void normalizeRoute())
+
+const pageActionError = ref('')
 const pageInfo = ref('')
-const publicProfile = ref<PublicUserProfileView | null>(null)
-const detail = ref<AdminUserDetailView | null>(null)
-const access = ref<PaymentAccessSummary | null>(null)
-const orders = ref<PaymentOrderView[]>([])
-const ordersLoading = ref(false)
+const moneyFormatter = new Intl.NumberFormat('ru-RU')
+const emptyUserPage = (): UserPageData => ({
+  publicProfile: null,
+  detail: null,
+  access: null
+})
+const {
+  data: pageData,
+  pending: loading,
+  error: pageLoadError,
+  refresh: refreshPage
+} = await useAsyncData(
+  computed(() => `user-page:${targetUserId.value}:${isAdmin.value ? 'admin' : 'public'}`),
+  async () => {
+    if (!targetUserId.value) {
+      throw createError({ statusCode: 404, statusMessage: 'Пользователь не найден' })
+    }
+    const publicRes = await publicUserProfile(targetUserId.value)
+    if (!isAdmin.value) {
+      return {
+        publicProfile: publicRes.data,
+        detail: null,
+        access: null
+      }
+    }
+    const [detailRes, accessRes] = await Promise.all([adminUserDetail(targetUserId.value), adminUserAccess(targetUserId.value)])
+    return {
+      publicProfile: publicRes.data,
+      detail: detailRes.data,
+      access: accessRes.data || null
+    }
+  },
+  {
+    default: emptyUserPage
+  }
+)
+const {
+  data: ordersData,
+  pending: ordersLoading,
+  error: ordersLoadError,
+  refresh: refreshOrders,
+  execute: executeOrders
+} = await useAsyncData(
+  computed(() => `user-orders:${targetUserId.value}`),
+  async () => (!isAdmin.value || adminTab.value !== 'payments' || !targetUserId.value ? [] : (await adminUserOrders(targetUserId.value)).data.items || []),
+  {
+    default: () => [],
+    immediate: false
+  }
+)
+
+watch(
+  [() => isAdmin.value, adminTab, targetUserId],
+  ([admin, tab, userId], prev) => {
+    if (!admin || tab !== 'payments' || !userId) return
+    if (!prev || admin !== prev[0] || tab !== prev[1] || userId !== prev[2] || !ordersData.value.length) {
+      void executeOrders().catch(() => {})
+    }
+  },
+  { immediate: true }
+)
+
+watch(targetUserId, () => {
+  pageActionError.value = ''
+  pageInfo.value = ''
+})
+
+const publicProfile = computed(() => pageData.value.publicProfile)
+const detail = computed(() => pageData.value.detail)
+const access = computed(() => pageData.value.access)
+const orders = computed(() => ordersData.value)
+const pageError = computed(() =>
+  pageActionError.value ||
+  extractApiErrorMessage(pageLoadError.value, '') ||
+  (adminTab.value === 'payments' ? extractApiErrorMessage(ordersLoadError.value, '') : '')
+)
 
 const title = computed(() => {
   const displayName =
     String(detail.value?.user.display_name || '').trim() || String(publicProfile.value?.display_name || '').trim()
   return displayName || 'Пользователь'
 })
+const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
+  const root = { label: title.value, to: buildUserTabPath('profile') }
+  if (adminTab.value === 'activity') {
+    return [
+      root,
+      { label: t('account.activity.title'), to: buildUserTabPath('activity', 'sessions'), kind: 'tab' },
+      {
+        label: activityTabItems.value.find(item => item.value === activityTab.value)?.label || t('account.activity.sessions'),
+        current: true,
+        kind: 'tab'
+      }
+    ]
+  }
+  return [
+    root,
+    {
+      label: adminTabItems.value.find(item => item.value === adminTab.value)?.label || t('account.profile'),
+      current: true,
+      kind: 'tab'
+    }
+  ]
+})
 usePageSeo({
   title,
   description: 'Профиль пользователя'
 })
+const adminTabItems = computed<LabTabItem[]>(() => [
+  { value: 'profile', label: t('account.profile') },
+  { value: 'payments', label: t('account.payments') },
+  { value: 'activity', label: t('account.activity.title') }
+])
 
-const adminTabItems: LabTabItem[] = [
-  { value: 'overview', label: 'Профиль' },
-  { value: 'payments', label: 'Транзакции' },
-  { value: 'activity', label: 'Активность' }
-]
-const activityTabItems: LabTabItem[] = [
-  { value: 'sessions', label: 'Сессии' },
-  { value: 'attempts', label: 'Попытки входа' },
-  { value: 'events', label: 'События' }
-]
+const activityTabItems = computed<LabTabItem[]>(() => [
+  { value: 'sessions', label: t('account.activity.sessions') },
+  { value: 'attempts', label: t('account.activity.attempts') },
+  { value: 'events', label: t('account.activity.events') }
+])
+const adminTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
+  profile: buildUserTabPath('profile'),
+  payments: buildUserTabPath('payments'),
+  activity: buildUserTabPath('activity', activityTab.value)
+}))
+const activityTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
+  sessions: buildUserTabPath('activity', 'sessions'),
+  attempts: buildUserTabPath('activity', 'attempts'),
+  events: buildUserTabPath('activity', 'events')
+}))
 
 const displayUser = computed<AuthUser | null>(() => {
   if (detail.value?.user) return detail.value.user
@@ -81,16 +264,23 @@ const subscriptionTooltipText = computed(() => {
 })
 const adminDetailUser = computed(() => detail.value?.user || null)
 const targetUserIsAdmin = computed(() => adminDetailUser.value?.roles.includes('admin') === true)
-const showAdminView = computed(() => clientAdminView.value && isAdmin.value && Boolean(detail.value))
+const showAdminView = computed(() => isAdmin.value && Boolean(detail.value))
 const paymentHistoryColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'createdAt', label: 'Дата', nowrap: true },
-  { key: 'plan', label: 'План' },
-  { key: 'amount', label: 'Сумма', nowrap: true },
-  { key: 'status', label: 'Статус', nowrap: true },
-  { key: 'access', label: 'Доступ' }
+  { key: 'createdAt', label: t('account.activity.created_at'), nowrap: true },
+  { key: 'plan', label: t('account.activity.plan') },
+  { key: 'amount', label: t('account.activity.amount'), nowrap: true },
+  { key: 'status', label: t('account.activity.status'), nowrap: true },
+  { key: 'access', label: t('account.activity.access') }
 ])
-const paymentHistoryRows = computed(() =>
-  orders.value.map((item) => ({
+const paymentHistoryRows = computed<{
+  id: string
+  createdAt: string
+  plan: string
+  amount: string
+  status: string
+  access: string
+}[]>(() =>
+  orders.value.map(item => ({
     id: item.order_id,
     createdAt: formatDateTime(item.created_at),
     plan: paymentPlanLabel(item.plan_code),
@@ -104,11 +294,11 @@ const paymentHistoryRows = computed(() =>
   }))
 )
 const sessionColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'device', label: 'Устройство', cellClass: 'whitespace-normal wrap-break-word' },
+  { key: 'device', label: t('account.activity.device'), cellClass: 'whitespace-normal wrap-break-word' },
   { key: 'status', label: '2FA', nowrap: true },
-  { key: 'activity', label: 'Активность', cellClass: 'whitespace-normal wrap-break-word' }
+  { key: 'activity', label: t('account.activity.activity'), cellClass: 'whitespace-normal wrap-break-word' }
 ])
-const groupedSessions = computed<AuthSessionGroupView[]>(() => {
+const groupedSessions = computed<UserSessionGroupView[]>(() => {
   const groups = new Map<
     string,
     {
@@ -118,7 +308,6 @@ const groupedSessions = computed<AuthSessionGroupView[]>(() => {
       mfaVerified: boolean
       count: number
       revokableSessionIds: string[]
-      currentSessionIds: string[]
       hasCurrent: boolean
     }
   >()
@@ -137,34 +326,39 @@ const groupedSessions = computed<AuthSessionGroupView[]>(() => {
         mfaVerified: Boolean(item.mfa_verified),
         count: 1,
         revokableSessionIds: [item.session_id],
-        currentSessionIds: item.is_current ? [item.session_id] : [],
         hasCurrent: Boolean(item.is_current)
       })
       continue
     }
     current.count += 1
     current.revokableSessionIds.push(item.session_id)
-    const currentTs = new Date(current.latestSession.last_seen_at).getTime() || 0
-    const nextTs = new Date(item.last_seen_at).getTime() || 0
-    if (nextTs > currentTs) {
+    if ((new Date(item.last_seen_at).getTime() || 0) > (new Date(current.latestSession.last_seen_at).getTime() || 0)) {
       current.latestSession = item
       current.mfaVerified = Boolean(item.mfa_verified)
     }
   }
-  return Array.from(groups.entries()).map(([key, group]) => ({
-    key,
-    ip: group.ip,
-    deviceLabel: group.deviceLabel,
-    count: group.count,
-    mfaVerified: group.mfaVerified,
-    lastSeenAt: group.latestSession.last_seen_at,
-    revokableSessionIds: group.revokableSessionIds,
-    currentSessionIds: group.currentSessionIds,
-    hasCurrent: group.hasCurrent
-  }))
+  return Array.from(groups.entries())
+    .map(([key, group]) => ({
+      key,
+      ip: group.ip,
+      deviceLabel: group.deviceLabel,
+      count: group.count,
+      mfaVerified: group.mfaVerified,
+      lastSeenAt: group.latestSession.last_seen_at,
+      revokableSessionIds: group.revokableSessionIds,
+      hasCurrent: group.hasCurrent
+    }))
+    .sort((a, b) => (new Date(b.lastSeenAt).getTime() || 0) - (new Date(a.lastSeenAt).getTime() || 0))
 })
-const sessionRows = computed(() =>
-  groupedSessions.value.map((item) => ({
+const sessionRows = computed<{
+  id: string
+  device: string
+  ip: string
+  status: string
+  count: number
+  lastSeenAt: string
+}[]>(() =>
+  groupedSessions.value.map(item => ({
     id: item.key,
     device: item.deviceLabel,
     ip: item.ip,
@@ -174,14 +368,22 @@ const sessionRows = computed(() =>
   }))
 )
 const loginAttemptColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'createdAt', label: 'Дата', nowrap: true },
-  { key: 'outcome', label: 'Результат', nowrap: true },
+  { key: 'createdAt', label: t('account.activity.date'), nowrap: true },
+  { key: 'outcome', label: t('account.activity.result'), nowrap: true },
   { key: 'ip', label: 'IP', nowrap: true },
-  { key: 'risk', label: 'Риск', nowrap: true },
-  { key: 'details', label: 'Детали', cellClass: 'whitespace-normal wrap-break-word' }
+  { key: 'risk', label: t('account.activity.risk'), nowrap: true },
+  { key: 'details', label: t('account.activity.details'), cellClass: 'whitespace-normal wrap-break-word' }
 ])
-const loginAttemptRows = computed(() =>
-  (detail.value?.login_attempts || []).map((item) => ({
+const loginAttemptRows = computed<{
+  id: string
+  createdAt: string
+  outcome: string
+  ip: string
+  risk: string
+  details: string
+  source: AuthLoginAttemptView
+}[]>(() =>
+  (detail.value?.login_attempts || []).map(item => ({
     id: item.attempt_id,
     createdAt: formatDateTime(item.created_at),
     outcome: item.outcome || '—',
@@ -192,13 +394,20 @@ const loginAttemptRows = computed(() =>
   }))
 )
 const securityEventColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'createdAt', label: 'Дата', nowrap: true },
-  { key: 'event', label: 'Событие', cellClass: 'whitespace-normal wrap-break-word' },
+  { key: 'createdAt', label: t('account.activity.date'), nowrap: true },
+  { key: 'event', label: t('account.activity.event'), cellClass: 'whitespace-normal wrap-break-word' },
   { key: 'ip', label: 'IP', nowrap: true },
   { key: 'payload', label: 'Payload', cellClass: 'whitespace-normal wrap-break-word' }
 ])
-const securityEventRows = computed(() =>
-  (detail.value?.security_events || []).map((item) => ({
+const securityEventRows = computed<{
+  id: string
+  createdAt: string
+  event: string
+  ip: string
+  payload: string
+  source: AuthSecurityEventView
+}[]>(() =>
+  (detail.value?.security_events || []).map(item => ({
     id: item.event_id,
     createdAt: formatDateTime(item.created_at),
     event: `${item.event_type} · ${item.severity}`,
@@ -210,10 +419,7 @@ const securityEventRows = computed(() =>
 
 const formatDateTime = (value?: string | null) =>
   formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
-const formatPaymentAmount = (value?: number | null) => {
-  const amount = Number(value || 0)
-  return new Intl.NumberFormat('ru-RU').format(Math.floor(amount / 100)) + ' ₽'
-}
+const formatPaymentAmount = (value?: number | null) => `${moneyFormatter.format(Math.floor(Number(value || 0) / 100))} ₽`
 const paymentPlanLabel = (planCode?: string | null) => (String(planCode || '').trim() === 'donation' ? 'Донат' : 'Pro')
 const paymentStatusLabel = (status?: string | null) => {
   switch (String(status || '').trim()) {
@@ -231,142 +437,86 @@ const paymentStatusLabel = (status?: string | null) => {
       return '—'
   }
 }
-const loadOrders = async () => {
-  if (!isAdmin.value) return
-  ordersLoading.value = true
-  try {
-    const res = await adminUserOrders(targetUserId.value)
-    orders.value = res.data.items || []
-  } catch (err: any) {
-    pageError.value = err?.data?.message || err?.message || 'Не удалось загрузить историю транзакций.'
-  } finally {
-    ordersLoading.value = false
-  }
-}
-const loadPage = async () => {
-  loading.value = true
-  pageError.value = ''
-  try {
-    const publicRes = await publicUserProfile(targetUserId.value)
-    publicProfile.value = publicRes.data
-    if (isAdmin.value) {
-      const [detailRes, accessRes] = await Promise.all([
-        adminUserDetail(targetUserId.value),
-        adminUserAccess(targetUserId.value)
-      ])
-      detail.value = detailRes.data
-      access.value = accessRes.data || null
-    }
-  } catch (err: any) {
-    pageError.value = err?.data?.message || err?.message || 'Не удалось загрузить профиль пользователя.'
-  } finally {
-    loading.value = false
-  }
-}
 const refreshAll = async () => {
-  await loadPage()
-  if (isAdmin.value && adminTab.value === 'payments') {
-    await loadOrders()
-  }
+  await refreshPage()
+  if (isAdmin.value && adminTab.value === 'payments') await refreshOrders()
 }
 const blockUser = async () => {
-  if (!detail.value) return
+  if (!adminDetailUser.value) return
   if (targetUserIsAdmin.value) {
-    pageError.value = 'Нельзя блокировать пользователя с ролью admin.'
+    pageActionError.value = 'Нельзя блокировать пользователя с ролью admin.'
     return
   }
-  pageError.value = ''
+  pageActionError.value = ''
   pageInfo.value = ''
   try {
-    await adminBlockUser(detail.value.user.user_id, '')
-    pageInfo.value = `Пользователь ${detail.value.user.email} заблокирован.`
+    await adminBlockUser(adminDetailUser.value.user_id, '')
+    pageInfo.value = `Пользователь ${adminDetailUser.value.email} заблокирован.`
     await refreshAll()
-  } catch (err: any) {
-    pageError.value = err?.data?.message || err?.message || 'Не удалось заблокировать пользователя.'
+  } catch (err: unknown) {
+    pageActionError.value = extractApiErrorMessage(err, 'Не удалось заблокировать пользователя.')
   }
 }
 const unblockUser = async () => {
-  if (!detail.value) return
-  pageError.value = ''
+  if (!adminDetailUser.value) return
+  pageActionError.value = ''
   pageInfo.value = ''
   try {
-    await adminUnblockUser(detail.value.user.user_id)
-    pageInfo.value = `Пользователь ${detail.value.user.email} разблокирован.`
+    await adminUnblockUser(adminDetailUser.value.user_id)
+    pageInfo.value = `Пользователь ${adminDetailUser.value.email} разблокирован.`
     await refreshAll()
-  } catch (err: any) {
-    pageError.value = err?.data?.message || err?.message || 'Не удалось разблокировать пользователя.'
+  } catch (err: unknown) {
+    pageActionError.value = extractApiErrorMessage(err, 'Не удалось разблокировать пользователя.')
   }
 }
 const forceLogout = async () => {
-  if (!detail.value) return
+  if (!adminDetailUser.value) return
   if (targetUserIsAdmin.value) {
-    pageError.value = 'Нельзя сбрасывать сессии пользователя с ролью admin.'
+    pageActionError.value = 'Нельзя сбрасывать сессии пользователя с ролью admin.'
     return
   }
-  pageError.value = ''
+  pageActionError.value = ''
   pageInfo.value = ''
   try {
-    await adminForceLogoutUser(detail.value.user.user_id)
-    pageInfo.value = `Все сессии пользователя ${detail.value.user.email} завершены.`
+    await adminForceLogoutUser(adminDetailUser.value.user_id)
+    pageInfo.value = `Все сессии пользователя ${adminDetailUser.value.email} завершены.`
     await refreshAll()
-  } catch (err: any) {
-    pageError.value = err?.data?.message || err?.message || 'Не удалось завершить сессии пользователя.'
+  } catch (err: unknown) {
+    pageActionError.value = extractApiErrorMessage(err, 'Не удалось завершить сессии пользователя.')
   }
 }
 const deleteUser = async () => {
-  if (!detail.value) return
+  if (!adminDetailUser.value) return
   if (targetUserIsAdmin.value) {
-    pageError.value = 'Нельзя удалять пользователя с ролью admin.'
+    pageActionError.value = 'Нельзя удалять пользователя с ролью admin.'
     return
   }
-  pageError.value = ''
+  pageActionError.value = ''
   pageInfo.value = ''
   try {
-    await adminDeleteUser(detail.value.user.user_id)
-    await router.push('/auth/admin?tab=users')
-  } catch (err: any) {
-    pageError.value = err?.data?.message || err?.message || 'Не удалось удалить пользователя.'
+    await adminDeleteUser(adminDetailUser.value.user_id)
+    await router.push('/auth/admin/users')
+  } catch (err: unknown) {
+    pageActionError.value = extractApiErrorMessage(err, 'Не удалось удалить пользователя.')
   }
 }
-
-await loadPage()
-
-onMounted(() => {
-  const hasMissingPageData = !publicProfile.value || (isAdmin.value && !detail.value)
-  if (pageError.value) {
-    pageError.value = ''
-    if (hasMissingPageData) {
-      void loadPage()
-    }
-  }
-  clientAdminView.value = isAdmin.value && Boolean(detail.value)
-  noticesReady.value = true
-})
-
-watch(adminTab, async (next) => {
-  if (next === 'payments' && isAdmin.value && orders.value.length === 0 && !ordersLoading.value) {
-    await loadOrders()
-  }
-})
-
-watch(
-  () => [isAdmin.value, detail.value] as const,
-  ([admin, nextDetail]) => {
-    clientAdminView.value = admin && Boolean(nextDetail)
-  }
-)
 </script>
 
 <template>
   <div>
-    <LabNavHeader :title="title" />
+    <LabNavHeader :title :breadcrumb-items="breadcrumbItems" />
     <LabLoader v-if="loading" variant="inline" label="Загрузка пользователя…" />
     <template v-else-if="displayUser">
-      <LabNotify v-if="noticesReady && pageError" :text="pageError" tone="error" size="xs" />
-      <LabNotify v-if="noticesReady && pageInfo" :text="pageInfo" tone="success" size="xs" />
+      <LabNotify v-if="pageError" :text="pageError" tone="error" size="xs" />
+      <LabNotify v-if="pageInfo" :text="pageInfo" tone="success" size="xs" />
       <section v-if="showAdminView && adminDetailUser">
-        <LabNavTabs v-model="adminTab" :items="adminTabItems">
-          <template #panel-overview>
+        <LabNavTabs
+          :model-value="adminTab"
+          :items="adminTabItems"
+          route-param-key="tab"
+          :route-target-map="adminTabRouteTargetMap"
+        >
+          <template #panel-profile>
             <section class="p-4">
               <div class="flex flex-wrap items-start gap-4">
                 <LabAvatar version="profile" :user="adminDetailUser" />
@@ -395,15 +545,17 @@ watch(
                   </div>
                   <div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm">
                     <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span class="lab-text-muted shrink-0 text-xs tracking-wide uppercase">Email</span>
+                      <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">Email</span>
                       <NuxtLink :to="`mailto:${adminDetailUser.email}`" external>{{ adminDetailUser.email }}</NuxtLink>
                     </div>
                     <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span class="lab-text-muted shrink-0 text-xs tracking-wide uppercase">Последний вход</span>
+                      <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">
+                        Последний вход
+                      </span>
                       <span>{{ formatDateTime(adminDetailUser.last_login_at) }}</span>
                     </div>
                     <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span class="lab-text-muted shrink-0 text-xs tracking-wide uppercase">Регистрация</span>
+                      <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">Регистрация</span>
                       <span>{{ formatDateTime(adminDetailUser.created_at) }}</span>
                     </div>
                   </div>
@@ -501,33 +653,48 @@ watch(
             />
           </template>
           <template #panel-activity>
-            <LabNavTabs v-model="activityTab" :items="activityTabItems">
+            <LabNavTabs
+              :model-value="activityTab"
+              :items="activityTabItems"
+              route-param-key="activity"
+              :route-target-map="activityTabRouteTargetMap"
+            >
               <template #panel-sessions>
-                <LabDataTable :columns="sessionColumns" :rows="sessionRows" empty-text="Сессии не найдены.">
+                <LabDataTable
+                  :title="t('account.activity.sessions')"
+                  :columns="sessionColumns"
+                  :rows="sessionRows"
+                  empty-text="Сессии не найдены."
+                >
                   <template #cell-device="{ row }">
                     <div class="space-y-1">
-                      <p class="text-sm">{{ row.device }}</p>
-                      <p class="text-xs text-(--lab-text-muted)">{{ row.ip }}</p>
+                      <p class="text-sm">{{ (row as SessionRow).device }}</p>
+                      <p class="text-xs text-(--lab-text-muted)">{{ (row as SessionRow).ip }}</p>
                     </div>
                   </template>
                   <template #cell-activity="{ row }">
                     <div class="space-y-1 text-xs">
-                      <p>Сессий: {{ row.count }}</p>
+                      <p>Сессий: {{ (row as SessionRow).count }}</p>
                       <p class="text-(--lab-text-muted)">
                         Последняя активность
-                        <LabRelativeTime :datetime="row.lastSeenAt" compact />
+                        <LabRelativeTime :datetime="(row as SessionRow).lastSeenAt" compact />
                       </p>
                     </div>
                   </template>
                 </LabDataTable>
               </template>
               <template #panel-attempts>
-                <LabDataTable :columns="loginAttemptColumns" :rows="loginAttemptRows" empty-text="Попыток входа нет.">
+                <LabDataTable
+                  :title="t('account.activity.attempts')"
+                  :columns="loginAttemptColumns"
+                  :rows="loginAttemptRows"
+                  empty-text="Попыток входа нет."
+                >
                   <template #cell-createdAt="{ row }">
                     <div class="space-y-1 text-xs">
-                      <p>{{ row.createdAt }}</p>
+                      <p>{{ (row as LoginAttemptRow).createdAt }}</p>
                       <p class="text-(--lab-text-muted)">
-                        <LabRelativeTime :datetime="row.source.created_at" compact />
+                        <LabRelativeTime :datetime="(row as LoginAttemptRow).source.created_at" compact />
                       </p>
                     </div>
                   </template>
@@ -535,15 +702,16 @@ watch(
               </template>
               <template #panel-events>
                 <LabDataTable
+                  :title="t('account.activity.events')"
                   :columns="securityEventColumns"
                   :rows="securityEventRows"
                   empty-text="Событий безопасности нет."
                 >
                   <template #cell-createdAt="{ row }">
                     <div class="space-y-1 text-xs">
-                      <p>{{ row.createdAt }}</p>
+                      <p>{{ (row as SecurityEventRow).createdAt }}</p>
                       <p class="text-(--lab-text-muted)">
-                        <LabRelativeTime :datetime="row.source.created_at" compact />
+                        <LabRelativeTime :datetime="(row as SecurityEventRow).source.created_at" compact />
                       </p>
                     </div>
                   </template>
@@ -562,5 +730,6 @@ watch(
         </div>
       </section>
     </template>
+    <LabNotify v-else :text="pageError || 'Пользователь не найден.'" tone="error" size="xs" />
   </div>
 </template>

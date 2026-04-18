@@ -1,0 +1,74 @@
+@layer components {
+  @keyframes payments-move-h {
+    0% {
+      left: -20%;
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      left: 120%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes payments-move-v {
+    0% {
+      top: -20%;
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      top: 120%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes payments-size-p-h {
+    0% {
+      width: 20px;
+    }
+    100% {
+      width: 150px;
+    }
+  }
+
+  @keyframes payments-size-p-v {
+    0% {
+      height: 20px;
+    }
+    100% {
+      height: 130px;
+    }
+  }
+
+  @keyframes payments-gold-flicker {
+    0%,
+    100% {
+      border-color: var(--payments-gold-glow);
+    }
+    50% {
+      border-color: var(--payments-gold-primary);
+    }
+  }
+
+  @keyframes payments-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

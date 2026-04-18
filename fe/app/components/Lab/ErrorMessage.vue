@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{ text?: string | string[] | null; errorC
 })
 const resolvedText = computed(() => {
   if (Array.isArray(props.text)) {
-    return props.text.map((item) => String(item || '').trim()).find(Boolean) || ''
+    return props.text.map(item => String(item || '').trim()).find(Boolean) || ''
   }
   return String(props.text || '').trim()
 })

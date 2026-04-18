@@ -1,5 +1,37 @@
 <script setup lang="ts">
-const { t } = useInterfacePreferences()
+type SessionActivityRow = LabDataTableRow & {
+  id: string
+  device: string
+  ip: string
+  status: string
+  count: number
+  lastSeenAt: string
+  revokableSessionIds: string[]
+  hasCurrent: boolean
+  action: string
+  source: AuthSessionGroupView
+}
+type LoginAttemptRow = LabDataTableRow & {
+  id: string
+  createdAt: string
+  outcome: string
+  ip: string
+  risk: string
+  details: string
+  source: AuthLoginAttemptView
+}
+type SecurityEventRow = LabDataTableRow & {
+  id: string
+  createdAt: string
+  event: string
+  ip: string
+  payload: string
+  source: AuthSecurityEventView
+}
+
+const { locale, key, load, t } = useI18nSection('auth')
+await useAsyncData(key.value, load, { watch: [locale] })
+const route = useRoute()
 const router = useRouter()
 const { formatAbsoluteDateTime } = useLocalizedDateTime()
 const {
@@ -19,17 +51,34 @@ const {
 } = useAuth()
 
 const activityTabItems: LabTabItem[] = [
-  { value: 'sessions', label: t('auth.account.activity.sessions') },
-  { value: 'attempts', label: t('auth.account.activity.attempts') },
-  { value: 'events', label: t('auth.account.activity.events') }
+  { value: 'sessions', label: t('account.activity.sessions') },
+  { value: 'attempts', label: t('account.activity.attempts') },
+  { value: 'events', label: t('account.activity.events') }
 ]
 const disableCodeTabItems: LabTabItem[] = [
-  { value: 'totp', label: t('auth.account.twofa.code_label') },
-  { value: 'backup', label: t('auth.login.mfa_backup') }
+  { value: 'totp', label: t('account.twofa.code_label') },
+  { value: 'backup', label: t('login.mfa_backup') }
 ]
 
-const activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
-const disableMethodTab = ref<'totp' | 'backup'>('totp')
+const activityTab = computed<'sessions' | 'attempts' | 'events'>({
+  get: () =>
+    normalizeTabRouteValue(route.query.activity, ['sessions', 'attempts', 'events'], 'sessions') as
+      | 'sessions'
+      | 'attempts'
+      | 'events',
+  set: () => {}
+})
+const disableMethodTab = computed<'totp' | 'backup'>({
+  get: () => normalizeTabRouteValue(route.query.disable2fa, ['totp', 'backup'], 'totp') as 'totp' | 'backup',
+  set: value => {
+    const target = buildTabRouteLocation(route, value, {
+      queryKey: 'disable2fa',
+      defaultValue: 'totp'
+    })
+    if (!target) return
+    void router.replace(target)
+  }
+})
 const showDisable2faForm = ref(false)
 
 const sessions = ref<AuthSessionView[]>([])
@@ -135,7 +184,7 @@ const groupedSessions = computed<AuthSessionGroupView[]>(() => {
     .sort((a, b) => (new Date(b.lastSeenAt).getTime() || 0) - (new Date(a.lastSeenAt).getTime() || 0))
 })
 const twofaStatusLabel = computed(() =>
-  user.value?.is_two_factor_enabled ? t('auth.account.twofa.enabled') : t('auth.account.twofa.disabled')
+  user.value?.is_two_factor_enabled ? t('account.twofa.enabled') : t('account.twofa.disabled')
 )
 const sessionActivityColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'device', label: 'Устройство', cellClass: 'whitespace-normal wrap-break-word' },
@@ -143,22 +192,33 @@ const sessionActivityColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'activity', label: 'Активность', cellClass: 'whitespace-normal wrap-break-word' },
   { key: 'action', label: 'Действие', nowrap: true }
 ])
-const sessionActivityRows = computed(() =>
-  groupedSessions.value.map((item) => ({
+const sessionActivityRows = computed<{
+  id: string
+  device: string
+  ip: string
+  status: string
+  count: number
+  lastSeenAt: string
+  revokableSessionIds: string[]
+  hasCurrent: boolean
+  action: string
+  source: AuthSessionGroupView
+}[]>(() =>
+  groupedSessions.value.map(item => ({
     id: item.key,
     device: item.deviceLabel,
     ip: item.ip,
-    status: item.mfaVerified ? t('auth.account.activity.mfa_verified') : t('auth.account.activity.mfa_unverified'),
+    status: item.mfaVerified ? t('account.activity.mfa_verified') : t('account.activity.mfa_unverified'),
     count: item.count,
     lastSeenAt: item.lastSeenAt,
     revokableSessionIds: item.revokableSessionIds,
     hasCurrent: item.hasCurrent,
     action:
       item.revokableSessionIds.length === 0
-        ? t('auth.account.activity.current')
+        ? t('account.activity.current')
         : item.hasCurrent
-          ? t('auth.account.activity.revoke_and_logout')
-          : t('auth.account.activity.revoke'),
+          ? t('account.activity.revoke_and_logout')
+          : t('account.activity.revoke'),
     source: item
   }))
 )
@@ -169,8 +229,16 @@ const loginAttemptColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'risk', label: 'Риск', nowrap: true },
   { key: 'details', label: 'Детали', cellClass: 'whitespace-normal wrap-break-word' }
 ])
-const loginAttemptRows = computed(() =>
-  loginAttempts.value.map((item) => ({
+const loginAttemptRows = computed<{
+  id: string
+  createdAt: string
+  outcome: string
+  ip: string
+  risk: string
+  details: string
+  source: AuthLoginAttemptView
+}[]>(() =>
+  loginAttempts.value.map(item => ({
     id: item.attempt_id,
     createdAt: formatDateTime(item.created_at),
     outcome: item.outcome || '—',
@@ -186,8 +254,15 @@ const securityEventColumns = computed<LabDataTableColumn[]>(() => [
   { key: 'ip', label: 'IP', nowrap: true },
   { key: 'payload', label: 'Payload', cellClass: 'whitespace-normal wrap-break-word' }
 ])
-const securityEventRows = computed(() =>
-  securityEvents.value.map((item) => ({
+const securityEventRows = computed<{
+  id: string
+  createdAt: string
+  event: string
+  ip: string
+  payload: string
+  source: AuthSecurityEventView
+}[]>(() =>
+  securityEvents.value.map(item => ({
     id: item.event_id,
     createdAt: formatDateTime(item.created_at),
     event: `${item.event_type} · ${item.severity}`,
@@ -281,7 +356,7 @@ const submitEmailChange = async () => {
   emailChangePending.value = true
   try {
     await requestEmailChange(nextEmail)
-    emailChangeInfo.value = t('auth.account.email.request_sent', { email: nextEmail })
+    emailChangeInfo.value = t('account.email.request_sent', { email: nextEmail })
   } catch (err: any) {
     emailChangeError.value =
       err?.data?.message || err?.message || 'Не удалось отправить письмо для подтверждения email.'
@@ -300,7 +375,7 @@ const begin2faSetup = async () => {
     setupOtpAuthUrl.value = res.data.otpauth_url || ''
     setupQrDataUrl.value = res.data.qr_data_url || ''
     clearSuccessNotice('twofa', twofaInfo)
-    twofaInfo.value = t('auth.account.twofa.setup_created')
+    twofaInfo.value = t('account.twofa.setup_created')
   } catch (err) {
     twofaError.value = extractApiErrorMessage(err, 'Не удалось начать настройку 2FA.')
   }
@@ -310,7 +385,7 @@ const activate2fa = async () => {
   clearSuccessNotice('twofa', twofaInfo)
   enableCode.value = enableCode.value.replace(/\D+/g, '').slice(0, 6)
   if (enableCode.value.length !== 6) {
-    twofaError.value = t('auth.account.twofa.code_hint')
+    twofaError.value = t('account.twofa.code_hint')
     return
   }
   try {
@@ -412,7 +487,7 @@ const revokeSessionGroup = async (group: AuthSessionGroupView) => {
   try {
     const currentSet = new Set(group.currentSessionIds)
     const revokeOrder = [
-      ...group.revokableSessionIds.filter((sessionId) => !currentSet.has(sessionId)),
+      ...group.revokableSessionIds.filter(sessionId => !currentSet.has(sessionId)),
       ...group.currentSessionIds
     ]
     for (const sessionId of revokeOrder) {
@@ -457,7 +532,7 @@ onBeforeUnmount(() => {
 
 watch(
   () => Boolean(user.value?.is_two_factor_enabled),
-  (enabled) => {
+  enabled => {
     if (enabled) {
       setupSecret.value = ''
       setupOtpAuthUrl.value = ''
@@ -474,7 +549,7 @@ watch(
 )
 watch(
   () => setupSecret.value,
-  async (value) => {
+  async value => {
     if (!value || user.value?.is_two_factor_enabled) return
     await nextTick()
     enableCodeInputRef.value?.focus()
@@ -505,15 +580,15 @@ await loadActivityState()
 <template>
   <section v-if="user" class="space-y-4 text-(--lab-text-primary)">
     <article class="space-y-3">
-      <h2 class="text-xl sm:text-2xl">{{ t('auth.account.email.title') }}</h2>
+      <h2 class="text-xl sm:text-2xl">{{ t('account.email.title') }}</h2>
       <p class="text-sm text-(--lab-text-muted)">
-        {{ t('auth.account.email.description', { email: user.email }) }}
+        {{ t('account.email.description', { email: user.email }) }}
       </p>
       <div class="grid gap-3 sm:max-w-fit">
         <LabField
-          :label="t('auth.account.email.new_label')"
+          :label="t('account.email.new_label')"
           for-id="account-next-email"
-          label-class="lab-text-muted text-xs normal-case tracking-normal"
+          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
         >
           <LabBaseInput
             id="account-next-email"
@@ -522,14 +597,14 @@ await loadActivityState()
             type="email"
             autocomplete="email"
             input-class="w-full"
-            :placeholder="t('auth.account.email.new_placeholder')"
+            :placeholder="t('account.email.new_placeholder')"
             @keydown.enter.prevent="submitEmailChange"
           />
         </LabField>
       </div>
       <div class="flex flex-wrap items-center">
         <LabBaseButton
-          :label="t('auth.account.email.submit')"
+          :label="t('account.email.submit')"
           variant="primary"
           size="lg"
           button-class="text-xs"
@@ -542,14 +617,14 @@ await loadActivityState()
     </article>
     <article class="space-y-3">
       <h2 class="flex flex-wrap items-center gap-3 text-xl sm:text-2xl">
-        {{ t('auth.account.password.title') }}
+        {{ t('account.password.title') }}
       </h2>
-      <span class="text-sm text-(--lab-text-muted)">{{ t('auth.account.password.description') }}</span>
+      <span class="text-sm text-(--lab-text-muted)">{{ t('account.password.description') }}</span>
       <div class="grid gap-3 sm:max-w-fit lg:grid-rows-2">
         <LabField
-          :label="t('auth.account.password.current_label')"
+          :label="t('account.password.current_label')"
           for-id="account-current-password"
-          label-class="lab-text-muted text-xs normal-case tracking-normal"
+          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
         >
           <LabBaseInput
             id="account-current-password"
@@ -558,13 +633,13 @@ await loadActivityState()
             type="password"
             autocomplete="current-password"
             :input-class="['w-full', passwordCurrentInputError ? 'text-(--lab-danger)' : '']"
-            :placeholder="t('auth.account.password.current_placeholder')"
+            :placeholder="t('account.password.current_placeholder')"
           />
         </LabField>
         <LabField
-          :label="t('auth.account.password.next_label')"
+          :label="t('account.password.next_label')"
           for-id="account-next-password"
-          label-class="lab-text-muted text-xs normal-case tracking-normal"
+          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
         >
           <LabBaseInput
             id="account-next-password"
@@ -573,13 +648,13 @@ await loadActivityState()
             type="password"
             autocomplete="new-password"
             input-class="w-full"
-            :placeholder="t('auth.account.password.next_placeholder')"
+            :placeholder="t('account.password.next_placeholder')"
           />
         </LabField>
       </div>
       <div class="flex flex-wrap items-center">
         <LabBaseButton
-          :label="t('auth.account.password.submit')"
+          :label="t('account.password.submit')"
           variant="primary"
           size="lg"
           button-class="text-xs"
@@ -605,9 +680,9 @@ await loadActivityState()
           {{
             user.is_two_factor_enabled
               ? showDisable2faForm
-                ? t('auth.account.twofa.hide_form')
-                : t('auth.account.twofa.disable')
-              : t('auth.account.twofa.get_secret')
+                ? t('account.twofa.hide_form')
+                : t('account.twofa.disable')
+              : t('account.twofa.get_secret')
           }}
         </LabBaseButton>
       </div>
@@ -618,24 +693,24 @@ await loadActivityState()
         class="grid items-start gap-3 xl:grid-cols-[auto_minmax(0,1fr)]"
       >
         <div v-if="setupQrDataUrl">
-          <img :src="setupQrDataUrl" alt="QR-код для настройки 2FA" class="h-48 w-48 object-contain" loading="lazy" >
+          <img :src="setupQrDataUrl" alt="QR-код для настройки 2FA" class="h-48 w-48 object-contain" loading="lazy" />
         </div>
         <div class="space-y-3">
           <p v-if="setupOtpAuthUrl" class="text-xs leading-5 wrap-break-word text-(--lab-text-muted)">
-            {{ t('auth.account.twofa.qr_fallback').split('{link}')[0] }}
+            {{ t('account.twofa.qr_fallback').split('{link}')[0] }}
             <a :href="setupOtpAuthUrl" target="_blank" rel="noopener noreferrer" class="lab-focus text-(--lab-info)">
-              {{ t('auth.account.twofa.qr_fallback_link') }}
+              {{ t('account.twofa.qr_fallback_link') }}
             </a>
-            {{ t('auth.account.twofa.qr_fallback').split('{link}')[1] }}
+            {{ t('account.twofa.qr_fallback').split('{link}')[1] }}
           </p>
           <LabCopyBlock
-            :label="t('auth.account.twofa.copy_key_label')"
+            :label="t('account.twofa.copy_key_label')"
             :value="setupSecret"
             variant="dark-cyan"
             button-class="w-full"
-            :title-idle="t('auth.account.twofa.copy_key_idle')"
-            :title-success="t('auth.account.twofa.copy_key_success')"
-            :title-error="t('auth.account.twofa.copy_key_error')"
+            :title-idle="t('account.twofa.copy_key_idle')"
+            :title-success="t('account.twofa.copy_key_success')"
+            :title-error="t('account.twofa.copy_key_error')"
             :show-state-tooltip="true"
           />
           <AuthCodeInput
@@ -643,8 +718,8 @@ await loadActivityState()
             ref="enableCodeInputRef"
             :model-value="enableCode"
             name="one_time_code_enable"
-            :label="t('auth.account.twofa.code_label')"
-            :hint="t('auth.account.twofa.code_hint')"
+            :label="t('account.twofa.code_label')"
+            :hint="t('account.twofa.code_hint')"
             :invalid="Boolean(twofaError)"
             :valid="Boolean(twofaInfo) && !Boolean(twofaError)"
             @update:model-value="onEnableCodeInput"
@@ -660,12 +735,12 @@ await loadActivityState()
           tabindex="-1"
           aria-hidden="true"
           class="pointer-events-none absolute -left-96 h-px w-px opacity-0"
-        >
+        />
         <LabField
           label="Текущий пароль"
           for-id="account-disable-2fa-password"
           field-class="min-w-0"
-          label-class="lab-text-muted text-xs normal-case tracking-normal"
+          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
         >
           <LabBaseInput
             id="account-disable-2fa-password"
@@ -677,13 +752,7 @@ await loadActivityState()
             placeholder="Текущий пароль"
           />
         </LabField>
-        <LabNavTabs
-          v-model="disableMethodTab"
-          :items="disableCodeTabItems"
-          route-query-key="disable2fa"
-          route-default-value="totp"
-          panel-class="space-y-3"
-        >
+        <LabNavTabs v-model="disableMethodTab" :items="disableCodeTabItems" route-query-key="disable2fa">
           <template #panel-totp>
             <AuthCodeInput
               id="account-disable-2fa-totp"
@@ -733,21 +802,21 @@ await loadActivityState()
     </article>
     <article class="space-y-3">
       <div>
-        <h2 class="text-xl sm:text-2xl">{{ t('auth.account.activity.title') }}</h2>
-        <p class="text-sm text-(--lab-text-muted)">{{ t('auth.account.activity.description') }}</p>
+        <h2 class="text-xl sm:text-2xl">{{ t('account.activity.title') }}</h2>
+        <p class="text-sm text-(--lab-text-muted)">{{ t('account.activity.description') }}</p>
       </div>
       <div class="flex flex-wrap items-baseline gap-x-6 gap-y-2">
         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span class="lab-text-muted shrink-0 text-xs tracking-wide uppercase">
-            {{ t('auth.account.activity.last_login') }}
+          <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">
+            {{ t('account.activity.last_login') }}
           </span>
           <span class="text-sm text-(--lab-text-primary)">
             {{ formatDateTime(user.last_login_at) }}
           </span>
         </div>
         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span class="lab-text-muted shrink-0 text-xs tracking-wide uppercase">
-            {{ t('auth.account.activity.created_at') }}
+          <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">
+            {{ t('account.activity.created_at') }}
           </span>
           <span class="text-sm text-(--lab-text-primary)">
             {{ formatDateTime(user.created_at) }}
@@ -758,13 +827,7 @@ await loadActivityState()
       <LabNotify :text="actionInfo" tone="success" size="xs" />
       <p v-if="activityLoading" class="text-xs text-(--lab-text-muted)">Загрузка сессий и активности…</p>
       <LabNotify v-else-if="activityError" :text="activityError" tone="error" size="xs" />
-      <LabNavTabs
-        v-else
-        v-model="activityTab"
-        :items="activityTabItems"
-        route-query-key="activity"
-        route-default-value="sessions"
-      >
+      <LabNavTabs v-else v-model="activityTab" :items="activityTabItems" route-query-key="activity">
         <template #tab="{ item }">
           <span>{{ item.label }}</span>
           <span class="ml-1 opacity-80">
@@ -787,16 +850,16 @@ await loadActivityState()
           >
             <template #cell-device="{ row }">
               <div class="space-y-1">
-                <p class="text-sm">{{ row.device }}</p>
-                <p class="text-xs text-(--lab-text-muted)">{{ row.ip }}</p>
+                <p class="text-sm">{{ (row as SessionActivityRow).device }}</p>
+                <p class="text-xs text-(--lab-text-muted)">{{ (row as SessionActivityRow).ip }}</p>
               </div>
             </template>
             <template #cell-activity="{ row }">
               <div class="space-y-1 text-xs">
-                <p>{{ t('auth.account.activity.sessions_count', { count: row.count }) }}</p>
+                <p>{{ t('account.activity.sessions_count', { count: (row as SessionActivityRow).count }) }}</p>
                 <p class="text-(--lab-text-muted)">
-                  {{ t('auth.account.activity.last_activity') }}
-                  <LabRelativeTime :datetime="row.lastSeenAt" compact />
+                  {{ t('account.activity.last_activity') }}
+                  <LabRelativeTime :datetime="(row as SessionActivityRow).lastSeenAt" compact />
                 </p>
               </div>
             </template>
@@ -805,10 +868,10 @@ await loadActivityState()
                 variant="secondary"
                 size="lg"
                 button-class="text-xs"
-                :disabled="row.revokableSessionIds.length === 0"
-                @click="revokeSessionGroup(row.source)"
+                :disabled="(row as SessionActivityRow).revokableSessionIds.length === 0"
+                @click="revokeSessionGroup((row as SessionActivityRow).source)"
               >
-                {{ row.action }}
+                {{ (row as SessionActivityRow).action }}
               </LabBaseButton>
             </template>
           </LabDataTable>
@@ -823,14 +886,14 @@ await loadActivityState()
           >
             <template #cell-createdAt="{ row }">
               <div class="space-y-1 text-xs">
-                <p>{{ row.createdAt }}</p>
+                <p>{{ (row as LoginAttemptRow).createdAt }}</p>
                 <p class="text-(--lab-text-muted)">
-                  <LabRelativeTime :datetime="row.source.created_at" compact />
+                  <LabRelativeTime :datetime="(row as LoginAttemptRow).source.created_at" compact />
                 </p>
               </div>
             </template>
             <template #cell-details="{ row }">
-              <p class="text-xs wrap-break-word">{{ row.details }}</p>
+              <p class="text-xs wrap-break-word">{{ (row as LoginAttemptRow).details }}</p>
             </template>
           </LabDataTable>
         </template>
@@ -844,14 +907,14 @@ await loadActivityState()
           >
             <template #cell-createdAt="{ row }">
               <div class="space-y-1 text-xs">
-                <p>{{ row.createdAt }}</p>
+                <p>{{ (row as SecurityEventRow).createdAt }}</p>
                 <p class="text-(--lab-text-muted)">
-                  <LabRelativeTime :datetime="row.source.created_at" compact />
+                  <LabRelativeTime :datetime="(row as SecurityEventRow).source.created_at" compact />
                 </p>
               </div>
             </template>
             <template #cell-payload="{ row }">
-              <p class="text-xs wrap-break-word">{{ row.payload }}</p>
+              <p class="text-xs wrap-break-word">{{ (row as SecurityEventRow).payload }}</p>
             </template>
           </LabDataTable>
         </template>

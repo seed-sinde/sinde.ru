@@ -8,7 +8,7 @@ Frontend приложения `sinde.ru` на Nuxt 4, Bun, Vite, Nitro и Tailwi
 
 - публичные страницы проекта;
 - страницы аутентификации и аккаунта;
-- прикладные разделы `traits`, `kitchen`, `chemistry`, `minerals`, `astronomy`;
+- прикладные разделы `traits`, `kitchen`, `chemistry`, `minerals`;
 - SSR proxy до backend API;
 - PWA-конфигурация и клиентская часть UI.
 

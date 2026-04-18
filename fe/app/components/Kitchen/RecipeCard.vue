@@ -41,7 +41,7 @@ const emit = defineEmits<{
 <template>
   <article class="space-y-3 bg-zinc-900/70 p-4">
     <NuxtLink v-if="coverSrc" :to="to" class="group relative block">
-      <img :src="coverSrc" alt="Фото готового блюда" class="h-36 w-full border border-zinc-700 object-cover" >
+      <img :src="coverSrc" alt="Фото готового блюда" class="h-36 w-full border border-zinc-700 object-cover" />
       <LabBaseButton
         v-if="showFavorite"
         :button-class="[

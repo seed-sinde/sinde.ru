@@ -7,7 +7,7 @@
     @click="$emit('preview')"
   >
     <span :class="resolvedFrameClass">
-      <img :src="src" :alt="alt" :class="resolvedImageClass" >
+      <img :src="src" :alt="alt" :class="resolvedImageClass" />
       <span class="image-preview-overlay">
         <span class="image-preview-overlay-bar">
           <Icon name="ic:round-open-in-full" class="h-4 w-4 shrink-0" />

@@ -6,6 +6,7 @@
       name="TraitGeoPoint"
       inputmode="decimal"
       placeholder="59.934280,30.335099"
+      @input="onInput"
       @blur="normalize"
     />
     <LabHint v-if="message" :text="message" hint-class="text-amber-400" />
@@ -18,36 +19,64 @@ const model = defineModel<TraitGeoPointModel>({ required: true })
 const inputId = computed(() => (props.id ? `${props.id}-geo` : 'TraitGeoPoint'))
 const raw = ref('')
 const message = ref('')
-const normalize = () => {
-  message.value = ''
+const emptyPoint = (): TraitGeoPointModel => ({ lat: '', lng: '' })
+const syncFromRaw = (options: { normalizeRaw: boolean; showErrors: boolean }) => {
+  if (!options.showErrors) {
+    message.value = ''
+  }
   const parts = raw.value
     .split(',')
-    .map((part) => part.trim())
+    .map(part => part.trim())
     .filter(Boolean)
   if (parts.length !== 2) {
-    message.value = 'Введите и широту, и долготу'
+    model.value = emptyPoint()
+    if (options.showErrors) {
+      message.value = 'Введите и широту, и долготу'
+    }
     return
   }
   const [latRaw, lngRaw] = parts as [string, string]
   const latParsed = parseGeoCoordinate(latRaw)
   const lngParsed = parseGeoCoordinate(lngRaw)
   if (!latParsed || !lngParsed) {
-    message.value = 'Широта и долгота должны быть числами'
+    model.value = emptyPoint()
+    if (options.showErrors) {
+      message.value = 'Широта и долгота должны быть числами'
+    }
     return
   }
   const normalized = normalizeGeoPoint(latRaw, lngRaw)
   if (!normalized) {
-    message.value = 'Широта и долгота должны быть числами'
+    model.value = emptyPoint()
+    if (options.showErrors) {
+      message.value = 'Широта и долгота должны быть числами'
+    }
     return
   }
-  if (latParsed.decimals < GEO_MIN_DECIMALS || lngParsed.decimals < GEO_MIN_DECIMALS) {
-    message.value = `Недостаточная точность (нужно не меньше ${GEO_MIN_DECIMALS} знаков после запятой)`
+  if (options.normalizeRaw) {
+    raw.value = `${normalized.lat},${normalized.lng}`
   }
-  raw.value = `${normalized.lat},${normalized.lng}`
   model.value = { lat: normalized.lat, lng: normalized.lng }
+  if (options.showErrors) {
+    message.value = ''
+    if (latParsed.decimals < GEO_MIN_DECIMALS || lngParsed.decimals < GEO_MIN_DECIMALS) {
+      message.value = `Недостаточная точность (нужно не меньше ${GEO_MIN_DECIMALS} знаков после запятой)`
+    }
+  }
+}
+const onInput = () => {
+  syncFromRaw({ normalizeRaw: false, showErrors: false })
+}
+const normalize = () => {
+  syncFromRaw({ normalizeRaw: true, showErrors: true })
 }
 watchEffect(() => {
   if (!model.value) return
-  raw.value = `${model.value.lat},${model.value.lng}`
+  const lat = String(model.value.lat || '').trim()
+  const lng = String(model.value.lng || '').trim()
+  const nextRaw = lat && lng ? `${lat},${lng}` : ''
+  if (raw.value !== nextRaw) {
+    raw.value = nextRaw
+  }
 })
 </script>

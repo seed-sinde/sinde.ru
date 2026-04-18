@@ -5,7 +5,8 @@ definePageMeta({
 })
 const route = useRoute()
 const router = useRouter()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('auth')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { resetPassword } = useAuth()
 const token = computed(() => {
   const raw = route.query.token
@@ -32,9 +33,9 @@ const submit = async () => {
 </script>
 <template>
   <div class="px-3 py-6 md:px-5">
-    <section class="lab-surface max-w-xl space-y-4 border p-5">
-      <h1 class="lab-text-primary text-2xl font-semibold">{{ t('auth.reset.title') }}</h1>
-      <p class="lab-text-muted text-sm">{{ t('auth.reset.description') }}</p>
+    <section class="max-w-xl space-y-4 border p-5">
+      <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ t('reset.title') }}</h1>
+      <p class="text-sm text-(--lab-text-muted)">{{ t('reset.description') }}</p>
       <form class="space-y-4" @submit.prevent="submit">
         <LabField label="Новый пароль" for-id="reset-password-new">
           <LabBaseInput
@@ -48,7 +49,7 @@ const submit = async () => {
           />
         </LabField>
         <LabBaseButton type="submit" variant="primary" size="xl" :disabled="pending || !token">
-          {{ t('auth.reset.submit') }}
+          {{ t('reset.submit') }}
         </LabBaseButton>
       </form>
       <LabNotify :text="errorText" tone="error" />

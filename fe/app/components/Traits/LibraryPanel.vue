@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { localeCode } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('traits')
+await useAsyncData(key.value, load, { watch: [locale] })
 const formatShortUuid = shortUuid
 const props = withDefaults(
   defineProps<{
@@ -9,8 +10,6 @@ const props = withDefaults(
     currentTraitUuid: ''
   }
 )
-const copy = computed(() => TRAITS_WORKSPACE_COPY[localeCode.value] || TRAITS_WORKSPACE_COPY.ru)
-const router = useRouter()
 const {
   user,
   ensureLoaded,
@@ -33,7 +32,7 @@ const errorText = ref('')
 const formName = ref('')
 const formDescription = ref('')
 const primaryTraitUuid = computed(() => String(user.value?.primary_trait_uuid || '').trim())
-const currentSavedSet = computed(() => savedSets.value.find((item) => item.set_uuid === currentTraitUuid.value) || null)
+const currentSavedSet = computed(() => savedSets.value.find(item => item.set_uuid === currentTraitUuid.value) || null)
 const isCurrentPrimary = computed(
   () => Boolean(currentTraitUuid.value) && currentTraitUuid.value === primaryTraitUuid.value
 )
@@ -75,7 +74,7 @@ const loadSavedSets = async () => {
     syncUserPrimary(res.data.primary_trait_uuid)
     hydrateCurrentForm()
   } catch (error: unknown) {
-    errorText.value = readErrorMessage(error, copy.value.library.loadFailed)
+    errorText.value = readErrorMessage(error, t('library.load_failed'))
   } finally {
     loading.value = false
     ready.value = true
@@ -92,18 +91,18 @@ const saveCurrentSet = async () => {
         name: formName.value,
         description: formDescription.value
       })
-      infoText.value = copy.value.library.updatedDescription
+      infoText.value = t('library.updated_description')
     } else {
       await saveTraitSet({
         set_uuid: currentTraitUuid.value,
         name: formName.value,
         description: formDescription.value
       })
-      infoText.value = copy.value.library.savedToList
+      infoText.value = t('library.saved_to_list')
     }
     await loadSavedSets()
   } catch (error: unknown) {
-    errorText.value = readErrorMessage(error, copy.value.library.saveFailed)
+    errorText.value = readErrorMessage(error, t('library.save_failed'))
   } finally {
     formPending.value = false
   }
@@ -115,18 +114,14 @@ const setAsPrimary = async (setUuid: string) => {
   primaryPending.value = true
   try {
     const res = await setPrimaryTraitUuid(setUuid)
-    syncUserPrimary(res.data.user.primary_trait_uuid)
+    syncUserPrimary(res.data.changes.primary_trait_uuid)
     await loadSavedSets()
-    infoText.value = copy.value.library.primaryUpdated
+    infoText.value = t('library.primary_updated')
   } catch (error: unknown) {
-    errorText.value = readErrorMessage(error, copy.value.library.primaryFailed)
+    errorText.value = readErrorMessage(error, t('library.primary_failed'))
   } finally {
     primaryPending.value = false
   }
-}
-const openPrimary = async () => {
-  if (!primaryTraitUuid.value) return
-  await router.replace(`/traits/${primaryTraitUuid.value}`)
 }
 const removeSavedSet = async (savedSetId: string) => {
   if (!savedSetId) return
@@ -135,10 +130,10 @@ const removeSavedSet = async (savedSetId: string) => {
   deletingId.value = savedSetId
   try {
     await deleteTraitSet(savedSetId)
-    infoText.value = copy.value.library.removed
+    infoText.value = t('library.removed')
     await loadSavedSets()
   } catch (error: unknown) {
-    errorText.value = readErrorMessage(error, copy.value.library.deleteFailed)
+    errorText.value = readErrorMessage(error, t('library.delete_failed'))
   } finally {
     deletingId.value = ''
   }
@@ -160,105 +155,73 @@ watch(
 )
 </script>
 <template>
-  <div class="px-3 py-3 sm:px-4 sm:py-4 lg:px-5">
-    <div class="mx-auto max-w-6xl space-y-4">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div class="space-y-1">
-          <h2 class="text-base font-semibold tracking-tight sm:text-lg">{{ copy.library.title }}</h2>
-          <p class="lab-text-muted max-w-2xl text-sm">
-            {{ copy.library.subtitle }}
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <LabBaseButton
-            v-if="hasPrimaryTrait && currentTraitUuid !== primaryTraitUuid"
-            variant="secondary"
-            size="sm"
-            :label="copy.library.openPrimary"
-            @click="openPrimary"
-          />
-        </div>
-      </div>
-      <div class="h-4 space-y-2">
-        <LabNotify :text="errorText" tone="error" />
-        <LabNotify :text="infoText" tone="success" />
-      </div>
-    </div>
-  </div>
-  <div v-if="!ready || loading" class="mx-auto mt-4 max-w-6xl px-3 text-sm text-zinc-500 sm:px-4 lg:px-5">
+  <div>
+    <LabNotify :text="errorText" tone="error" />
+    <LabNotify :text="infoText" tone="success" />
     <LabLoader
+      v-if="!ready || loading"
       variant="cards"
       :count="2"
-      :columns="2"
-      :label="copy.library.loading"
+      :columns="1"
+      :label="t('library.loading')"
       :show-media="false"
       :show-footer="false"
+      class="max-w-lg"
     />
-  </div>
-  <div v-else-if="!isAuthenticated" class="mx-auto mt-4 max-w-6xl px-3 sm:px-4 lg:px-5">
-    <div class="max-w-3xl">
-      <AuthFeatureGateNotice :message="copy.library.featureGate" />
-    </div>
-  </div>
-  <div v-else class="px-3 pb-4 sm:px-4 lg:px-5">
-    <div class="mx-auto grid max-w-6xl gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)]">
-      <article
-        class="space-y-4 border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_88%,transparent)] p-4"
-      >
+    <AuthFeatureGateNotice v-else-if="!isAuthenticated" :message="t('library.feature_gate')" />
+    <div v-else>
+      <article class="space-y-2">
         <div class="flex flex-wrap items-center gap-2">
-          <span class="lab-text-muted text-sm">{{ copy.library.primaryLabel }}</span>
+          {{ t('library.primary_label') }}
           <NuxtLink
             v-if="hasPrimaryTrait"
             :to="`/traits/${primaryTraitUuid}`"
-            class="font-mono text-sm transition hover:text-(--lab-accent) focus-visible:text-(--lab-accent)"
+            class="lab-focus font-mono text-sm hover:text-(--lab-accent)"
           >
             {{ formatShortUuid(primaryTraitUuid, 6) }}
           </NuxtLink>
-          <span v-else class="lab-text-muted text-sm">{{ copy.library.notAssigned }}</span>
-          <LabBaseBadge v-if="isCurrentPrimary" variant="info">{{ copy.library.openedBadge }}</LabBaseBadge>
+          <span v-else class="text-sm text-(--lab-text-muted)">{{ t('library.not_assigned') }}</span>
+          <LabBaseBadge v-if="isCurrentPrimary" variant="info">{{ t('library.opened_badge') }}</LabBaseBadge>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <LabBaseButton
-            v-if="currentTraitUuid && !isCurrentPrimary"
-            variant="secondary"
-            size="sm"
-            button-class="rounded-xl border border-amber-400/35 bg-amber-400/10 text-amber-100 transition-colors hover:bg-amber-400/18"
-            :disabled="primaryPending"
-            @click="setAsPrimary(currentTraitUuid)"
-          >
-            {{ copy.library.makePrimary }}
-          </LabBaseButton>
-        </div>
-        <div class="space-y-3 border-t pt-4">
+        <LabBaseButton
+          v-if="currentTraitUuid && !isCurrentPrimary"
+          :label="t('library.make_primary')"
+          variant="secondary"
+          size="sm"
+          button-class="text-amber-100"
+          :disabled="primaryPending"
+          @click="setAsPrimary(currentTraitUuid)"
+        />
+        <div class="space-y-2">
           <div class="space-y-1">
             <h3 class="text-sm font-medium">
-              {{ currentSavedSet ? copy.library.editCurrentTitle : copy.library.saveCurrentTitle }}
+              {{ currentSavedSet ? t('library.edit_current.title') : t('library.save_current.title') }}
             </h3>
-            <p class="lab-text-muted text-xs">
-              {{ currentTraitUuid ? formatShortUuid(currentTraitUuid, 6) : copy.library.openSetHint }}
+            <p class="text-xs text-(--lab-text-muted)">
+              {{ currentTraitUuid ? formatShortUuid(currentTraitUuid, 6) : t('library.open_set.hint') }}
             </p>
           </div>
           <div v-if="currentTraitUuid" class="space-y-3">
             <div class="max-w-2xl space-y-3">
-              <LabField :label="copy.library.nameLabel" for-id="traits-library-name">
+              <LabField :label="t('library.name.label')" for-id="traits-library-name">
                 <LabBaseInput
                   id="traits-library-name"
                   v-model="formName"
-                  :placeholder="copy.library.namePlaceholder"
+                  :placeholder="t('library.name.placeholder')"
                   maxlength="120"
                 />
               </LabField>
               <LabField
-                :label="copy.library.descriptionLabel"
+                :label="t('library.description.label')"
                 for-id="traits-library-description"
-                :hint="copy.library.descriptionHint"
+                :hint="t('library.description.hint')"
               >
                 <LabBaseTextarea
                   id="traits-library-description"
                   v-model="formDescription"
                   rows="3"
                   maxlength="280"
-                  :placeholder="copy.library.descriptionPlaceholder"
+                  :placeholder="t('library.description.placeholder')"
                 />
               </LabField>
             </div>
@@ -266,79 +229,80 @@ watch(
               <LabBaseButton
                 variant="primary"
                 size="sm"
-                button-class="rounded-xl"
                 :disabled="formPending || !formName.trim()"
                 @click="saveCurrentSet"
               >
-                {{ currentSavedSet ? copy.library.updateEntry : copy.library.saveSet }}
+                {{ currentSavedSet ? t('library.update_entry') : t('library.save_set') }}
               </LabBaseButton>
-              <span v-if="currentSavedSet" class="lab-text-muted text-xs">
-                {{ copy.library.existingRecord }}
+              <span v-if="currentSavedSet" class="text-xs text-(--lab-text-muted)">
+                {{ t('library.existing_record') }}
               </span>
             </div>
           </div>
-          <p v-else class="lab-text-muted text-sm">
-            {{ copy.library.waitingFormHint }}
+          <p v-else class="text-sm text-(--lab-text-muted)">
+            {{ t('library.waiting_form_hint') }}
           </p>
         </div>
       </article>
-      <article
-        class="space-y-3 border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_88%,transparent)] p-4"
-      >
+      <article class="space-y-2">
         <div class="flex items-center justify-between gap-3">
-          <h3 class="text-sm font-medium">{{ copy.library.title }}</h3>
-          <span class="lab-text-muted text-xs">{{ formatCountText(copy.library.total, savedSets.length) }}</span>
+          <h3 class="text-sm font-medium">{{ t('library.title') }}</h3>
+          <span class="text-xs text-(--lab-text-muted)">
+            {{
+            formatCountText(t('library.total'), savedSets.length)
+            }}
+          </span>
         </div>
         <div
           v-if="savedSets.length === 0"
-          class="border border-dashed border-[color-mix(in_srgb,var(--lab-border)_82%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_52%,transparent)] px-4 py-3 text-sm text-(--lab-text-muted)"
+          class="px-4 py-3 text-sm text-(--lab-text-muted)"
         >
-          {{ copy.library.empty }}
+          {{ t('library.empty') }}
         </div>
         <div v-else class="space-y-2">
           <div
             v-for="item in savedSets"
             :key="item.saved_set_id"
-            class="border-[color-mix(in_srgb,var(--lab-border)_78%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface-subtle)_68%,transparent)] px-3 py-3"
+            class="px-2 py-2"
           >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0 flex-1 space-y-1">
                 <div class="flex flex-wrap items-center gap-2">
                   <NuxtLink
                     :to="`/traits/${item.set_uuid}`"
-                    class="min-w-0 truncate text-sm font-medium transition hover:text-(--lab-accent) focus-visible:text-(--lab-accent)"
+                    class="lab-focus min-w-0 truncate text-sm font-medium"
                   >
                     {{ item.name }}
                   </NuxtLink>
                   <span
                     v-if="item.set_uuid === primaryTraitUuid"
-                    class="inline-flex items-center border border-(--lab-accent) bg-[color-mix(in_srgb,var(--lab-accent)_10%,transparent)] px-2 py-0.5 text-xs tracking-wide text-(--lab-accent) uppercase"
+                    class="inline-flex items-center px-1.5 py-0.5 text-[11px] tracking-wide text-(--lab-accent) uppercase"
                   >
-                    {{ copy.library.primaryChip }}
+                    {{ t('library.primary.chip') }}
                   </span>
                   <span
                     v-if="item.set_uuid === currentTraitUuid"
-                    class="inline-flex items-center border bg-(--lab-bg-surface-muted) px-2 py-0.5 text-xs tracking-wide uppercase"
+                    class="inline-flex items-center px-1.5 py-0.5 text-[11px] tracking-wide uppercase"
                   >
-                    {{ copy.library.currentChip }}
+                    {{ t('library.current.chip') }}
                   </span>
                 </div>
-                <p class="lab-text-muted font-mono text-xs">{{ formatShortUuid(item.set_uuid, 6) }}</p>
-                <p v-if="item.description" class="lab-text-secondary text-sm">{{ item.description }}</p>
+                <p class="font-mono text-xs text-(--lab-text-muted)">{{ formatShortUuid(item.set_uuid, 6) }}</p>
+                <p v-if="item.description" class="text-sm text-(--lab-text-secondary)">{{ item.description }}</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <LabBaseButton
                   v-if="item.set_uuid !== primaryTraitUuid"
                   variant="primary"
                   size="xs"
-                  :label="copy.library.makeMine"
+                  :label="t('library.make_mine')"
                   :disabled="primaryPending"
                   @click="setAsPrimary(item.set_uuid)"
                 />
                 <LabBaseButton
                   variant="danger"
                   size="xs"
-                  :label="copy.library.delete"
+                  :label="t('library.delete')"
                   :disabled="deletingId === item.saved_set_id"
                   @click="removeSavedSet(item.saved_set_id)"
                 />

@@ -41,7 +41,7 @@ const toggle = () => {
 const close = () => {
   open.value = false
 }
-watch(open, (isOpen) => {
+watch(open, isOpen => {
   if (!import.meta.client) return
   if (!isOpen) return
   updateTooltipPosition()

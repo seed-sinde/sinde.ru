@@ -5,7 +5,8 @@ definePageMeta({
 })
 const route = useRoute()
 const router = useRouter()
-const { t } = useInterfacePreferences()
+const { locale, key, load, t } = useI18nSection('auth')
+await useAsyncData(key.value, load, { watch: [locale] })
 const { verifyEmail, refresh, loadMe, canAttemptSessionRestore } = useAuth()
 const token = computed(() => {
   const raw = route.query.token
@@ -28,7 +29,7 @@ onMounted(async () => {
         }
       }
       successText.value = `Новый email подтверждён: ${res.data.email || 'адрес обновлён'}. Текущая сессия обновлена.`
-      setTimeout(() => router.push('/auth/account?account=security'), 1200)
+      setTimeout(() => router.push('/auth/account/security'), 1200)
     } else {
       successText.value = 'Email подтверждён. Можно входить в систему.'
       setTimeout(() => router.push('/auth/login'), 1000)
@@ -42,13 +43,13 @@ onMounted(async () => {
 </script>
 <template>
   <div class="px-3 py-6 md:px-5">
-    <section class="lab-surface max-w-xl space-y-4 border p-5">
-      <h1 class="lab-text-primary text-2xl font-semibold">{{ t('auth.verify.title') }}</h1>
-      <p v-if="pending" class="lab-text-secondary text-sm">{{ t('auth.verify.pending') }}</p>
+    <section class="max-w-xl space-y-4 border p-5">
+      <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ t('verify.title') }}</h1>
+      <p v-if="pending" class="text-sm text-(--lab-text-secondary)">{{ t('verify.pending') }}</p>
       <LabNotify :text="errorText" tone="error" />
       <LabNotify :text="successText" tone="success" />
       <NuxtLink to="/auth/login" class="text-sm text-(--lab-accent) transition hover:text-(--lab-accent-hover)">
-        {{ t('auth.verify.login_link') }}
+        {{ t('verify.login_link') }}
       </NuxtLink>
     </section>
   </div>

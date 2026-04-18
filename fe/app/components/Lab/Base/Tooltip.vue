@@ -72,7 +72,7 @@ watch(
   }
 )
 
-watch(open, (value) => {
+watch(open, value => {
   if (!import.meta.client) return
   if (value) {
     window.addEventListener('resize', onWindowChange)

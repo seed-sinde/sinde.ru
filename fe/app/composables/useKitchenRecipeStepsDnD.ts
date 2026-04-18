@@ -1,4 +1,4 @@
-import { onScopeDispose, ref, type Ref } from 'vue'
+import {onScopeDispose, ref, type Ref} from "vue"
 export type UseKitchenRecipeStepsDnDOptions = {
   formSteps: Ref<KitchenFormStep[]>
   moveFormStep: (fromIndex: number, toIndex: number) => void
@@ -9,11 +9,11 @@ export const useKitchenRecipeStepsDnD = (options: UseKitchenRecipeStepsDnDOption
   const draggingStepIndex = ref<number | null>(null)
   const stepDragPreview = ref<KitchenStepDragPreview | null>(null)
   let activeStepPointerId: number | null = null
-  const setStepItemRef = (index: number, el: Element | { $el?: Element } | null) => {
+  const setStepItemRef = (index: number, el: Element | {$el?: Element} | null) => {
     const node =
       el instanceof HTMLElement
         ? el
-        : el && typeof el === 'object' && '$el' in el && el.$el instanceof HTMLElement
+        : el && typeof el === "object" && "$el" in el && el.$el instanceof HTMLElement
           ? el.$el
           : null
     stepItemRefs.value[index] = node
@@ -47,10 +47,10 @@ export const useKitchenRecipeStepsDnD = (options: UseKitchenRecipeStepsDnDOption
     activeStepPointerId = null
     draggingStepIndex.value = null
     stepDragPreview.value = null
-    document.body.style.userSelect = ''
-    window.removeEventListener('pointermove', onStepReorderPointerMove)
-    window.removeEventListener('pointerup', onStepReorderPointerUp)
-    window.removeEventListener('pointercancel', onStepReorderPointerUp)
+    document.body.style.userSelect = ""
+    window.removeEventListener("pointermove", onStepReorderPointerMove)
+    window.removeEventListener("pointerup", onStepReorderPointerUp)
+    window.removeEventListener("pointercancel", onStepReorderPointerUp)
   }
   const onStepReorderPointerMove = (event: PointerEvent) => {
     if (draggingStepIndex.value === null) return
@@ -66,7 +66,7 @@ export const useKitchenRecipeStepsDnD = (options: UseKitchenRecipeStepsDnDOption
     cleanupStepReorderDrag()
   }
   const startStepReorderDrag = (index: number, event: PointerEvent) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return
+    if (event.pointerType === "mouse" && event.button !== 0) return
     const step = options.formSteps.value[index]
     if (!step) return
     event.preventDefault()
@@ -94,10 +94,10 @@ export const useKitchenRecipeStepsDnD = (options: UseKitchenRecipeStepsDnDOption
       y: 12
     }
     updateStepDragPreviewPosition(event.clientX, event.clientY)
-    document.body.style.userSelect = 'none'
-    window.addEventListener('pointermove', onStepReorderPointerMove)
-    window.addEventListener('pointerup', onStepReorderPointerUp)
-    window.addEventListener('pointercancel', onStepReorderPointerUp)
+    document.body.style.userSelect = "none"
+    window.addEventListener("pointermove", onStepReorderPointerMove)
+    window.addEventListener("pointerup", onStepReorderPointerUp)
+    window.addEventListener("pointercancel", onStepReorderPointerUp)
   }
   onScopeDispose(() => {
     if (!import.meta.client) return
