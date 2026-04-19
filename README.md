@@ -5,7 +5,7 @@
 В репозитории лежат:
 
 - `be/` — backend на Go;
-- `fe/` — frontend на Nuxt 4, Bun и Tailwind CSS v4;
+- `fe/` — frontend на Nuxt 4, pnpm и Tailwind CSS v4;
 - `docker-compose.yml` — локальные зависимости для разработки: PostgreSQL, Redis, MinIO;
 - `docs/` — рабочая документация по запуску, вкладу в проект и безопасности.
 
@@ -21,7 +21,8 @@
 
 ## Требования
 
-- Bun `1.3.11`
+- Node.js `24.x`
+- pnpm `10.x`
 - Go `1.26.1`
 - Docker и `docker compose`
 - PostgreSQL, Redis и MinIO для локальной разработки
@@ -54,8 +55,8 @@ cd be
 
 ```bash
 cd fe
-bun install
-bun run dev
+pnpm install
+pnpm dev
 ```
 
 Приложение по умолчанию доступно на `http://127.0.0.1:3000`, backend на `http://127.0.0.1:3001`.
@@ -71,9 +72,10 @@ Backend:
 
 Frontend:
 
-- `cd fe && bun run dev` — локальный запуск frontend;
-- `cd fe && bun run typecheck` — проверка типов;
-- `cd fe && bun run build` — production build;
+- `cd fe && pnpm dev` — локальный запуск frontend;
+- `cd fe && pnpm typecheck` — проверка типов;
+- `cd fe && pnpm lint` — frontend lint;
+- `cd fe && pnpm build` — production build;
 
 ## Структура
 

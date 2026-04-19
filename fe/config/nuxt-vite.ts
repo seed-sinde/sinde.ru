@@ -2,7 +2,7 @@ import tailwindcss from "@tailwindcss/vite"
 import {isDev} from "./nuxt-env"
 const viteConfig = {
   clearScreen: false,
-  plugins: [tailwindcss() as any],
+  plugins: [tailwindcss()],
   build: {
     chunkSizeWarningLimit: 3500
   },

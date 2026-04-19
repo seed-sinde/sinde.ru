@@ -6,6 +6,7 @@
 
 - [README корня](../README.md) — обзор проекта, быстрый запуск и структура репозитория;
 - [CONTRIBUTING](CONTRIBUTING.md) — правила внесения изменений;
+- [PROJECT_STANDARDS](PROJECT_STANDARDS.md) — постоянные правила frontend/backend-развития и versioning <abbr title="Application Programming Interface">API</abbr>;
 - [SECURITY](SECURITY.md) — как работать с безопасностью и куда сообщать об уязвимостях;
 - [CHANGELOG](CHANGELOG.md) — история заметных публичных изменений;
 - [README фронтенда](../fe/README.md) — команды и окружение frontend.

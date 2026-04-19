@@ -1,6 +1,10 @@
-import {joinURL} from "ufo"
 const useApiJson = <T>(path: string, options?: NonNullable<Parameters<ReturnType<typeof useAPI>["json"]>[1]>) =>
   useAPI().json<T>(path, options)
+type ApiErrorLike = {
+  status?: number
+  statusCode?: number
+  response?: {status?: number}
+}
 /**
  * Creates a simple trait payload for set-building requests.
  */
@@ -34,68 +38,6 @@ const createTraitFromTuple = (uuid: string, value: [string, string]): Trait => {
   return {t_uuid: uuid, t_key: value[0], t_value: value[1]}
 }
 /**
- * Parses one NDJSON payload into a normalized trait list.
- */
-const parseNdjsonTraits = (source: string): Trait[] => {
-  const items: Trait[] = []
-  for (const rawLine of source.split("\n")) {
-    const line = rawLine.trim()
-    if (!line) continue
-    try {
-      const parsed = JSON.parse(line)
-      if (isTraitRecord(parsed)) {
-        items.push(parsed)
-      }
-    } catch {
-      // ignore malformed lines
-    }
-  }
-  return items
-}
-/**
- * Parses any resolve response body into a normalized trait list.
- * Supports:
- * - compact JSON tuple for one trait
- * - one trait object
- * - array of trait objects
- * - NDJSON stream of trait objects
- */
-const parseResolvedTraitsBody = (uuid: string, body: string): Trait[] => {
-  const trimmed = body.trim()
-  if (!trimmed) return []
-
-  try {
-    const parsed = JSON.parse(trimmed) as TraitResolvePayload
-    return parseTraitResolveJsonPayload(uuid, parsed)
-  } catch {
-    return parseNdjsonTraits(body)
-  }
-}
-/**
- * Wraps an HTTP status into a regular Error instance.
- */
-const toErrorWithStatus = (message: string, statusCode: number) => {
-  const error = new Error(message) as Error & {statusCode?: number; status?: number}
-  error.statusCode = statusCode
-  error.status = statusCode
-  return error
-}
-/**
- * Normalizes one JSON traits resolve response into a list of records.
- */
-const parseTraitResolveJsonPayload = (uuid: string, payload: unknown): Trait[] => {
-  if (isTraitTuple(payload)) {
-    return [createTraitFromTuple(uuid, payload)]
-  }
-  if (isTraitRecord(payload)) {
-    return [payload]
-  }
-  if (Array.isArray(payload)) {
-    return payload.filter(isTraitRecord)
-  }
-  return []
-}
-/**
  * Normalizes one single-trait payload into a concrete record.
  */
 const normalizeTraitPayload = (uuid: string, payload: unknown): Trait | null => {
@@ -104,33 +46,9 @@ const normalizeTraitPayload = (uuid: string, payload: unknown): Trait | null => 
   }
   return isTraitRecord(payload) ? payload : null
 }
-/**
- * Returns proxy request headers required for SSR trait resolve fetches.
- */
-const getTraitResolveHeaders = (): Record<string, string> => {
-  const headers: Record<string, string> = {
-    Accept: "application/x-ndjson, application/json"
-  }
-  if (import.meta.server) {
-    const forwardedHeaderNames = ["cookie", "user-agent", "accept-language", "x-forwarded-for", "x-real-ip"] as const
-    const requestHeaders = useRequestHeaders(forwardedHeaderNames as unknown as string[])
-    for (const name of forwardedHeaderNames) {
-      const value = requestHeaders[name]
-      if (value) headers[name] = value
-    }
-  }
-  return headers
-}
-/**
- * Resolves the absolute proxy base URL for trait requests during SSR and CSR.
- */
-const getTraitResolveBaseUrl = (): string => {
-  const config = useRuntimeConfig()
-  const base = import.meta.client ? "" : useRequestURL().origin || config.public.baseURL
-  if (!base) {
-    throw new Error("SSR base URL is not defined")
-  }
-  return base
+const getApiErrorStatus = (error: unknown) => {
+  const e = error as ApiErrorLike
+  return Number(e?.statusCode ?? e?.status ?? e?.response?.status ?? 0)
 }
 /**
  * Executes a POST request against the keys API.
@@ -196,26 +114,17 @@ const updateKeyMeta = async (id: number, meta: KeyMeta) => {
  */
 const fetchTraitsByUuid = async (uuid: string): Promise<Trait[]> => {
   if (!uuid) return []
-  const url = joinURL(getTraitResolveBaseUrl(), "/api/proxy/traits/resolve", uuid)
-  const response = await fetch(url, {
-    method: "GET",
-    credentials: "include",
-    headers: getTraitResolveHeaders()
-  })
-  if (!response.ok) {
-    if (response.status === 404) return []
-    let errorBody = ""
-    errorBody = await response.text()
-    throw toErrorWithStatus(
-      errorBody
-        ? `Failed to resolve traits: HTTP ${response.status} ${errorBody}`
-        : `Failed to resolve traits: HTTP ${response.status}`,
-      response.status
-    )
+  const items: Trait[] = []
+  try {
+    await useAPI().stream(`/traits/resolve/${uuid}`, line => {
+      const item = normalizeTraitPayload(uuid, line)
+      if (item) items.push(item)
+    })
+  } catch (error) {
+    if (getApiErrorStatus(error) === 404) return []
+    throw error
   }
-  const body = await response.text()
-  if (!body.trim()) return []
-  return parseResolvedTraitsBody(uuid, body)
+  return items
 }
 /**
  * Loads one trait by uuid and falls back to the resolve endpoint when needed.
@@ -226,9 +135,7 @@ const fetchTraitByUuid = async (uuid: string): Promise<Trait | null> => {
     const payload = await useApiJson<[string, string] | Trait>(`/traits/${uuid}`)
     return normalizeTraitPayload(uuid, payload)
   } catch (error: unknown) {
-    const e = error as {statusCode?: number; status?: number; response?: {status?: number}}
-    const status = Number(e.statusCode ?? e.status ?? e.response?.status ?? 0)
-    if (status === 404) return null
+    if (getApiErrorStatus(error) === 404) return null
     throw error
   }
 }

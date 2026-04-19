@@ -6,5 +6,6 @@ be/storage/
 fe/node_modules/
 fe/.nuxt/
 fe/.output/
+*.tsbuildinfo
 .runtime-cache
 .vscode

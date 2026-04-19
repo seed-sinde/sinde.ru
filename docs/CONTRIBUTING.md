@@ -7,19 +7,22 @@
 - не дублируй существующую логику и типы без причины;
 - если в проекте уже есть компонент, утилита или composable для задачи, используй его;
 - пользовательские тексты в интерфейсе по умолчанию должны быть на русском, если задача не про локализацию.
+- постоянные архитектурные правила описаны в [PROJECT_STANDARDS](PROJECT_STANDARDS.md).
 
 ## Frontend
 
-- стек: Nuxt 4, Vue 3, Bun, Tailwind CSS v4;
+- стек: Nuxt 4, Vue 3, pnpm, Tailwind CSS v4;
 - использовать `script setup lang="ts"`;
 - не писать ручные import для Nuxt auto-import сущностей;
+- все запросы к <abbr title="Application Programming Interface">API</abbr> делать через `useAPI().json`, `useAPI().stream` или существующий доменный composable;
 - новые иконки использовать из набора `ic:round-*`;
 - проверка перед push:
 
 ```bash
 cd fe
-bun install
-bun run typecheck
+pnpm install
+pnpm typecheck
+pnpm lint
 ```
 
 ## Backend

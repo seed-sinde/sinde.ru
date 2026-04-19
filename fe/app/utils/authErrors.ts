@@ -1,5 +1,15 @@
+type ApiErrorMessageSource = {
+  data?: {message?: unknown} | string
+  message?: unknown
+}
 export const extractApiErrorMessage = (err: unknown, fallback = "") => {
-  const candidate = (err as any)?.data?.message || (err as any)?.message || fallback
+  const source = err as ApiErrorMessageSource
+  const candidate =
+    source?.data && typeof source.data === "object"
+      ? source.data.message || source.message || fallback
+      : typeof source?.data === "string"
+        ? source.data || source.message || fallback
+        : source?.message || fallback
   return String(candidate || fallback).trim()
 }
 export const MFA_TICKET_EXPIRED_MESSAGE = "Время подтверждения истекло. Войдите заново."

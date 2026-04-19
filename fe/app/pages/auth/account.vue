@@ -261,7 +261,7 @@ const _paymentHistoryRows = computed(() =>
     orderId: item.order_id,
     createdAt: formatDateTime(item.created_at),
     plan: paymentPlanLabel(item.plan_code),
-    amount: formatPaymentAmount(item.amount),
+    amount: formatPaymentWholeRubles(item.amount),
     status: paymentStatusLabel(item.status),
     access: item.access_until
       ? `До ${formatDateTime(item.access_until)}`
@@ -428,10 +428,6 @@ const scheduleClientFrame = (cb: () => void) => {
   }
   cb()
 }
-const formatPaymentAmount = (value?: number | null) => {
-  const amount = Number(value || 0)
-  return new Intl.NumberFormat('ru-RU').format(Math.floor(amount / 100)) + ' ₽'
-}
 const paymentStatusLabel = (status?: string | null) => {
   switch (String(status || '').trim()) {
     case 'success':
@@ -450,7 +446,8 @@ const paymentStatusLabel = (status?: string | null) => {
 }
 const paymentPlanLabel = (planCode?: string | null) =>
   String(planCode || '').trim() === 'donation' ? t('payments.plan.donation') : t('payments.plan.pro')
-const resolveUploadedImageKey = (res: any) => String(res?.data?.image_key || res?.image_key || '').trim()
+const resolveUploadedImageKey = (res: ApiResponseWithData<MediaUploadResult> | MediaUploadResult) =>
+  String('data' in res ? res.data.image_key : res.image_key).trim()
 const findAvatarGalleryIndexById = (itemId?: string | null) => {
   const normalizedId = String(itemId || '').trim()
   if (!normalizedId) return 0
@@ -502,7 +499,7 @@ const syncProfileForm = () => {
   })
 }
 
-const updateAvatarProfilePayload = async (nextAvatar: Record<string, any> | null) => {
+const updateAvatarProfilePayload = async (nextAvatar: AuthAvatarPayload | null) => {
   if (!user.value) throw new Error('Требуется активная сессия.')
   await updateProfile({
     profile: {
@@ -526,8 +523,8 @@ const persistAvatarGallery = async (items: AuthAvatarGalleryItem[], primaryId: s
     const nextPayload = buildAuthAvatarPayload(items, primaryId, AVATAR_ICON_SIZE)
     await updateAvatarProfilePayload(nextPayload)
     showSuccessNotice('avatar', avatarInfo, successMessage)
-  } catch (err: any) {
-    avatarError.value = err?.data?.message || err?.message || 'Не удалось сохранить фотографии профиля.'
+  } catch (err) {
+    avatarError.value = extractApiErrorMessage(err, 'Не удалось сохранить фотографии профиля.')
     throw err
   } finally {
     avatarUploading.value = false
@@ -574,8 +571,8 @@ const refreshState = async () => {
     await loadMe()
     if (!user.value) return
     syncProfileForm()
-  } catch (err: any) {
-    actionError.value = err?.data?.message || err?.message || 'Не удалось загрузить аккаунт.'
+  } catch (err) {
+    actionError.value = extractApiErrorMessage(err, 'Не удалось загрузить аккаунт.')
   } finally {
     initialLoading.value = false
   }
@@ -595,8 +592,8 @@ const loadActivityState = async (force = false) => {
     loginAttempts.value = attemptsRes.data.items || []
     securityEvents.value = eventsRes.data.items || []
     activityLoaded.value = true
-  } catch (err: any) {
-    activityError.value = err?.data?.message || err?.message || 'Не удалось загрузить сессии и активность.'
+  } catch (err) {
+    activityError.value = extractApiErrorMessage(err, 'Не удалось загрузить сессии и активность.')
   } finally {
     activityLoading.value = false
   }
@@ -614,11 +611,11 @@ const saveProfile = async () => {
     profileInputError.value = false
     showProfileNotice(t('auth.account.display_name_updated'), 'success', true)
     syncProfileForm()
-  } catch (err: any) {
+  } catch (err) {
     profileNoticeTemporary.value = false
     profileNoticeTone.value = 'error'
     profileInputError.value = true
-    profileError.value = err?.data?.message || err?.message || 'Не удалось обновить профиль.'
+    profileError.value = extractApiErrorMessage(err, 'Не удалось обновить профиль.')
   }
 }
 const submitDisplayNameFromKeyboard = (event: KeyboardEvent) => {
@@ -647,8 +644,8 @@ const saveInterfacePreferences = async () => {
     })
     showSuccessNotice('interface', interfaceInfo, t('settings.saved'))
     syncProfileForm()
-  } catch (err: any) {
-    interfaceError.value = err?.data?.message || err?.message || 'Не удалось сохранить настройки интерфейса.'
+  } catch (err) {
+    interfaceError.value = extractApiErrorMessage(err, 'Не удалось сохранить настройки интерфейса.')
   } finally {
     interfaceAutosavePending.value = false
   }
@@ -663,8 +660,8 @@ const _submitPasswordChange = async () => {
     passwordForm.current = ''
     passwordForm.next = ''
     await router.push('/auth/login')
-  } catch (err: any) {
-    const message = String(err?.data?.message || err?.message || 'Не удалось изменить пароль.')
+  } catch (err) {
+    const message = extractApiErrorMessage(err, 'Не удалось изменить пароль.')
     passwordError.value = message
     if (message.toLowerCase().includes('current password') || message.toLowerCase().includes('текущ')) {
       passwordCurrentInputError.value = true
@@ -683,9 +680,8 @@ const _submitEmailChange = async () => {
   try {
     await requestEmailChange(nextEmail)
     emailChangeInfo.value = t('auth.account.email.request_sent', { email: nextEmail })
-  } catch (err: any) {
-    emailChangeError.value =
-      err?.data?.message || err?.message || 'Не удалось отправить письмо для подтверждения email.'
+  } catch (err) {
+    emailChangeError.value = extractApiErrorMessage(err, 'Не удалось отправить письмо для подтверждения email.')
   } finally {
     emailChangePending.value = false
   }
@@ -702,7 +698,7 @@ const _begin2faSetup = async () => {
     setupQrDataUrl.value = res.data.qr_data_url || ''
     clearSuccessNotice('twofa', twofaInfo)
     twofaInfo.value = t('auth.account.twofa.setup_created')
-  } catch (err: any) {
+  } catch (err) {
     twofaError.value = extractApiErrorMessage(err, 'Не удалось начать настройку 2FA.')
   }
 }
@@ -724,7 +720,7 @@ const _activate2fa = async () => {
     enableCode.value = ''
     showDisable2faForm.value = false
     await refreshState()
-  } catch (err: any) {
+  } catch (err) {
     twofaError.value = getTwoFactorErrorMessage(err, 'totp', 'Неверный код из приложения. Попробуйте ещё раз.')
   }
 }
@@ -775,7 +771,7 @@ const _deactivate2fa = async (rawCode?: string) => {
     disableBackupCode.value = ''
     showDisable2faForm.value = false
     await refreshState()
-  } catch (err: any) {
+  } catch (err) {
     twofaError.value = getTwoFactorErrorMessage(
       err,
       disableMethodTab.value === 'backup' ? 'backup' : 'totp',
@@ -860,8 +856,8 @@ const _revokeSessionGroup = async (group: AuthSessionGroupView) => {
     }
     showSuccessNotice('action', actionInfo, 'Сессии устройства отозваны.')
     await loadActivityState(true)
-  } catch (err: any) {
-    actionError.value = err?.data?.message || err?.message || 'Не удалось отозвать сессии устройства.'
+  } catch (err) {
+    actionError.value = extractApiErrorMessage(err, 'Не удалось отозвать сессии устройства.')
   }
 }
 syncProfileForm()
@@ -917,8 +913,8 @@ const onAvatarCropConfirm = async (file: File) => {
     showSuccessNotice('avatar', avatarInfo, 'Фотография профиля добавлена.')
     avatarPreviewDialog.index = 0
     closeAvatarCropDialog(true)
-  } catch (err: any) {
-    avatarError.value = err?.data?.message || err?.message || 'Не удалось обработать и сохранить аватарку.'
+  } catch (err) {
+    avatarError.value = extractApiErrorMessage(err, 'Не удалось обработать и сохранить аватарку.')
   } finally {
     avatarUploading.value = false
   }

@@ -38,10 +38,6 @@ const paymentHistoryColumns = computed<LabDataTableColumn[]>(() => [
 ])
 const formatDateTime = (value?: string | null) =>
   formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
-const formatPaymentAmount = (value?: number | null) => {
-  const amount = Number(value || 0)
-  return new Intl.NumberFormat('ru-RU').format(Math.floor(amount / 100)) + ' ₽'
-}
 const paymentStatusLabel = (status?: string | null) => {
   switch (String(status || '').trim()) {
     case 'success':
@@ -76,7 +72,7 @@ const paymentHistoryRows = computed<{
     orderId: item.order_id,
     createdAt: formatDateTime(item.created_at),
     plan: paymentPlanLabel(item.plan_code),
-    amount: formatPaymentAmount(item.amount),
+    amount: formatPaymentWholeRubles(item.amount),
     status: paymentStatusLabel(item.status),
     access: item.access_until
       ? `До ${formatDateTime(item.access_until)}`

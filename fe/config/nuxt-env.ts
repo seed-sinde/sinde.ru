@@ -1,4 +1,7 @@
-const env = ((globalThis as any)?.process?.env || {}) as Record<string, string | undefined>
+const env = ((globalThis as {process?: {env?: Record<string, string | undefined>}}).process?.env || {}) as Record<
+  string,
+  string | undefined
+>
 const isDev = env.NODE_ENV !== "production"
 const runtimeConfig = {
   apiInternalUrl: env.NUXT_API_INTERNAL_URL || env.API_INTERNAL_URL || "",

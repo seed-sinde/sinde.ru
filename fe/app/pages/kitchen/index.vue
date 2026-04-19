@@ -2,7 +2,8 @@
 definePageMeta({
   path: '/kitchen/:tab(recipes|ingredients|my-recipes|create)?'
 })
-
+const route = useRoute()
+const router = useRouter()
 const title = 'Кухня'
 const runtimeConfig = useRuntimeConfig()
 const { effectiveTheme } = useInterfacePreferences()
@@ -272,24 +273,34 @@ const loadKitchenAccountIngredients = async () => {
     accountIngredientsLoading.value = false
   }
 }
-const route = useRoute()
-const router = useRouter()
 const loginPath = computed(() => buildLoginPath(route.fullPath))
 const isKitchenEditRoute = computed(() => route.path.startsWith('/kitchen/edit/'))
 const kitchenTabValues: Array<Exclude<KitchenMainTab, 'edit'>> = ['recipes', 'ingredients', 'my-recipes', 'create']
-const routeKitchenTabParam = Array.isArray(route.params.tab) ? route.params.tab[0] : route.params.tab
-const routeKitchenTabQuery = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab
+const routeKitchenTabParam = computed<string | undefined>(() => {
+  const tab = route.params.tab
+  return typeof tab === 'string' ? tab : typeof tab?.[0] === 'string' ? tab[0] : undefined
+})
+const routeKitchenTabQuery = computed<string | undefined>(() => {
+  const tab = route.query.tab
+  return typeof tab === 'string' ? tab : typeof tab?.[0] === 'string' ? tab[0] : undefined
+})
 const buildKitchenTabPath = (tab: Exclude<KitchenMainTab, 'edit'>) => `/kitchen/${tab}`
-const resolvedKitchenTab = normalizeTabRouteValue(
-  routeKitchenTabParam || routeKitchenTabQuery,
-  kitchenTabValues,
-  'recipes'
-) as Exclude<KitchenMainTab, 'edit'>
-if (!isKitchenEditRoute.value && (routeKitchenTabQuery || routeKitchenTabParam !== resolvedKitchenTab)) {
+const resolvedKitchenTab = computed(
+  () =>
+    normalizeTabRouteValue(
+      routeKitchenTabParam.value || routeKitchenTabQuery.value,
+      kitchenTabValues,
+      'recipes'
+    ) as Exclude<KitchenMainTab, 'edit'>
+)
+if (
+  !isKitchenEditRoute.value
+  && (routeKitchenTabQuery.value || routeKitchenTabParam.value !== resolvedKitchenTab.value)
+) {
   const { tab: _tab, ...query } = route.query
   await navigateTo(
     {
-      path: buildKitchenTabPath(resolvedKitchenTab),
+      path: buildKitchenTabPath(resolvedKitchenTab.value),
       query,
       hash: route.hash
     },
@@ -303,10 +314,11 @@ const activeKitchenTab = computed<KitchenMainTab>({
   get: () =>
     isKitchenEditRoute.value
       ? 'edit'
-      : (normalizeTabRouteValue(route.params.tab || route.query.tab, kitchenTabValues, 'recipes') as Exclude<
-          KitchenMainTab,
-          'edit'
-        >),
+      : (normalizeTabRouteValue(
+          routeKitchenTabParam.value || routeKitchenTabQuery.value,
+          kitchenTabValues,
+          'recipes'
+        ) as Exclude<KitchenMainTab, 'edit'>),
   set: value => {
     if (value === 'edit') return
     const { tab: _tab, ...query } = route.query
@@ -474,10 +486,6 @@ const activeSearchSummary = computed(() => {
   if (excludeFavoriteIngredientsInSearch.value) favoriteScope.push('исключаемые добавлены')
   const favoriteText = favoriteScope.length ? ` ${favoriteScope.join(', ')}.` : ''
   return `Режим поиска: ${modeText}.${excludedText}${favoriteText}${favoriteOnlyText} Найдено рецептов: ${count}.`
-})
-const recipeAdvancedSearchFoundLabel = computed(() => {
-  if (recipesLoading.value) return 'Ищем рецепты...'
-  return `Найдено рецептов: ${visibleRecipes.value.length}`
 })
 const recipeAdvancedSearchCloseLabel = computed(() => {
   if (recipesLoading.value) return 'Вернуться к результатам'
@@ -1204,7 +1212,7 @@ onBeforeUnmount(() => {
       route-param-key="tab"
       :route-target-map="kitchenTabRouteTargetMap"
     />
-    <section v-show="activeKitchenTab === 'ingredients'" class="space-y-4 p-4">
+    <section v-if="activeKitchenTab === 'ingredients'" class="space-y-4 p-4">
       <LabNotify
         :text="catalogStore.error ? `Справочник кухни загружен не полностью: ${catalogStore.error}` : ''"
         tone="warning"
@@ -1260,80 +1268,60 @@ onBeforeUnmount(() => {
                 <span class="whitespace-nowrap">{{ group.category }}</span>
                 <span :class="catalogGroupDividerLineClass" />
               </div>
-              <div class="grid grid-cols-2 gap-0.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              <div class="grid gap-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <div
                   v-for="item in group.items"
                   :key="item.id"
-                  class="group relative flex aspect-4/3 w-full overflow-hidden border p-0 text-left transition-colors duration-200 hover:ring-1 hover:ring-zinc-500/70"
+                  class="group flex min-h-11 w-full items-center justify-between gap-2 px-2 py-1.5 text-left transition-colors duration-200 hover:ring-1 hover:ring-zinc-500/70"
                   :class="catalogCardVisualClass()"
                 >
-                  <div class="absolute inset-0 flex items-center justify-center bg-zinc-950/70">
-                    <div class="flex flex-col items-center gap-1 text-zinc-500">
-                      <Icon name="ic:round-image" class="h-5 w-5" />
-                      <span class="text-[10px] leading-none">изображение позже</span>
-                    </div>
-                  </div>
-                  <div class="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-2">
+                  <div class="min-w-0 flex-1">
                     <h3
-                      class="max-w-[calc(100%-4.5rem)] bg-zinc-950/70 px-2 py-1 text-xs leading-tight font-medium wrap-break-word text-zinc-100"
+                      class="text-xs leading-tight font-medium wrap-break-word"
+                      :class="kitchenTheme === 'light' ? 'text-zinc-900' : 'text-zinc-100'"
                     >
                       {{ item.name }}
                     </h3>
-                    <div
-                      v-if="showCatalogFavoriteActions"
-                      class="pointer-events-auto inline-flex shrink-0 items-center gap-1"
-                    >
-                      <LabBaseButton
-                        :button-class="catalogFavoriteButtonClass(isFavoriteIngredient(item.ingredient_id))"
-                        :aria-label="
-                          isFavoriteIngredient(item.ingredient_id)
-                            ? `Убрать ${item.name} из любимых`
-                            : `Добавить ${item.name} в любимые`
-                        "
-                        :icon="isFavoriteIngredient(item.ingredient_id) ? 'ic:round-star' : 'ic:round-star-border'"
-                        :icon-class="isFavoriteIngredient(item.ingredient_id) ? 'text-amber-300' : ''"
-                        size="xs"
-                        icon-only
-                        @click.stop="toggleFavoriteIngredient(item, 'include')"
-                      />
-                      <LabBaseButton
-                        :button-class="catalogExcludeButtonClass(isExcludeFavoriteIngredient(item.ingredient_id))"
-                        :aria-label="
-                          isExcludeFavoriteIngredient(item.ingredient_id)
-                            ? `Убрать ${item.name} из исключаемых`
-                            : `Добавить ${item.name} в исключаемые`
-                        "
-                        :icon="
-                          isExcludeFavoriteIngredient(item.ingredient_id)
-                            ? 'ic:round-block'
-                            : 'ic:round-do-not-disturb-on'
-                        "
-                        icon-only
-                        size="xs"
-                        @click.stop="toggleFavoriteIngredient(item, 'exclude')"
-                      />
-                    </div>
+                    <p v-if="!groupCatalogByCategory" class="text-[10px] leading-tight wrap-break-word text-zinc-500">
+                      {{ item.category }}
+                    </p>
                   </div>
-                  <div
-                    class="pointer-events-none absolute inset-x-0 bottom-0 hidden translate-y-2 bg-zinc-950/78 p-2 opacity-0 transition duration-200 group-hover:translate-y-0 group-hover:opacity-100 md:block"
+                  <p
+                    v-if="item.kcal !== null || item.protein_g !== null || item.fat_g !== null || item.carbs_g !== null"
+                    :class="['shrink-0 text-right', catalogCardMetaClass]"
                   >
-                    <div class="flex flex-col gap-1 text-left">
-                      <p v-if="!groupCatalogByCategory" class="text-[10px] leading-tight wrap-break-word text-zinc-400">
-                        {{ item.category }}
-                      </p>
-                      <p v-if="item.description" :class="['line-clamp-2', catalogCardMetaClass]">
-                        {{ item.description }}
-                      </p>
-                      <p
-                        v-if="
-                          item.kcal !== null || item.protein_g !== null || item.fat_g !== null || item.carbs_g !== null
-                        "
-                        :class="catalogCardMetaClass"
-                      >
-                        {{ item.kcal ?? '—' }} ккал · Б {{ item.protein_g ?? '—' }} · Ж {{ item.fat_g ?? '—' }} · У
-                        {{ item.carbs_g ?? '—' }}
-                      </p>
-                    </div>
+                    {{ item.kcal ?? '—' }} ккал
+                  </p>
+                  <div v-if="showCatalogFavoriteActions" class="inline-flex shrink-0 items-center gap-1">
+                    <LabBaseButton
+                      :button-class="catalogFavoriteButtonClass(isFavoriteIngredient(item.ingredient_id))"
+                      :aria-label="
+                        isFavoriteIngredient(item.ingredient_id)
+                          ? `Убрать ${item.name} из любимых`
+                          : `Добавить ${item.name} в любимые`
+                      "
+                      :icon="isFavoriteIngredient(item.ingredient_id) ? 'ic:round-star' : 'ic:round-star-border'"
+                      :icon-class="isFavoriteIngredient(item.ingredient_id) ? 'text-amber-300' : ''"
+                      size="xs"
+                      icon-only
+                      @click.stop="toggleFavoriteIngredient(item, 'include')"
+                    />
+                    <LabBaseButton
+                      :button-class="catalogExcludeButtonClass(isExcludeFavoriteIngredient(item.ingredient_id))"
+                      :aria-label="
+                        isExcludeFavoriteIngredient(item.ingredient_id)
+                          ? `Убрать ${item.name} из исключаемых`
+                          : `Добавить ${item.name} в исключаемые`
+                      "
+                      :icon="
+                        isExcludeFavoriteIngredient(item.ingredient_id)
+                          ? 'ic:round-block'
+                          : 'ic:round-do-not-disturb-on'
+                      "
+                      icon-only
+                      size="xs"
+                      @click.stop="toggleFavoriteIngredient(item, 'exclude')"
+                    />
                   </div>
                 </div>
               </div>
@@ -1421,7 +1409,7 @@ onBeforeUnmount(() => {
       </div>
       <p v-else class="text-xs text-zinc-500">Войдите в аккаунт, чтобы добавлять свои ингредиенты и вести избранное.</p>
     </section>
-    <section v-show="activeKitchenTab === 'recipes'" class="space-y-4 p-4">
+    <section v-if="activeKitchenTab === 'recipes'" class="space-y-4 p-4">
       <div
         class="sticky top-0 z-20 -mx-3 border-y px-3 py-2 backdrop-blur sm:-mx-4 sm:px-4 md:static md:mx-0 md:border-y-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none"
       >
@@ -1528,20 +1516,12 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <Teleport to="body" :disabled="!isCompactRecipeSearch">
-          <LabSpoiler v-model="recipeAdvancedSearchOpen" label="Расширенный поиск">
-            <div class="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3 md:hidden">
-              <div class="min-w-0 space-y-1">
-                <p class="text-base font-semibold text-zinc-100">Расширенный поиск</p>
-                <p class="text-xs text-zinc-500">{{ recipeAdvancedSearchFoundLabel }}</p>
-              </div>
-              <LabBaseButton
-                label="Закрыть"
-                variant="secondary"
-                size="md"
-                icon="ic:round-close"
-                @click="closeRecipeAdvancedSearch"
-              />
-            </div>
+          <LabSpoiler
+            v-model="recipeAdvancedSearchOpen"
+            label="Расширенный поиск"
+            header-class="hidden"
+            content-class="pt-3"
+          >
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <LabField label="Тип блюда" for-id="recipe-meal-type-filter" field-class="min-w-0">
                 <LabBaseSelect
@@ -1852,7 +1832,7 @@ onBeforeUnmount(() => {
         />
       </div>
     </section>
-    <section v-show="showRecipeManageSection" class="space-y-4 bg-zinc-900 p-4">
+    <section v-if="showRecipeManageSection" class="space-y-4 bg-zinc-900 p-4">
       <div class="flex flex-wrap items-center gap-2">
         <LabBaseButton
           v-if="showMyRecipesList && authUiReady && isAuthenticated"

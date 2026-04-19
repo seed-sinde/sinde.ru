@@ -135,7 +135,7 @@ const form = reactive<KeyMeta>(normalizeKeyMeta(metaModel.value))
 const syncing = ref(false)
 const syncForm = (next: KeyMeta) => {
   for (const key of Object.keys(form) as Array<keyof KeyMeta>) {
-    if (!(key in next)) delete form[key]
+    if (!(key in next)) Reflect.deleteProperty(form, key)
   }
   Object.assign(form, next)
 }
@@ -156,7 +156,7 @@ const unitOptions = computed(() =>
   getUnitOptionsByCategory(form.unitCategory).map(option => ({value: option.value, label: `${option.label} (${option.value})`}))
 )
 const clearNumericField = (key: "minLength" | "maxLength" | "minItems" | "opacity") => {
-  delete form[key]
+  Reflect.deleteProperty(form, key)
 }
 const bindNumberText = (key: keyof Pick<KeyMeta, "minLength" | "maxLength" | "minItems" | "opacity">) =>
   computed({

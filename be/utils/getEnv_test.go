@@ -9,6 +9,9 @@ func TestGetEnvVarReturnsTrimmedConfig(t *testing.T) {
 	t.Setenv("POSTGRES_PASSWORD", " secret ")
 	t.Setenv("POSTGRES_DB", " sinde ")
 	t.Setenv("POSTGRES_SSL", " disable ")
+	t.Setenv("REDIS_ADDR", " 127.0.0.1:6379 ")
+	t.Setenv("REDIS_PASSWORD", " redis-secret ")
+	t.Setenv("REDIS_DB", " 2 ")
 	cfg := GetEnvVar()
 	if cfg == nil {
 		t.Fatal("expected config, got nil")
@@ -30,6 +33,15 @@ func TestGetEnvVarReturnsTrimmedConfig(t *testing.T) {
 	}
 	if cfg.PostgresSSL != "disable" {
 		t.Fatalf("unexpected ssl mode: %q", cfg.PostgresSSL)
+	}
+	if cfg.RedisAddr != "127.0.0.1:6379" {
+		t.Fatalf("unexpected redis addr: %q", cfg.RedisAddr)
+	}
+	if cfg.RedisPassword != "redis-secret" {
+		t.Fatalf("unexpected redis password: %q", cfg.RedisPassword)
+	}
+	if cfg.RedisDB != 2 {
+		t.Fatalf("unexpected redis db: %d", cfg.RedisDB)
 	}
 }
 func TestGetEnvVarReturnsNilWhenRequiredValuesAreMissing(t *testing.T) {

@@ -8,6 +8,9 @@ export const formatPaymentAmount = (amountKopecks: number, locale = "ru-RU") => 
   }).format(amount)
 }
 
+export const formatPaymentWholeRubles = (amountKopecks?: number | null, locale = "ru-RU") =>
+  `${new Intl.NumberFormat(locale).format(Math.floor(Number(amountKopecks || 0) / 100))} ₽`
+
 export const formatPaymentInputRubles = (amountKopecks: number, locale = "ru-RU") => {
   const amount = Number.isFinite(amountKopecks) ? amountKopecks / 100 : 0
   return new Intl.NumberFormat(locale, {

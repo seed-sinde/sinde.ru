@@ -56,7 +56,6 @@ export type TraitUnitOption = {
   value: string
   label: string
 }
-export type TraitResolvePayload = [string, string] | Trait | Trait[]
 export type KeyMeta = {
   dataType: DataType
   ui?: TraitMetaUi

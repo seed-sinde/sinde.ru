@@ -3,6 +3,7 @@ import {uploadMediaFile} from "~/composables/useMediaUpload"
 import {buildMediaFileUrl} from "~/utils/mediaUrl"
 import type {KitchenRecipeImageDraft, KitchenRecipeStepDraft} from "./useKitchenRecipeEditor"
 type MaybeReadonlyRef<T> = Ref<T> | ComputedRef<T>
+type UploadedKitchenImageResponse = ApiResponseWithData<MediaUploadResult> | MediaUploadResult
 export type UseKitchenRecipeImagesOptions = {
   activeRecipeUploadId: MaybeReadonlyRef<string>
   formSteps: Ref<KitchenFormStep[]>
@@ -35,8 +36,8 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
   const stepImageTargetIndex = ref<number | null>(null)
   const buildStepImageUrl = (imageKey?: string) => buildMediaFileUrl(imageKey)
   const stepImageSrc = (step: {image_key?: string}) => buildStepImageUrl(step.image_key)
-  const resolveUploadedImageKey = (response: any) =>
-    String(response?.data?.image_key || response?.image_key || "").trim()
+  const resolveUploadedImageKey = (response: UploadedKitchenImageResponse) =>
+    String("data" in response ? response.data.image_key : response.image_key).trim()
   const openImageCropDialog = (file: File, target: ImageCropTarget) => {
     if (!file) return
     imageCropDialog.target = target
@@ -115,8 +116,8 @@ export const useKitchenRecipeImages = (options: UseKitchenRecipeImagesOptions) =
       }
       applyUploadedKitchenImage(target, imageKey)
       closeImageCropDialog(true)
-    } catch (err: any) {
-      const message = err?.data?.message || err?.message || "Не удалось загрузить изображение."
+    } catch (err) {
+      const message = extractApiErrorMessage(err, "Не удалось загрузить изображение.")
       if (target === "cover") {
         coverImageError.value = message
       } else {

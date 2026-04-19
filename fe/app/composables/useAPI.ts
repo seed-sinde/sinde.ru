@@ -36,6 +36,15 @@ const AUTH_PUBLIC_PATHS = new Set([
 ])
 const AUTH_STALE_SKIP_PATHS = new Set(["/auth/summary", "/auth/admin/summary"])
 const CSRF_COOKIE_NAMES = ["csrf_token", "__Host-csrf_token"] as const
+const JSON_SSR_HEADER_NAMES = [
+  "cookie",
+  "x-csrf-token",
+  "user-agent",
+  "accept-language",
+  "x-forwarded-for",
+  "x-real-ip"
+] as const
+const STREAM_SSR_HEADER_NAMES = ["cookie", "user-agent", "accept-language", "x-forwarded-for", "x-real-ip"] as const
 const SESSION_STATE_MESSAGES = new Set([
   "authentication required",
   "invalid or expired session",
@@ -143,25 +152,15 @@ const canAutoRefreshByPath = (path: string, method: string, auth?: AuthOptions, 
   auth?.allowAutoRefresh !== false &&
   (isProtectedPath(path, method) || auth?.requiresSession === true) &&
   (!err || isSessionStateError(getErrorMessage(err)))
-const buildJsonHeaders = (path: string, method: string, options: ApiJsonOptions) => {
+const buildJsonHeaders = (
+  path: string,
+  method: string,
+  options: ApiJsonOptions,
+  reqHeaders: Record<string, string | undefined>
+) => {
   const headers = mergeHeaders(options.headers)
   if (import.meta.server) {
-    const reqHeaders = useRequestHeaders([
-      "cookie",
-      "x-csrf-token",
-      "user-agent",
-      "accept-language",
-      "x-forwarded-for",
-      "x-real-ip"
-    ])
-    copyRequestHeadersIfMissing(headers, reqHeaders, [
-      "cookie",
-      "x-csrf-token",
-      "user-agent",
-      "accept-language",
-      "x-forwarded-for",
-      "x-real-ip"
-    ])
+    copyRequestHeadersIfMissing(headers, reqHeaders, JSON_SSR_HEADER_NAMES)
     if (!headers["x-csrf-token"]) {
       setHeaderIfMissing(headers, "x-csrf-token", readCSRFFromCookieHeader(reqHeaders.cookie))
     }
@@ -243,13 +242,18 @@ const createHttpError = async (res: Response) => {
  */
 export const useAPI = () => {
   const basicFetch = $fetch as BasicFetch
+  const nuxtApp = tryUseNuxtApp()
+  const config = nuxtApp ? useRuntimeConfig() : null
+  const ssrJsonHeaders = import.meta.server && nuxtApp ? useRequestHeaders([...JSON_SSR_HEADER_NAMES]) : {}
+  const ssrStreamHeaders = import.meta.server && nuxtApp ? useRequestHeaders([...STREAM_SSR_HEADER_NAMES]) : {}
+  const ssrOrigin = import.meta.server && nuxtApp ? useRequestURL().origin : ""
   /**
    * Executes a proxied JSON request with auth-aware retry logic.
    */
   const json = async <T>(path: string, options: ApiJsonOptions = {}): Promise<T> => {
     const p = toPath(path)
     const method = getMethod(options.method)
-    const headers = buildJsonHeaders(p, method, options)
+    const headers = buildJsonHeaders(p, method, options, ssrJsonHeaders)
     const cfg = buildJsonRequestConfig({...options, method}, headers)
     try {
       return await basicFetch<T>(`/api/proxy${p}`, cfg)
@@ -281,14 +285,16 @@ export const useAPI = () => {
    */
   const stream = async (path: string, onLine: (line: unknown) => void, options: RequestInit = {}): Promise<void> => {
     const p = toPath(path)
-    const config = useRuntimeConfig()
-    const base = import.meta.client ? "" : useRequestURL().origin || config.public.baseURL
+    const base = import.meta.client ? "" : ssrOrigin || config?.public.baseURL || ""
     const url = joinURL(base, "/api/proxy", p)
     const headers = mergeHeaders(options.headers)
     setHeaderIfMissing(headers, "accept", "application/x-ndjson, application/json")
     if (import.meta.server) {
-      const req = useRequestHeaders(["cookie"])
-      setHeaderIfMissing(headers, "cookie", req.cookie)
+      copyRequestHeadersIfMissing(headers, ssrStreamHeaders, STREAM_SSR_HEADER_NAMES)
+    }
+    if (import.meta.client && !headers["accept-language"]) {
+      const ui = useUiPreferencesStore()
+      headers["accept-language"] = interfaceLocaleToTag(normalizeInterfaceLocale(ui.interfaceLocale))
     }
     const res = await fetch(url, {
       ...options,

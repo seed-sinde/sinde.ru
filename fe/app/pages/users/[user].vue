@@ -18,7 +18,6 @@ type SessionRow = LabDataTableRow & {
 }
 type UserSessionGroupView = Omit<AuthSessionGroupView, 'currentSessionIds'>
 type UserTab = 'profile' | 'payments' | 'activity'
-type ActivityTab = 'sessions' | 'attempts' | 'events'
 type LoginAttemptRow = LabDataTableRow & {
   id: string
   createdAt: string
@@ -44,7 +43,7 @@ type UserPageData = {
 }
 
 const USER_TAB_VALUES: UserTab[] = ['profile', 'payments', 'activity']
-const ACTIVITY_TAB_VALUES: ActivityTab[] = ['sessions', 'attempts', 'events']
+const nuxtApp = useNuxtApp()
 const route = useRoute()
 const router = useRouter()
 const readRouteValue = (value: unknown) =>
@@ -53,16 +52,7 @@ const targetUserId = computed(() => readRouteValue(route.params.user).trim())
 const routeUserTab = computed(
   () => normalizeTabRouteValue(readRouteValue(route.params.tab) || readRouteValue(route.query.tab), USER_TAB_VALUES, 'profile') as UserTab
 )
-const routeActivityTab = computed(
-  () =>
-    normalizeTabRouteValue(
-      readRouteValue(route.params.activity) || readRouteValue(route.query.activity),
-      ACTIVITY_TAB_VALUES,
-      'sessions'
-    ) as ActivityTab
-)
-const buildUserTabPath = (tab: UserTab, activity: ActivityTab = 'sessions') =>
-  tab === 'activity' ? `/users/${targetUserId.value}/activity/${activity}` : `/users/${targetUserId.value}/${tab}`
+const buildUserTabPath = (tab: UserTab) => `/users/${targetUserId.value}/${tab}`
 const {
   ensureLoaded,
   isAdmin,
@@ -77,27 +67,29 @@ const { adminUserAccess, adminUserOrders } = usePayments()
 const { formatAbsoluteDateTime } = useLocalizedDateTime()
 const { locale, key, load, t } = useI18nSection('auth')
 
-await useAsyncData(key, load, { watch: [locale] })
+await nuxtApp.runWithContext(() => useAsyncData(key, load, { watch: [locale] }))
 
-await ensureLoaded()
+await nuxtApp.runWithContext(() => ensureLoaded())
 
 const adminTab = computed<UserTab>(() => (isAdmin.value ? routeUserTab.value : 'profile'))
-const activityTab = computed<ActivityTab>(() => routeActivityTab.value)
 const normalizeRoute = async () => {
   if (
     !(
       readRouteValue(route.query.tab) ||
       readRouteValue(route.query.activity) ||
       readRouteValue(route.params.tab) !== adminTab.value ||
-      (adminTab.value === 'activity'
-        ? readRouteValue(route.params.activity) !== activityTab.value
-        : Boolean(readRouteValue(route.params.activity)))
+      Boolean(readRouteValue(route.params.activity))
     )
   ) {
     return
   }
   const { tab: _tab, activity: _activity, ...query } = route.query
-  await navigateTo({ path: buildUserTabPath(adminTab.value, activityTab.value), query, hash: route.hash }, { redirectCode: 301, replace: true })
+  await nuxtApp.runWithContext(() =>
+    navigateTo(
+      { path: buildUserTabPath(adminTab.value), query, hash: route.hash },
+      { redirectCode: 301, replace: true }
+    )
+  )
 }
 
 await normalizeRoute()
@@ -105,7 +97,6 @@ watch([() => route.fullPath, () => isAdmin.value], () => void normalizeRoute())
 
 const pageActionError = ref('')
 const pageInfo = ref('')
-const moneyFormatter = new Intl.NumberFormat('ru-RU')
 const emptyUserPage = (): UserPageData => ({
   publicProfile: null,
   detail: null,
@@ -116,7 +107,7 @@ const {
   pending: loading,
   error: pageLoadError,
   refresh: refreshPage
-} = await useAsyncData(
+} = await nuxtApp.runWithContext(() => useAsyncData(
   computed(() => `user-page:${targetUserId.value}:${isAdmin.value ? 'admin' : 'public'}`),
   async () => {
     if (!targetUserId.value) {
@@ -140,21 +131,21 @@ const {
   {
     default: emptyUserPage
   }
-)
+))
 const {
   data: ordersData,
   pending: ordersLoading,
   error: ordersLoadError,
   refresh: refreshOrders,
   execute: executeOrders
-} = await useAsyncData(
+} = await nuxtApp.runWithContext(() => useAsyncData(
   computed(() => `user-orders:${targetUserId.value}`),
   async () => (!isAdmin.value || adminTab.value !== 'payments' || !targetUserId.value ? [] : (await adminUserOrders(targetUserId.value)).data.items || []),
   {
     default: () => [],
     immediate: false
   }
-)
+))
 
 watch(
   [() => isAdmin.value, adminTab, targetUserId],
@@ -190,15 +181,7 @@ const title = computed(() => {
 const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
   const root = { label: title.value, to: buildUserTabPath('profile') }
   if (adminTab.value === 'activity') {
-    return [
-      root,
-      { label: t('account.activity.title'), to: buildUserTabPath('activity', 'sessions'), kind: 'tab' },
-      {
-        label: activityTabItems.value.find(item => item.value === activityTab.value)?.label || t('account.activity.sessions'),
-        current: true,
-        kind: 'tab'
-      }
-    ]
+    return [root, { label: t('account.activity.title'), current: true, kind: 'tab' }]
   }
   return [
     root,
@@ -209,9 +192,11 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
     }
   ]
 })
-usePageSeo({
-  title,
-  description: 'Профиль пользователя'
+nuxtApp.runWithContext(() => {
+  usePageSeo({
+    title,
+    description: 'Профиль пользователя'
+  })
 })
 const adminTabItems = computed<LabTabItem[]>(() => [
   { value: 'profile', label: t('account.profile') },
@@ -219,20 +204,10 @@ const adminTabItems = computed<LabTabItem[]>(() => [
   { value: 'activity', label: t('account.activity.title') }
 ])
 
-const activityTabItems = computed<LabTabItem[]>(() => [
-  { value: 'sessions', label: t('account.activity.sessions') },
-  { value: 'attempts', label: t('account.activity.attempts') },
-  { value: 'events', label: t('account.activity.events') }
-])
 const adminTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
   profile: buildUserTabPath('profile'),
   payments: buildUserTabPath('payments'),
-  activity: buildUserTabPath('activity', activityTab.value)
-}))
-const activityTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
-  sessions: buildUserTabPath('activity', 'sessions'),
-  attempts: buildUserTabPath('activity', 'attempts'),
-  events: buildUserTabPath('activity', 'events')
+  activity: buildUserTabPath('activity')
 }))
 
 const displayUser = computed<AuthUser | null>(() => {
@@ -284,7 +259,7 @@ const paymentHistoryRows = computed<{
     id: item.order_id,
     createdAt: formatDateTime(item.created_at),
     plan: paymentPlanLabel(item.plan_code),
-    amount: formatPaymentAmount(item.amount),
+    amount: formatPaymentWholeRubles(item.amount),
     status: paymentStatusLabel(item.status),
     access: item.access_until
       ? `До ${formatDateTime(item.access_until)}`
@@ -419,7 +394,6 @@ const securityEventRows = computed<{
 
 const formatDateTime = (value?: string | null) =>
   formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
-const formatPaymentAmount = (value?: number | null) => `${moneyFormatter.format(Math.floor(Number(value || 0) / 100))} ₽`
 const paymentPlanLabel = (planCode?: string | null) => (String(planCode || '').trim() === 'donation' ? 'Донат' : 'Pro')
 const paymentStatusLabel = (status?: string | null) => {
   switch (String(status || '').trim()) {
@@ -653,71 +627,60 @@ const deleteUser = async () => {
             />
           </template>
           <template #panel-activity>
-            <LabNavTabs
-              :model-value="activityTab"
-              :items="activityTabItems"
-              route-param-key="activity"
-              :route-target-map="activityTabRouteTargetMap"
-            >
-              <template #panel-sessions>
-                <LabDataTable
-                  :title="t('account.activity.sessions')"
-                  :columns="sessionColumns"
-                  :rows="sessionRows"
-                  empty-text="Сессии не найдены."
-                >
-                  <template #cell-device="{ row }">
-                    <div class="space-y-1">
-                      <p class="text-sm">{{ (row as SessionRow).device }}</p>
-                      <p class="text-xs text-(--lab-text-muted)">{{ (row as SessionRow).ip }}</p>
-                    </div>
-                  </template>
-                  <template #cell-activity="{ row }">
-                    <div class="space-y-1 text-xs">
-                      <p>Сессий: {{ (row as SessionRow).count }}</p>
-                      <p class="text-(--lab-text-muted)">
-                        Последняя активность
-                        <LabRelativeTime :datetime="(row as SessionRow).lastSeenAt" compact />
-                      </p>
-                    </div>
-                  </template>
-                </LabDataTable>
-              </template>
-              <template #panel-attempts>
-                <LabDataTable
-                  :title="t('account.activity.attempts')"
-                  :columns="loginAttemptColumns"
-                  :rows="loginAttemptRows"
-                  empty-text="Попыток входа нет."
-                >
-                  <template #cell-createdAt="{ row }">
-                    <div class="space-y-1 text-xs">
-                      <p>{{ (row as LoginAttemptRow).createdAt }}</p>
-                      <p class="text-(--lab-text-muted)">
-                        <LabRelativeTime :datetime="(row as LoginAttemptRow).source.created_at" compact />
-                      </p>
-                    </div>
-                  </template>
-                </LabDataTable>
-              </template>
-              <template #panel-events>
-                <LabDataTable
-                  :title="t('account.activity.events')"
-                  :columns="securityEventColumns"
-                  :rows="securityEventRows"
-                  empty-text="Событий безопасности нет."
-                >
-                  <template #cell-createdAt="{ row }">
-                    <div class="space-y-1 text-xs">
-                      <p>{{ (row as SecurityEventRow).createdAt }}</p>
-                      <p class="text-(--lab-text-muted)">
-                        <LabRelativeTime :datetime="(row as SecurityEventRow).source.created_at" compact />
-                      </p>
-                    </div>
-                  </template>
-                </LabDataTable>
-              </template>
-            </LabNavTabs>
+            <div class="space-y-4 p-4">
+              <LabDataTable
+                :title="t('account.activity.sessions')"
+                :columns="sessionColumns"
+                :rows="sessionRows"
+                empty-text="Сессии не найдены."
+              >
+                <template #cell-device="{ row }">
+                  <div class="space-y-1">
+                    <p class="text-sm">{{ (row as SessionRow).device }}</p>
+                    <p class="text-xs text-(--lab-text-muted)">{{ (row as SessionRow).ip }}</p>
+                  </div>
+                </template>
+                <template #cell-activity="{ row }">
+                  <div class="space-y-1 text-xs">
+                    <p>Сессий: {{ (row as SessionRow).count }}</p>
+                    <p class="text-(--lab-text-muted)">
+                      Последняя активность
+                      <LabRelativeTime :datetime="(row as SessionRow).lastSeenAt" compact />
+                    </p>
+                  </div>
+                </template>
+              </LabDataTable>
+              <LabDataTable
+                :title="t('account.activity.attempts')"
+                :columns="loginAttemptColumns"
+                :rows="loginAttemptRows"
+                empty-text="Попыток входа нет."
+              >
+                <template #cell-createdAt="{ row }">
+                  <div class="space-y-1 text-xs">
+                    <p>{{ (row as LoginAttemptRow).createdAt }}</p>
+                    <p class="text-(--lab-text-muted)">
+                      <LabRelativeTime :datetime="(row as LoginAttemptRow).source.created_at" compact />
+                    </p>
+                  </div>
+                </template>
+              </LabDataTable>
+              <LabDataTable
+                :title="t('account.activity.events')"
+                :columns="securityEventColumns"
+                :rows="securityEventRows"
+                empty-text="Событий безопасности нет."
+              >
+                <template #cell-createdAt="{ row }">
+                  <div class="space-y-1 text-xs">
+                    <p>{{ (row as SecurityEventRow).createdAt }}</p>
+                    <p class="text-(--lab-text-muted)">
+                      <LabRelativeTime :datetime="(row as SecurityEventRow).source.created_at" compact />
+                    </p>
+                  </div>
+                </template>
+              </LabDataTable>
+            </div>
           </template>
         </LabNavTabs>
       </section>

@@ -1,6 +1,6 @@
 # Фронтенд
 
-Frontend приложения `sinde.ru` на Nuxt 4, Bun, Vite, Nitro и Tailwind CSS v4.
+Frontend приложения `sinde.ru` на Nuxt 4, pnpm, Vite, Nitro и Tailwind CSS v4.
 
 ## Назначение
 
@@ -14,7 +14,8 @@ Frontend приложения `sinde.ru` на Nuxt 4, Bun, Vite, Nitro и Tailwi
 
 ## Требования
 
-- Bun `1.3.11`
+- Node.js `24.x`
+- pnpm `10.x`
 - файл `fe/.env`
 - запущенный backend на `http://127.0.0.1:3001`
 
@@ -22,18 +23,19 @@ Frontend приложения `sinde.ru` на Nuxt 4, Bun, Vite, Nitro и Tailwi
 
 ```bash
 cp .env.example .env
-bun install
+pnpm install
 ```
 
 ## Скрипты
 
-- `bun run dev` — локальный запуск Nuxt с HMR;
-- `bun run typecheck` — `nuxt typecheck`;
-- `bun run build` — production build;
-- `bun run preview` — локальный просмотр production build;
-- `bun run start` — запуск `.output/server/index.mjs` через Bun;
-- `bun run generate` — генерация статического вывода;
-- `bun run upd` — показать список обновлений зависимостей через `npm-check-updates`.
+- `pnpm dev` — локальный запуск Nuxt с HMR;
+- `pnpm typecheck` — `nuxt typecheck`;
+- `pnpm lint` — eslint-проверка;
+- `pnpm build` — production build;
+- `pnpm preview` — локальный просмотр production build;
+- `pnpm start` — запуск `.output/server/index.mjs` через Node.js;
+- `pnpm generate` — генерация статического вывода;
+- `pnpm upd` — показать список обновлений зависимостей через `npm-check-updates`.
 
 ## Переменные окружения
 
@@ -49,5 +51,5 @@ bun install
 ## PWA
 
 - PWA включается для production build;
-- для локальной проверки используй `bun run build && bun run preview`;
+- для локальной проверки используй `pnpm build && pnpm preview`;
 - сервис-воркер и manifest корректнее проверять на HTTPS-хосте, а не только на `localhost`.

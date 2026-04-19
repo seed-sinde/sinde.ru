@@ -16,6 +16,8 @@ const useApiStream = (
   onLine: Parameters<ReturnType<typeof useAPI>["stream"]>[1],
   options?: Parameters<ReturnType<typeof useAPI>["stream"]>[2]
 ) => useAPI().stream(path, onLine, options)
+const isAbortError = (error: unknown) =>
+  Boolean(error && typeof error === "object" && "name" in error && error.name === "AbortError")
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 /**
  * Returns the uuid route param only for set pages inside the traits workspace.
@@ -317,13 +319,13 @@ export const useTraitStream = (uuid: Ref<string | undefined>, skipFetchUuid: Ref
           flushTimer = null
         }
         flush()
-      } catch (error: any) {
+      } catch (error) {
         if (flushTimer) {
           clearTimeout(flushTimer)
           flushTimer = null
         }
         flush()
-        if (error?.name === "AbortError") return
+        if (isAbortError(error)) return
       }
       if (!gotAny && store.traits.length === 0) {
         try {

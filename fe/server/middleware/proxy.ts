@@ -1,4 +1,4 @@
-import type {HTTPMethod} from "h3"
+import type {H3Event, HTTPMethod} from "h3"
 import {
   defineEventHandler,
   getHeaders,
@@ -101,10 +101,16 @@ function splitSetCookieHeader(raw: string) {
     .map(value => value.trim())
     .filter(Boolean)
 }
-function appendSetCookies(
-  event: Parameters<typeof defineEventHandler>[0] extends (event: infer E) => any ? E : never,
-  response: Response
-) {
+type ProxyErrorLike = {
+  response?: {status?: number; _data?: {message?: unknown; details?: unknown}}
+  status?: number
+  statusCode?: number
+  statusMessage?: string
+  message?: string
+}
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === "object" && !Array.isArray(value))
+function appendSetCookies(event: H3Event, response: Response) {
   const headers = response.headers as Headers & {
     getSetCookie?: () => string[]
     getAll?: (name: string) => string[]
@@ -177,6 +183,7 @@ export default defineEventHandler(async event => {
   const isMultipartRequest = hasBody && requestContentType.includes("multipart/form-data")
   const isMediaFilePath = normalizedProxyPath.startsWith("/media/files/")
   const rawBody = hasBody ? await readRawBody(event, false) : undefined
+  const requestBody = rawBody ? new Blob([new Uint8Array(rawBody)]) : undefined
   const requestHeaders = Object.fromEntries(
     Object.entries(headers).filter(([key]) => !shouldSkipRequestHeader(key))
   ) as Record<string, string>
@@ -184,7 +191,7 @@ export default defineEventHandler(async event => {
     const doRawRequest = async (url: string) =>
       await fetch(url, {
         method,
-        body: hasBody ? (rawBody as any) : undefined,
+        body: hasBody ? requestBody : undefined,
         headers: requestHeaders,
         credentials: "include"
       })
@@ -208,7 +215,7 @@ export default defineEventHandler(async event => {
     const doRequest = (url: string) =>
       fetch(url, {
         method,
-        body: hasBody ? (rawBody as any) : undefined,
+        body: hasBody ? requestBody : undefined,
         credentials: "include",
         headers: requestHeaders
       })
@@ -217,14 +224,8 @@ export default defineEventHandler(async event => {
     if (shouldForwardSetCookie(method, proxyPath, response)) {
       appendSetCookies(event, response)
     }
-    setResponseStatus(event, response.status)
     const contentType = String(response.headers.get("content-type") || "").toLowerCase()
     const isEventStream = contentType.includes("text/event-stream")
-    if (!isEventStream || response.ok) {
-      if (shouldForwardSetCookie(method, proxyPath, response)) {
-        appendSetCookies(event, response)
-      }
-    }
     response.headers.forEach((value, key) => {
       if (!value) return
       const lower = key.toLowerCase()
@@ -245,10 +246,10 @@ export default defineEventHandler(async event => {
     }
     if (contentType.includes("application/json")) {
       const raw = await response.text()
-      let payload: any = null
+      let payload: unknown = null
       if (raw) {
         try {
-          payload = JSON.parse(raw)
+          payload = JSON.parse(raw) as unknown
         } catch {
           throw createError({
             statusCode: 502,
@@ -259,10 +260,10 @@ export default defineEventHandler(async event => {
       }
       if (!response.ok) {
         const message =
-          payload && typeof payload === "object"
-            ? (payload as any)?.message || response.statusText || "Unknown error"
+          isRecord(payload)
+            ? String(payload.message || response.statusText || "Unknown error")
             : response.statusText || "Unknown error"
-        const details = payload && typeof payload === "object" ? (payload as any)?.details : undefined
+        const details = isRecord(payload) ? payload.details : undefined
         throw createError({
           statusCode: response.status,
           statusMessage: response.statusText || message,
@@ -280,10 +281,11 @@ export default defineEventHandler(async event => {
       })
     }
     return text
-  } catch (error: any) {
-    const status = error?.response?.status || error?.statusCode || error?.status || 500
-    const message = error?.response?._data?.message || error?.message || "Unknown error"
-    const details = error?.response?._data?.details
+  } catch (error) {
+    const err = error as ProxyErrorLike
+    const status = err?.response?.status || err?.statusCode || err?.status || 500
+    const message = String(err?.response?._data?.message || err?.message || "Unknown error")
+    const details = err?.response?._data?.details
     // special case: keys/meta not found → return "empty" instead of error
     if (status === 404 && proxyPath.startsWith("/keys/meta")) {
       setResponseStatus(event, 200)
@@ -294,7 +296,7 @@ export default defineEventHandler(async event => {
     }
     throw createError({
       statusCode: status,
-      statusMessage: error?.statusMessage || error?.message || message,
+      statusMessage: err?.statusMessage || err?.message || message,
       message,
       data: details
     })

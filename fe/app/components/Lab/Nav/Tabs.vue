@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="relative">
+    <div class="relative border-b border-(--lab-border)">
       <div ref="tabsScrollerRef" class="lab-scroll-hidden overflow-x-auto overflow-y-hidden">
         <div role="tablist" class="flex min-w-max items-end gap-0">
           <component
@@ -49,7 +49,7 @@
       />
     </div>
 
-    <div v-if="renderPanels && activeValue !== null" class="space-y-4 p-4">
+    <div v-if="renderPanels && activeValue !== null" class="m-2 space-y-4 p-2">
       <div :key="String(activeValue)">
         <slot :name="`panel-${String(activeValue)}`" :value="activeValue" />
       </div>
