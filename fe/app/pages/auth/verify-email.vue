@@ -43,7 +43,7 @@ onMounted(async () => {
 </script>
 <template>
   <div class="px-3 py-6 md:px-5">
-    <section class="max-w-xl space-y-4 border p-5">
+    <section class="max-w-xl space-y-4 border p-4">
       <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ t('verify.title') }}</h1>
       <p v-if="pending" class="text-sm text-(--lab-text-secondary)">{{ t('verify.pending') }}</p>
       <LabNotify :text="errorText" tone="error" />

@@ -52,7 +52,6 @@ const close = () => {
               <LabBaseButton
                 icon="ic:round-close"
                 icon-only
-                icon-size="lg"
                 size="sm"
                 variant="ghost"
                 :aria-label="t('close_menu')"

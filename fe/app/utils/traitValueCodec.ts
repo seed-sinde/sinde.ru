@@ -190,9 +190,7 @@ const parseGeoValue = (meta: KeyMeta, value: unknown): TraitGeoModel | null => {
     }
   }
   const points = Array.isArray((value as any).points) ? (value as any).points : []
-  const normalizedPoints = points
-    .map((point: unknown) => parseGeoPolygonPoint(point))
-    .filter(isGeoPolygonPoint)
+  const normalizedPoints = points.map((point: unknown) => parseGeoPolygonPoint(point)).filter(isGeoPolygonPoint)
   return normalizedPoints.length >= 3 ? {type, points: normalizedPoints} : null
 }
 /**
@@ -268,7 +266,10 @@ export const isTraitFormValueFilled = (meta: KeyMeta, value: unknown): boolean =
       const glossGU = String((value as any).glossGU ?? "").trim()
       const reliefType = String((value as any).reliefType ?? "").trim()
       const microReliefHeight = String((value as any).microReliefHeight ?? "").trim()
-      return Boolean((glossCategory && (glossGU ? !Number.isNaN(Number(glossGU)) : true)) || (reliefType && (microReliefHeight ? !Number.isNaN(Number(microReliefHeight)) : true)))
+      return Boolean(
+        (glossCategory && (glossGU ? !Number.isNaN(Number(glossGU)) : true)) ||
+        (reliefType && (microReliefHeight ? !Number.isNaN(Number(microReliefHeight)) : true))
+      )
     }
     default:
       return false
@@ -399,7 +400,17 @@ export const defaultTraitFormValue = (meta: KeyMeta): TraitDynamicValueModel => 
     case "schedule":
       return {fromDay: "1", toDay: "5", fromTime: "", toTime: ""}
     case "geo":
-      return {type: resolveGeoType(meta.geoType), lat: "", lng: "", points: [{lat: "", lng: ""}, {lat: "", lng: ""}, {lat: "", lng: ""}], radius: ""}
+      return {
+        type: resolveGeoType(meta.geoType),
+        lat: "",
+        lng: "",
+        points: [
+          {lat: "", lng: ""},
+          {lat: "", lng: ""},
+          {lat: "", lng: ""}
+        ],
+        radius: ""
+      }
     case "validity":
       return {mode: "permanent", since: "", until: ""}
     case "color": {
@@ -476,7 +487,12 @@ export const parseTraitStoredValue = (meta: KeyMeta, rawValue: string): TraitDyn
         const parsed = JSON.parse(raw)
         return {items: Array.isArray(parsed) ? parsed.map(item => String(item ?? "")) : []}
       } catch {
-        return {items: raw.split("\n").map(item => item.trim()).filter(Boolean)}
+        return {
+          items: raw
+            .split("\n")
+            .map(item => item.trim())
+            .filter(Boolean)
+        }
       }
     case "boolean":
       return parseBooleanStoredValue(raw)

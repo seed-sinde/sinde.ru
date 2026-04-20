@@ -4,6 +4,7 @@ const mobileBreadcrumbOwner = useState<string>('mobile-header-breadcrumb-owner',
 const mobileHeaderActions = useMobileHeaderActions()
 const mobileHeaderActionsOwner = useMobileHeaderActionsOwner()
 const isCompactHeader = ref(false)
+const isMobileActionsTargetReady = ref(false)
 const headerInstanceId = `lab-nav-header:${Math.random().toString(36).slice(2)}`
 let removeCompactHeaderListener: (() => void) | null = null
 const props = withDefaults(
@@ -35,22 +36,35 @@ const syncMobileHeaderActions = (actions: MobileHeaderAction[]) => {
   mobileHeaderActionsOwner.value = headerInstanceId
   mobileHeaderActions.value = [...actions]
 }
+const syncMobileActionsTarget = () => {
+  isMobileActionsTargetReady.value = Boolean(document.getElementById('mobile-header-actions'))
+}
+const scheduleMobileActionsTargetSync = () => {
+  void nextTick(syncMobileActionsTarget)
+}
+const canTeleportActions = computed(
+  () => Boolean(slots.actions) && isCompactHeader.value && !props.mobileActions.length && isMobileActionsTargetReady.value
+)
 onMounted(() => {
   if (!import.meta.client) return
   syncMobileBreadcrumbItems(resolvedBreadcrumbItems.value)
   syncMobileHeaderActions(props.mobileActions)
+  scheduleMobileActionsTargetSync()
   watch(resolvedBreadcrumbItems, next => {
     syncMobileBreadcrumbItems(next)
+    scheduleMobileActionsTargetSync()
   })
   watch(
     () => props.mobileActions,
     next => {
       syncMobileHeaderActions(next)
+      scheduleMobileActionsTargetSync()
     }
   )
   const mediaQuery = window.matchMedia('(min-width: 64rem)')
   const syncCompactHeader = () => {
     isCompactHeader.value = !mediaQuery.matches
+    scheduleMobileActionsTargetSync()
   }
   syncCompactHeader()
   mediaQuery.addEventListener('change', syncCompactHeader)
@@ -72,7 +86,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="sticky top-0 z-30 h-full">
     <ClientOnly>
-      <Teleport v-if="$slots.actions && isCompactHeader && !props.mobileActions.length" to="#mobile-header-actions">
+      <Teleport v-if="canTeleportActions" to="#mobile-header-actions">
         <div class="flex items-center gap-1">
           <slot name="actions" :compact="true" />
         </div>

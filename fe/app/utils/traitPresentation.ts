@@ -157,7 +157,13 @@ export const formatTraitValueForDisplay = (rawValue: string, dataType: string): 
   if (dataType === "geo") {
     if (!raw.startsWith("{")) return raw
     try {
-      const parsed = JSON.parse(raw) as {type?: string; lat?: string; lng?: string; radius?: string; points?: Array<{lat?: string; lng?: string}>}
+      const parsed = JSON.parse(raw) as {
+        type?: string
+        lat?: string
+        lng?: string
+        radius?: string
+        points?: Array<{lat?: string; lng?: string}>
+      }
       if (parsed.type === "zone") return `Зона: ${parsed.lat}, ${parsed.lng} · r ${parsed.radius || "0"}`
       if (parsed.type === "polygon") return `Полигон: ${Array.isArray(parsed.points) ? parsed.points.length : 0} точек`
       return `Точка: ${parsed.lat}, ${parsed.lng}`
@@ -176,8 +182,18 @@ export const formatTraitValueForDisplay = (rawValue: string, dataType: string): 
   if (dataType === "surface") {
     if (!raw.startsWith("{")) return raw
     try {
-      const parsed = JSON.parse(raw) as {glossCategory?: string; glossGU?: string; reliefType?: string; microReliefHeight?: string}
-      return [parsed.glossCategory, parsed.glossGU ? `${parsed.glossGU} GU` : "", parsed.reliefType, parsed.microReliefHeight ? `${parsed.microReliefHeight} мкм` : ""]
+      const parsed = JSON.parse(raw) as {
+        glossCategory?: string
+        glossGU?: string
+        reliefType?: string
+        microReliefHeight?: string
+      }
+      return [
+        parsed.glossCategory,
+        parsed.glossGU ? `${parsed.glossGU} GU` : "",
+        parsed.reliefType,
+        parsed.microReliefHeight ? `${parsed.microReliefHeight} мкм` : ""
+      ]
         .filter(Boolean)
         .join(" · ")
     } catch {

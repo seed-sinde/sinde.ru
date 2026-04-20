@@ -31,9 +31,8 @@ const toggle = () => {
     v-if="mode === 'button'"
     variant="secondary"
     size="md"
-    :button-class="resolvedButtonClass"
+    :class="resolvedButtonClass"
     :icon="model ? 'ic:round-check-box' : 'ic:round-check-box-outline-blank'"
-    icon-class="h-4 w-4"
     @click="toggle"
   >
     {{ label }}

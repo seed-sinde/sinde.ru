@@ -1,154 +1,148 @@
 <script setup lang="ts">
 usePageSeo({
-  title: 'UI main.css preview',
-  description: 'Preview of global UI classes from main.css.'
+  title: 'UI lab.css preview',
+  description: 'Preview of global UI classes moved into ui-lab.css.'
 })
-const text = ref('')
-const disabled = ref(false)
-const showFade = ref(true)
-const tabs = ['one', 'two', 'three'] as const
-const activeTab = ref<(typeof tabs)[number]>('one')
-const badgeItems = [
-  { cls: 'lab-badge-default', label: 'default' },
-  { cls: 'lab-badge-muted', label: 'muted' },
-  { cls: 'lab-badge-info', label: 'info' },
-  { cls: 'lab-badge-success', label: 'success' },
-  { cls: 'lab-badge-warning', label: 'warning' },
-  { cls: 'lab-badge-danger', label: 'danger' }
+
+const text = ref('Лабораторный ввод')
+const note = ref('Многострочный пример')
+const selectValue = ref('beta')
+const tabValue = ref<'one' | 'two' | 'three'>('one')
+
+const buttonVariants = [
+  { variant: 'default', label: 'default' },
+  { variant: 'secondary', label: 'secondary' },
+  { variant: 'primary', label: 'primary' },
+  { variant: 'ghost', label: 'ghost' },
+  { variant: 'plain', label: 'plain' },
+  { variant: 'danger', label: 'danger' },
+  { variant: 'success', label: 'success' },
+  { variant: 'info', label: 'info' }
+] as const
+
+const badgeVariants = [
+  { variant: 'default', label: 'default' },
+  { variant: 'muted', label: 'muted' },
+  { variant: 'info', label: 'info' },
+  { variant: 'success', label: 'success' },
+  { variant: 'warning', label: 'warning' },
+  { variant: 'danger', label: 'danger' }
+] as const
+
+const selectOptions = [
+  { value: 'alpha', label: 'alpha' },
+  { value: 'beta', label: 'beta' },
+  { value: 'gamma', label: 'gamma' }
+]
+
+const tableColumns = [
+  { key: 'name', label: 'name' },
+  { key: 'state', label: 'state', nowrap: true },
+  { key: 'value', label: 'value', nowrap: true }
+]
+
+const tableRows = [
+  { id: '1', name: 'north line', state: 'ready', value: '12' },
+  { id: '2', name: 'south line', state: 'queued', value: '7' },
+  { id: '3', name: 'west line', state: 'paused', value: '3' }
+]
+
+const tabItems = [
+  { value: 'one', label: 'one' },
+  { value: 'two', label: 'two' },
+  { value: 'three', label: 'three' }
+]
+
+const scrollItems = [
+  'grain flow',
+  'amber field',
+  'quiet branch',
+  'signal path',
+  'iron pulse',
+  'north vector',
+  'slow drift',
+  'clean edge',
+  'plain text',
+  'open lane',
+  'soft grid',
+  'dry channel'
 ]
 </script>
 
 <template>
   <div class="space-y-8 p-4 text-(--lab-text-secondary)">
     <section class="space-y-3">
-      <h1 class="text-lg text-(--lab-text-primary)">main.css preview</h1>
-      <p class="lab-field-label">Preview of global focus, control, dropdown, button, badge, grid and scroll classes.</p>
-    </section>
-    <section class="space-y-3">
-      <h2 class="text-base text-(--lab-text-primary)">focus</h2>
-      <div class="grid gap-3 min-[900px]:grid-cols-2">
-        <button class="lab-button lab-button-secondary lab-focus min-h-11 border px-3" type="button">
-          lab-focus button
-        </button>
-        <div class="lab-control lab-focus-manual">lab-focus-manual</div>
-        <input v-model="text" class="lab-control lab-focus" placeholder="lab-control + lab-focus" />
-        <input class="lab-control lab-focus lab-control-invalid" placeholder="lab-control-invalid" />
-        <label class="flex min-h-11 items-center border border-(--lab-border) px-3">
-          <input class="peer sr-only" type="checkbox" />
-          <span class="lab-focus-peer flex min-h-11 w-full items-center px-3">peer + lab-focus-peer</span>
-        </label>
-        <button class="lab-button lab-tabs-focus min-h-11 border px-3" type="button">lab-tabs-focus</button>
-      </div>
+      <h1 class="text-lg text-(--lab-text-primary)">ui-lab.css preview</h1>
+      <p class="lab-field-label">
+        Global controls, buttons, badges, tables, tabs and scroll helpers now live in ui-lab.css.
+      </p>
     </section>
 
     <section class="space-y-3">
       <h2 class="text-base text-(--lab-text-primary)">controls</h2>
       <div class="grid gap-3 min-[900px]:grid-cols-2">
-        <input class="lab-control" placeholder="default control" />
-        <input class="lab-control" :disabled="disabled" placeholder="disabled control" />
-        <textarea class="lab-control min-h-24" placeholder="textarea control" />
-        <select class="lab-control">
-          <option>option one</option>
-          <option>option two</option>
-        </select>
-      </div>
-      <label class="inline-flex items-center gap-2 text-sm">
-        <input v-model="disabled" type="checkbox" />
-        disabled
-      </label>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-base text-(--lab-text-primary)">dropdown</h2>
-      <div class="lab-dropdown-panel max-h-56 max-w-xl">
-        <button class="lab-dropdown-option" type="button">
-          <span>default option</span>
-          <span class="lab-dropdown-option-meta">meta</span>
-        </button>
-        <button class="lab-dropdown-option lab-dropdown-option-active" type="button">
-          <span>active option</span>
-          <span class="lab-dropdown-option-meta">meta</span>
-        </button>
-        <button class="lab-dropdown-option" type="button" disabled>
-          <span>disabled option</span>
-          <span class="lab-dropdown-option-meta">meta</span>
-        </button>
+        <LabBaseInput v-model="text" placeholder="lab-control" />
+        <LabBaseInput v-model="text" invalid placeholder="lab-control-invalid" />
+        <LabBaseTextarea v-model="note" :rows="3" placeholder="textarea" />
+        <LabBaseSelect v-model="selectValue" :options="selectOptions" placeholder="select value" />
       </div>
     </section>
 
     <section class="space-y-3">
       <h2 class="text-base text-(--lab-text-primary)">buttons</h2>
       <div class="flex flex-wrap gap-3">
-        <button class="lab-button lab-button-primary min-h-11 border px-3">primary</button>
-        <button class="lab-button lab-button-secondary min-h-11 border px-3">secondary</button>
-        <button class="lab-button lab-button-danger min-h-11 border px-3">danger</button>
-        <button class="lab-button lab-button-success min-h-11 border px-3">success</button>
-        <button class="lab-button lab-button-info min-h-11 border px-3">info</button>
-        <button class="lab-button lab-button-ghost min-h-11 px-3">ghost</button>
-        <button class="lab-button lab-button-plain min-h-11 px-3">plain</button>
-        <button class="lab-button lab-button-secondary min-h-11 border px-3" disabled>disabled</button>
+        <LabBaseButton v-for="item in buttonVariants" :key="item.variant" :variant="item.variant" class="min-h-11 px-3">
+          {{ item.label }}
+        </LabBaseButton>
+        <LabBaseButton variant="secondary" class="min-h-11 px-3">manual focus</LabBaseButton>
       </div>
     </section>
 
     <section class="space-y-3">
       <h2 class="text-base text-(--lab-text-primary)">badges</h2>
       <div class="flex flex-wrap gap-2">
-        <span v-for="item in badgeItems" :key="item.cls" class="lab-badge border px-2 py-1 text-sm" :class="item.cls">
+        <LabBaseBadge v-for="item in badgeVariants" :key="item.variant" :variant="item.variant" size="md">
           {{ item.label }}
-        </span>
+        </LabBaseBadge>
       </div>
     </section>
 
     <section class="space-y-3">
-      <h2 class="text-base text-(--lab-text-primary)">grid table</h2>
-      <div class="lab-grid-table max-w-xl grid-cols-3">
-        <div class="lab-grid-table-cell p-3">cell 1</div>
-        <div class="lab-grid-table-cell p-3">cell 2</div>
-        <div class="lab-grid-table-cell p-3">cell 3</div>
-        <div class="lab-grid-table-cell p-3">cell 4</div>
-        <div class="lab-grid-table-cell p-3">cell 5</div>
-        <div class="lab-grid-table-cell p-3">cell 6</div>
-      </div>
+      <h2 class="text-base text-(--lab-text-primary)">table</h2>
+      <LabDataTable :columns="tableColumns" :rows="tableRows" empty-text="no rows">
+        <template #cell-state="{ value }">
+          <LabBaseBadge :variant="value === 'ready' ? 'success' : value === 'queued' ? 'warning' : 'muted'" size="md">
+            {{ value }}
+          </LabBaseBadge>
+        </template>
+      </LabDataTable>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="text-base text-(--lab-text-primary)">tabs</h2>
+      <LabNavTabs v-model="tabValue" :items="tabItems">
+        <template #panel-one>
+          <p class="text-sm text-(--lab-text-muted)">one panel</p>
+        </template>
+        <template #panel-two>
+          <p class="text-sm text-(--lab-text-muted)">two panel</p>
+        </template>
+        <template #panel-three>
+          <p class="text-sm text-(--lab-text-muted)">three panel</p>
+        </template>
+      </LabNavTabs>
     </section>
 
     <section class="space-y-3">
       <h2 class="text-base text-(--lab-text-primary)">scroll hidden + fade</h2>
       <div class="relative max-w-full overflow-hidden border border-(--lab-border)">
-        <div class="lab-scroll-hidden flex gap-2 overflow-x-auto px-6 py-3 whitespace-nowrap">
-          <button
-            v-for="n in 16"
-            :key="n"
-            class="lab-button lab-button-secondary min-h-10 shrink-0 border px-3"
-            type="button"
-          >
-            item {{ n }}
-          </button>
+        <div class="lab-scroll-hidden flex gap-3 overflow-x-auto px-6 py-3 whitespace-nowrap">
+          <span v-for="item in scrollItems" :key="item" class="shrink-0 text-sm text-(--lab-text-secondary)">
+            {{ item }}
+          </span>
         </div>
-        <div class="lab-scroll-fade lab-scroll-fade-visible lab-scroll-fade-x-left" :class="showFade ? '' : 'hidden'" />
-        <div
-          class="lab-scroll-fade lab-scroll-fade-visible lab-scroll-fade-x-right"
-          :class="showFade ? '' : 'hidden'"
-        />
-      </div>
-      <label class="inline-flex items-center gap-2 text-sm">
-        <input v-model="showFade" type="checkbox" />
-        show fade
-      </label>
-    </section>
-
-    <section class="space-y-3">
-      <h2 class="text-base text-(--lab-text-primary)">tabs focus preview</h2>
-      <div class="flex flex-wrap gap-2 border-b border-(--lab-border)">
-        <button
-          v-for="tab in tabs"
-          :key="tab"
-          class="lab-tabs-focus min-h-10 border-b-2 border-transparent px-3 text-sm"
-          :class="activeTab === tab ? 'text-(--lab-text-primary)' : 'text-(--lab-text-secondary)'"
-          type="button"
-          @click="activeTab = tab"
-        >
-          {{ tab }}
-        </button>
+        <div class="lab-scroll-fade lab-scroll-fade-visible lab-scroll-fade-x-left" aria-hidden="true" />
+        <div class="lab-scroll-fade lab-scroll-fade-visible lab-scroll-fade-x-right" aria-hidden="true" />
       </div>
     </section>
   </div>

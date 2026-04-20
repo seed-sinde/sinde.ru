@@ -19,7 +19,7 @@
       <div
         v-for="item in normalizedCount"
         :key="`list-${item}`"
-        class="flex items-start gap-3 border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_92%,transparent)] p-3"
+        class="flex items-start gap-3 border-[color-mix(in_srgb,var(--lab-border)_72%,transparent)] bg-[color-mix(in_srgb,var(--lab-bg-surface)_92%,transparent)] p-2"
       >
         <div
           v-if="showAvatar"

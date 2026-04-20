@@ -1,11 +1,5 @@
 <template>
-  <LabBaseButton
-    size="none"
-    icon-size="none"
-    variant="plain"
-    :button-class="resolvedButtonClass"
-    @click="$emit('preview')"
-  >
+  <LabBaseButton size="none" variant="plain" :class="resolvedButtonClass" @click="$emit('preview')">
     <span :class="resolvedFrameClass">
       <img :src="src" :alt="alt" :class="resolvedImageClass" />
       <span class="image-preview-overlay">

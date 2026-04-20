@@ -100,11 +100,11 @@ const onCancel = () => {
 </script>
 <template>
   <div class="max-w-xl space-y-4">
-    <div v-if="hasRejectedModerationNote" class="border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+    <div v-if="hasRejectedModerationNote" class="border border-amber-500/30 bg-amber-500/10 p-2 text-sm text-amber-100">
       <p class="font-medium">Причина отклонения</p>
       <p class="mt-1 text-amber-50/90">{{ editingRecipeModerationNote }}</p>
     </div>
-    <LabField for-id="recipe-title" label="Название блюда">
+    <LabBaseField for-id="recipe-title" label="Название блюда">
       <LabBaseInput
         id="recipe-title"
         v-model="form.title"
@@ -112,7 +112,7 @@ const onCancel = () => {
         type="text"
         placeholder="например: Куриная грудка с томатами в духовке."
       />
-    </LabField>
+    </LabBaseField>
     <label class="block text-xs text-zinc-400">
       <span class="inline-flex items-center gap-1">
         <span>Описание</span>
@@ -266,7 +266,7 @@ const onCancel = () => {
         :src="coverImageDraft.image_url"
         alt="Фото готового блюда"
         step-format
-        button-class="block w-full max-w-sm"
+        class="block w-full max-w-sm"
         @preview="openImagePreview(coverImageDraft.image_url, 'Фото блюда')"
       />
     </div>
@@ -283,8 +283,8 @@ const onCancel = () => {
             name="recipe_ingredient_name"
             type="text"
             placeholder="например, томаты черри"
-            :class="['w-full']"
-            :input-class="
+            class="w-full"
+            :class="
               !editor.hideFormIngredientSuggestions && ingredientDraft.name.trim() && formIngredientSuggestions.length
                 ? 'rounded-b-none border-b-transparent'
                 : ''
@@ -296,15 +296,15 @@ const onCancel = () => {
             v-if="
               !editor.hideFormIngredientSuggestions && ingredientDraft.name.trim() && formIngredientSuggestions.length
             "
-            class="absolute inset-x-0 top-full z-30 -mt-px rounded-b-md border border-t-0 border-zinc-700 bg-zinc-900/95"
+            class="absolute inset-x-0 top-full z-30 -mt-px rounded-b-md border border-t-0"
           >
-            <p class="px-2 py-1 text-xs text-zinc-500">Найдено: {{ formIngredientSuggestions.length }}</p>
+            <p class="px-2 py-1 text-xs">Найдено: {{ formIngredientSuggestions.length }}</p>
             <div class="max-h-40 overflow-x-hidden overflow-y-auto px-2 pb-2">
               <div class="flex flex-wrap gap-2">
                 <LabBaseButton
                   v-for="item in formIngredientSuggestions"
                   :key="`form-suggest:${item.name}`"
-                  button-class="rounded border px-2 py-1 text-xs transition hover:brightness-110"
+                  class="rounded border px-2 py-1 text-xs transition hover:brightness-110"
                   :style="categoryTagStyle(item.category)"
                   @click="selectFormIngredientSuggestion(item.name)"
                 >
@@ -344,8 +344,7 @@ const onCancel = () => {
           @keydown.enter.prevent="addFormIngredient"
         />
       </label>
-      <label class="text-xs text-zinc-400">
-        Примечание
+      <LabBaseField label="Примечание" for-id="recipe-ingredient-note">
         <LabBaseInput
           id="recipe-ingredient-note"
           v-model="ingredientDraft.note"
@@ -355,7 +354,7 @@ const onCancel = () => {
           class="mt-1 w-full"
           @keydown.enter.prevent="addFormIngredient"
         />
-      </label>
+      </LabBaseField>
       <div class="flex flex-col items-start md:self-start">
         <span class="sr-only">Действие</span>
         <div class="mt-6 flex flex-wrap items-center gap-2">
@@ -410,7 +409,7 @@ const onCancel = () => {
           v-for="(step, idx) in formSteps"
           :key="`step:${idx}`"
           :ref="el => setStepItemRef(idx, el)"
-          class="rounded-xl border border-zinc-800 bg-zinc-900/55 p-3"
+          class="rounded-xl border p-2"
           :class="
             draggingStepIndex === idx ? 'border-cyan-500/60 bg-cyan-500/5 opacity-35 ring-1 ring-cyan-500/50' : ''
           "
@@ -418,9 +417,8 @@ const onCancel = () => {
           <div class="flex flex-col gap-3 md:flex-row md:items-start">
             <div class="flex items-center gap-2 md:w-28 md:shrink-0">
               <LabBaseButton
-                button-class="inline-flex h-9 w-9 touch-none cursor-grab items-center justify-center rounded-lg border border-zinc-700 bg-zinc-950 text-zinc-300 hover:bg-zinc-800 active:cursor-grabbing"
+                class="inline-flex h-9 w-9 cursor-grab touch-none items-center justify-center rounded-lg border border-zinc-700 bg-zinc-950 text-zinc-300 hover:bg-zinc-800 active:cursor-grabbing"
                 icon="ic:round-drag-indicator"
-                icon-class="h-5 w-5"
                 icon-only
                 :title="`Перетащить шаг ${idx + 1}`"
                 @pointerdown="startStepReorderDrag(idx, $event)"
@@ -500,7 +498,7 @@ const onCancel = () => {
             width: `${stepDragPreview.width}px`
           }"
         >
-          <div class="overflow-hidden rounded-xl border border-cyan-400/60 bg-zinc-950/95 p-3 backdrop-blur">
+          <div class="overflow-hidden rounded-xl border border-cyan-400/60 p-2 backdrop-blur">
             <div class="flex items-center gap-2 text-[10px] tracking-[0.08em] uppercase">
               <Icon name="ic:round-drag-indicator" />
               <span>Шаг {{ stepDragPreview.stepNumber }}</span>
@@ -515,7 +513,7 @@ const onCancel = () => {
             </p>
             <div
               v-if="stepDragPreview.imageUrl"
-              class="mt-3 inline-flex max-w-44 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/80 p-1.5"
+              class="mt-3 inline-flex max-w-44 items-center justify-center rounded-lg border p-1.5"
             >
               <img
                 :src="stepDragPreview.imageUrl"
@@ -526,15 +524,11 @@ const onCancel = () => {
           </div>
         </div>
       </Teleport>
-      <div class="space-y-3 border border-dashed border-zinc-700 p-3">
+      <div class="space-y-3 border border-dashed p-2">
         <div class="flex flex-wrap items-center gap-2">
-          <p class="text-sm font-medium text-zinc-100">Новый шаг</p>
+          <p class="text-sm font-medium">Новый шаг</p>
         </div>
-        <label class="block text-xs text-zinc-400">
-          <span class="inline-flex items-center gap-1">
-            <span>Описание шага</span>
-            <span class="text-rose-400">*</span>
-          </span>
+        <LabBaseField label="Описание шага" for-id="recipe-step-text" required>
           <LabBaseTextarea
             id="recipe-step-text"
             v-model="stepDraft.text"
@@ -543,7 +537,7 @@ const onCancel = () => {
             placeholder="описание шага"
             class="mt-1 w-full"
           />
-        </label>
+        </LabBaseField>
         <div class="flex flex-wrap items-center gap-2">
           <LabBaseFile
             id="recipe-step-file"
@@ -563,7 +557,7 @@ const onCancel = () => {
           />
           <LabBaseButton label="Добавить шаг" size="sm" variant="primary" @click="addFormStep" />
         </div>
-        <p class="text-xs text-zinc-500">
+        <p class="text-xs">
           Размер файла до {{ imageMaxMb }} МБ, форматы: {{ imageFormatsLabel }}. Рекомендуемый размер для шага: не
           меньше {{ recommendedStepImageMinWidth }}×{{ recommendedStepImageMinHeight }} px.
         </p>
@@ -575,7 +569,7 @@ const onCancel = () => {
         />
       </div>
     </div>
-    <label class="block text-xs text-zinc-400">
+    <label class="block text-xs">
       Теги (через запятую)
       <LabBaseInput
         id="recipe-tags"
@@ -586,17 +580,17 @@ const onCancel = () => {
         class="mt-1 w-full"
       />
     </label>
-    <label v-if="isCurrentUserAdmin" class="inline-flex items-center gap-2 text-sm text-zinc-300">
+    <label v-if="isCurrentUserAdmin" class="inline-flex items-center gap-2 text-sm">
       <LabBaseCheckbox
         id="recipe-is-public"
         v-model="form.is_public"
         name="recipe_is_public"
         bare
-        class="h-4 w-4 rounded border-zinc-700 bg-zinc-900"
+        class="h-4 w-4 rounded"
       />
       Опубликовать рецепт
     </label>
-    <p v-else class="text-xs text-zinc-500">После сохранения рецепт будет отправлен на модерацию администратора.</p>
+    <p v-else class="text-xs">После сохранения рецепт будет отправлен на модерацию администратора.</p>
     <div class="flex flex-wrap gap-2">
       <LabBaseButton :disabled="createPending" variant="primary" @click="submitRecipe">
         {{ editRecipeId ? 'Сохранить изменения' : 'Сохранить рецепт' }}

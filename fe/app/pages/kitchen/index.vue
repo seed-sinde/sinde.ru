@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { div } from 'three/src/nodes/TSL.js'
+
 definePageMeta({
   path: '/kitchen/:tab(recipes|ingredients|my-recipes|create)?'
 })
@@ -663,8 +665,7 @@ const displayExcludedIngredients = computed(() =>
 const catalogCardVisualClass = () =>
   kitchenTheme.value === 'light'
     ? 'bg-white/80 hover:bg-white border-zinc-300'
-    : 'bg-zinc-900/70 hover:bg-zinc-900 border-zinc-700'
-const catalogShellClass = computed(() => (kitchenTheme.value === 'light' ? 'bg-zinc-50 p-2' : 'bg-zinc-900 p-2'))
+    : 'border-zinc-700'
 const catalogGroupDividerClass = computed(() =>
   kitchenTheme.value === 'light'
     ? 'inline-flex w-full items-center gap-2 text-[10px] uppercase tracking-[0.08em] text-zinc-500'
@@ -1203,7 +1204,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <LabBaseSection variant="plain">
+  <div>
     <LabNavHeader :title :breadcrumb-items="kitchenBreadcrumbItems" />
     <LabNavTabs
       v-model="activeKitchenTab"
@@ -1212,54 +1213,52 @@ onBeforeUnmount(() => {
       route-param-key="tab"
       :route-target-map="kitchenTabRouteTargetMap"
     />
-    <section v-if="activeKitchenTab === 'ingredients'" class="space-y-4 p-4">
+    <section v-if="activeKitchenTab === 'ingredients'" class="space-y-2 p-4">
       <LabNotify
         :text="catalogStore.error ? `Справочник кухни загружен не полностью: ${catalogStore.error}` : ''"
         tone="warning"
         size="xs"
       />
-      <div class="space-y-2 bg-zinc-900 p-2">
-        <div class="flex flex-wrap items-end gap-2">
-          <LabField
-            label="Название ингредиента"
-            for-id="ingredient-catalog-query"
-            field-class="min-w-56 max-w-120 flex-1"
-          >
-            <LabBaseInput
-              id="ingredient-catalog-query"
-              v-model="ingredientCatalogQuery"
-              name="ingredient_catalog_query"
-              type="text"
-              placeholder="например, огурец"
-            />
-          </LabField>
-          <LabField label="Категория" for-id="ingredient-category-filter">
-            <LabBaseSelect
-              id="ingredient-category-filter"
-              v-model="categoryFilter"
-              name="ingredient_category_filter"
-              :options="ingredientCategoryOptions"
-            />
-          </LabField>
-          <div class="flex flex-col gap-1">
-            <span class="text-xs text-zinc-500">Сортировка: {{ catalogSortLabel }}</span>
-            <LabNavTabs
-              v-model="catalogSortMode"
-              :items="catalogSortItems"
-              :render-panels="false"
-              route-query-key="sort"
-            />
-          </div>
-          <KitchenGroupByCategoryToggle v-model="groupCatalogByCategory" mode="button" />
+      <div class="flex flex-wrap items-end gap-2">
+        <LabBaseField
+          label="Название ингредиента"
+          for-id="ingredient-catalog-query"
+          field-class="min-w-56 max-w-120 flex-1"
+        >
+          <LabBaseInput
+            id="ingredient-catalog-query"
+            v-model="ingredientCatalogQuery"
+            name="ingredient_catalog_query"
+            type="text"
+            placeholder="например, огурец"
+          />
+        </LabBaseField>
+        <LabBaseField label="Категория" for-id="ingredient-category-filter">
+          <LabBaseSelect
+            id="ingredient-category-filter"
+            v-model="categoryFilter"
+            name="ingredient_category_filter"
+            :options="ingredientCategoryOptions"
+          />
+        </LabBaseField>
+        <div class="flex flex-col gap-1">
+          <span class="text-xs text-zinc-500">Сортировка: {{ catalogSortLabel }}</span>
+          <LabNavTabs
+            v-model="catalogSortMode"
+            :items="catalogSortItems"
+            :render-panels="false"
+            route-query-key="sort"
+          />
         </div>
-        <ClientOnly>
-          <span v-if="catalogFrequencyHint" class="text-xs text-zinc-500">
-            {{ catalogFrequencyHint }}
-          </span>
-        </ClientOnly>
+        <KitchenGroupByCategoryToggle v-model="groupCatalogByCategory" mode="button" />
       </div>
-      <div :class="catalogShellClass">
-        <p class="text-xs leading-none text-zinc-500">Найдено: {{ filteredCatalog.length }}</p>
+      <ClientOnly>
+        <span v-if="catalogFrequencyHint" class="text-xs text-zinc-500">
+          {{ catalogFrequencyHint }}
+        </span>
+      </ClientOnly>
+      <div>
+        <p class="text-xs leading-none">Найдено: {{ filteredCatalog.length }}</p>
         <div class="max-h-96 overflow-y-auto pt-2 pr-1">
           <div class="space-y-3">
             <div v-for="group in visibleCatalogGroups" :key="group.category || 'all'" class="space-y-2">
@@ -1294,20 +1293,19 @@ onBeforeUnmount(() => {
                   </p>
                   <div v-if="showCatalogFavoriteActions" class="inline-flex shrink-0 items-center gap-1">
                     <LabBaseButton
-                      :button-class="catalogFavoriteButtonClass(isFavoriteIngredient(item.ingredient_id))"
+                      :class="catalogFavoriteButtonClass(isFavoriteIngredient(item.ingredient_id))"
                       :aria-label="
                         isFavoriteIngredient(item.ingredient_id)
                           ? `Убрать ${item.name} из любимых`
                           : `Добавить ${item.name} в любимые`
                       "
                       :icon="isFavoriteIngredient(item.ingredient_id) ? 'ic:round-star' : 'ic:round-star-border'"
-                      :icon-class="isFavoriteIngredient(item.ingredient_id) ? 'text-amber-300' : ''"
                       size="xs"
                       icon-only
                       @click.stop="toggleFavoriteIngredient(item, 'include')"
                     />
                     <LabBaseButton
-                      :button-class="catalogExcludeButtonClass(isExcludeFavoriteIngredient(item.ingredient_id))"
+                      :class="catalogExcludeButtonClass(isExcludeFavoriteIngredient(item.ingredient_id))"
                       :aria-label="
                         isExcludeFavoriteIngredient(item.ingredient_id)
                           ? `Убрать ${item.name} из исключаемых`
@@ -1330,11 +1328,9 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <p v-if="!authUiReady" class="text-xs text-zinc-500">Проверяем сессию...</p>
-      <div v-else-if="isAuthenticated" class="space-y-2 bg-zinc-900 p-2">
+      <div v-else-if="isAuthenticated" class="space-y-2 p-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p class="text-sm text-zinc-200">Персональные ингредиенты и избранное</p>
-          </div>
+          <div class="text-sm">Персональные ингредиенты и избранное</div>
           <LabLoader
             v-if="accountIngredientsLoading"
             variant="inline"
@@ -1414,7 +1410,11 @@ onBeforeUnmount(() => {
         class="sticky top-0 z-20 -mx-3 border-y px-3 py-2 backdrop-blur sm:-mx-4 sm:px-4 md:static md:mx-0 md:border-y-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none"
       >
         <div class="flex items-end gap-2">
-          <LabField label="Поиск по названию рецепта" for-id="recipe-query" field-class="min-w-0 max-w-[34rem] flex-1">
+          <LabBaseField
+            label="Поиск по названию рецепта"
+            for-id="recipe-query"
+            field-class="min-w-0 max-w-[34rem] flex-1"
+          >
             <LabBaseInput
               id="recipe-query"
               v-model="recipeQuery"
@@ -1422,14 +1422,13 @@ onBeforeUnmount(() => {
               type="text"
               placeholder="например, салат"
             />
-          </LabField>
+          </LabBaseField>
           <div class="flex shrink-0 items-center gap-2">
             <LabBaseButton
-              :button-class="[
-                'inline-flex h-11 w-11 items-center justify-center border transition',
+              :class="[
                 showFavoriteRecipesOnly
                   ? 'border-rose-400/90 bg-rose-600 text-white hover:bg-rose-500'
-                  : 'border-zinc-700 bg-zinc-900 text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
+                  : 'text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
               ]"
               :title="showFavoriteRecipesOnly ? 'Показать все рецепты' : 'Показать только избранные рецепты'"
               :aria-label="showFavoriteRecipesOnly ? 'Показать все рецепты' : 'Показать только избранные рецепты'"
@@ -1442,7 +1441,6 @@ onBeforeUnmount(() => {
                     ? 'ic:round-favorite'
                     : 'ic:round-favorite-border'
               "
-              icon-class="h-5 w-5 text-xl"
               icon-only
               @click="toggleFavoriteRecipesOnlyFilterFromToolbar"
             >
@@ -1453,11 +1451,11 @@ onBeforeUnmount(() => {
               />
             </LabBaseButton>
             <LabBaseButton
-              :button-class="[
+              :class="[
                 'inline-flex h-11 w-11 items-center justify-center border transition disabled:cursor-not-allowed disabled:opacity-60',
                 recipesLoading
                   ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
-                  : 'border-zinc-700 bg-zinc-900 text-emerald-300 hover:border-emerald-400/70 hover:bg-emerald-500/10'
+                  : 'text-emerald-300 hover:border-emerald-400/70 hover:bg-emerald-500/10'
               ]"
               title="Найти рецепты"
               aria-label="Найти рецепты"
@@ -1476,11 +1474,11 @@ onBeforeUnmount(() => {
               </span>
             </LabBaseButton>
             <LabBaseButton
-              :button-class="[
+              :class="[
                 'inline-flex h-11 w-11 items-center justify-center border transition disabled:cursor-not-allowed disabled:opacity-60',
                 recipesLoading
-                  ? 'border-zinc-600 bg-zinc-900 text-zinc-400'
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800'
+                  ? 'text-zinc-400'
+                  : 'text-zinc-200'
               ]"
               title="Сбросить фильтры"
               aria-label="Сбросить фильтры"
@@ -1499,17 +1497,16 @@ onBeforeUnmount(() => {
               </span>
             </LabBaseButton>
             <LabBaseButton
-              :button-class="[
+              :class="[
                 'inline-flex h-11 w-11 items-center justify-center border transition',
                 recipeAdvancedSearchOpen
                   ? 'border-cyan-400/80 bg-cyan-500/20 text-cyan-100 hover:bg-cyan-500/30'
-                  : 'border-zinc-700 bg-zinc-900 text-cyan-300 hover:border-cyan-400/70 hover:bg-cyan-500/10'
+                  : 'text-cyan-300 hover:border-cyan-400/70 hover:bg-cyan-500/10'
               ]"
               :title="recipeAdvancedSearchOpen ? 'Скрыть расширенный поиск' : 'Показать расширенный поиск'"
               :aria-label="recipeAdvancedSearchOpen ? 'Скрыть расширенный поиск' : 'Показать расширенный поиск'"
               :aria-pressed="recipeAdvancedSearchOpen ? 'true' : 'false'"
               icon="ic:round-manage-search"
-              icon-class="h-5 w-5 text-xl"
               icon-only
               @click="recipeAdvancedSearchOpen = !recipeAdvancedSearchOpen"
             />
@@ -1523,23 +1520,23 @@ onBeforeUnmount(() => {
             content-class="pt-3"
           >
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <LabField label="Тип блюда" for-id="recipe-meal-type-filter" field-class="min-w-0">
+              <LabBaseField label="Тип блюда" for-id="recipe-meal-type-filter" field-class="min-w-0">
                 <LabBaseSelect
                   id="recipe-meal-type-filter"
                   v-model="recipeMealTypeFilter"
                   name="recipe_meal_type_filter"
                   :options="mealTypeSelectOptions"
                 />
-              </LabField>
-              <LabField label="Тип питания" for-id="recipe-diet-type-filter" field-class="min-w-0">
+              </LabBaseField>
+              <LabBaseField label="Тип питания" for-id="recipe-diet-type-filter" field-class="min-w-0">
                 <LabBaseSelect
                   id="recipe-diet-type-filter"
                   v-model="recipeDietTypeFilter"
                   name="recipe_diet_type_filter"
                   :options="dietTypeSelectOptions"
                 />
-              </LabField>
-              <LabField label="Способ приготовления" for-id="recipe-cooking-method-filter" field-class="min-w-0">
+              </LabBaseField>
+              <LabBaseField label="Способ приготовления" for-id="recipe-cooking-method-filter" field-class="min-w-0">
                 <LabBaseInput
                   id="recipe-cooking-method-filter"
                   v-model="recipeCookingMethodFilter"
@@ -1555,8 +1552,8 @@ onBeforeUnmount(() => {
                     :value="item"
                   />
                 </datalist>
-              </LabField>
-              <LabField label="Время приготовления" for-id="recipe-max-total-minutes" field-class="min-w-0">
+              </LabBaseField>
+              <LabBaseField label="Время приготовления" for-id="recipe-max-total-minutes" field-class="min-w-0">
                 <div class="relative">
                   <span
                     class="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-xs font-medium text-zinc-500"
@@ -1572,8 +1569,7 @@ onBeforeUnmount(() => {
                     :max="RECIPE_TIME_FILTER_MAX"
                     step="1"
                     placeholder="∞"
-                    class="w-full"
-                    input-class="pl-7 pr-12"
+                    class="w-full pr-12 pl-7"
                   />
                   <span
                     class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs font-medium text-zinc-500"
@@ -1581,8 +1577,8 @@ onBeforeUnmount(() => {
                     мин.
                   </span>
                 </div>
-              </LabField>
-              <LabField label="Порции" field-class="min-w-0">
+              </LabBaseField>
+              <LabBaseField label="Порции" field-class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <div class="relative min-w-0 flex-1">
                     <span
@@ -1599,7 +1595,7 @@ onBeforeUnmount(() => {
                       inputmode="numeric"
                       placeholder="1"
                       class="w-full min-w-0"
-                      :input-class="['pl-7 pr-2', isServingsRangeInvalid ? 'lab-control-invalid' : '']"
+                      :class="['pr-2 pl-7', isServingsRangeInvalid ? 'lab-control-invalid' : '']"
                     />
                   </div>
                   <div class="relative min-w-0 flex-1">
@@ -1617,13 +1613,13 @@ onBeforeUnmount(() => {
                       inputmode="numeric"
                       placeholder="8"
                       class="w-full min-w-0"
-                      :input-class="['pl-7 pr-2', isServingsRangeInvalid ? 'lab-control-invalid' : '']"
+                      :class="['pr-2 pl-7', isServingsRangeInvalid ? 'lab-control-invalid' : '']"
                     />
                   </div>
                 </div>
                 <LabNotify :text="recipeServingsRangeError" tone="error" size="xs" class="mt-2" />
-              </LabField>
-              <LabField label="Калорийность (ккал)" field-class="min-w-0">
+              </LabBaseField>
+              <LabBaseField label="Калорийность (ккал)" field-class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <div class="relative min-w-0 flex-1">
                     <span
@@ -1640,7 +1636,7 @@ onBeforeUnmount(() => {
                       inputmode="numeric"
                       placeholder="200"
                       class="w-full min-w-0"
-                      :input-class="['pl-7 pr-2', isKcalRangeInvalid ? 'lab-control-invalid' : '']"
+                      :class="['pr-2 pl-7', isKcalRangeInvalid ? 'lab-control-invalid' : '']"
                     />
                   </div>
                   <div class="relative min-w-0 flex-1">
@@ -1658,13 +1654,13 @@ onBeforeUnmount(() => {
                       inputmode="numeric"
                       placeholder="700"
                       class="w-full min-w-0"
-                      :input-class="['pl-7 pr-2', isKcalRangeInvalid ? 'lab-control-invalid' : '']"
+                      :class="['pr-2 pl-7', isKcalRangeInvalid ? 'lab-control-invalid' : '']"
                     />
                   </div>
                 </div>
                 <LabNotify :text="recipeKcalRangeError" tone="error" size="xs" class="mt-2" />
-              </LabField>
-              <LabField label="Национальная кухня" for-id="recipe-cuisine-filter" field-class="min-w-0">
+              </LabBaseField>
+              <LabBaseField label="Национальная кухня" for-id="recipe-cuisine-filter" field-class="min-w-0">
                 <LabBaseInput
                   id="recipe-cuisine-filter"
                   v-model="recipeCuisineFilter"
@@ -1680,7 +1676,7 @@ onBeforeUnmount(() => {
                     :value="item"
                   />
                 </datalist>
-              </LabField>
+              </LabBaseField>
               <LabBaseScale
                 id="recipe-difficulty-filter"
                 v-model="recipeDifficultyFilter"
@@ -1691,7 +1687,7 @@ onBeforeUnmount(() => {
               />
             </div>
             <div class="space-y-2">
-              <LabField label="Ингредиенты для фильтра" for-id="search-ingredient-input">
+              <LabBaseField label="Ингредиенты для фильтра" for-id="search-ingredient-input">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <LabBaseInput
                     id="search-ingredient-input"
@@ -1711,16 +1707,15 @@ onBeforeUnmount(() => {
                     </LabBaseButton>
                   </div>
                 </div>
-              </LabField>
-              <div v-if="ingredientSuggestions.length" class="rounded-md border border-zinc-700 bg-zinc-900">
+              </LabBaseField>
+              <div v-if="ingredientSuggestions.length" class="rounded-md border">
                 <p class="px-2 py-1 text-xs text-zinc-500">Найдено: {{ ingredientSuggestions.length }}</p>
                 <div class="max-h-28 overflow-y-auto px-2 pb-2">
                   <div class="flex flex-wrap gap-2">
                     <LabBaseButton
                       v-for="item in ingredientSuggestions"
                       :key="item.name"
-                      rounded-xl
-                      button-class="transition hover:brightness-110"
+                      class="transition hover:brightness-110"
                       :style="categoryTagStyle(item.category)"
                       size="xs"
                       @click="searchIngredientInput = item.name"
@@ -1730,7 +1725,7 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
               </div>
-              <div class="grid gap-2 bg-zinc-900 md:grid-cols-2 md:gap-3">
+              <div class="grid gap-2 md:grid-cols-2 md:gap-3">
                 <KitchenIngredientScopePanel
                   title="Включить"
                   container-class="min-h-16 overflow-visible md:max-h-36 md:overflow-y-auto"
@@ -1832,19 +1827,19 @@ onBeforeUnmount(() => {
         />
       </div>
     </section>
-    <section v-if="showRecipeManageSection" class="space-y-4 bg-zinc-900 p-4">
+    <section v-if="showRecipeManageSection" class="space-y-4 p-4">
       <div class="flex flex-wrap items-center gap-2">
         <LabBaseButton
           v-if="showMyRecipesList && authUiReady && isAuthenticated"
           variant="primary"
           size="md"
-          button-class="self-start"
+          class="self-start"
           @click="openNewRecipeForm"
         >
           Новый рецепт
         </LabBaseButton>
       </div>
-      <div v-if="!authUiReady" class="rounded-lg border border-zinc-700 bg-zinc-900 p-4 text-sm text-zinc-400">
+      <div v-if="!authUiReady" class="rounded-lg border border-zinc-700 p-4 text-sm text-zinc-400">
         Проверяем сессию...
       </div>
       <AuthFeatureGateNotice
@@ -1852,17 +1847,17 @@ onBeforeUnmount(() => {
         message="Войдите в аккаунт, чтобы создавать, редактировать и сохранять свои рецепты."
       />
       <template v-else>
-        <div v-if="showMyRecipesList" class="space-y-3 bg-zinc-900 p-3">
+        <div v-if="showMyRecipesList" class="space-y-3 p-2">
           <div
             v-if="userAttentionSummary?.has_unread && userAttentionRecipes.length"
-            class="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3"
+            class="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2"
           >
             <div class="flex flex-wrap items-center justify-between gap-2">
               <p class="text-sm font-medium text-amber-100">{{ userAttentionSummaryText }}</p>
               <LabBaseButton
                 variant="ghost"
                 size="xs"
-                button-class="px-0 text-amber-200 hover:text-amber-100"
+                class="px-0 text-amber-200 hover:text-amber-100"
                 :disabled="userAttentionReadPending"
                 @click="markUserAttentionRead"
               >
@@ -1910,7 +1905,6 @@ onBeforeUnmount(() => {
           :editor="recipeEditor"
           :images="recipeImages"
           :steps-dn-d="recipeStepsDnD"
-          rounded-xl
           :is-current-user-admin="isCurrentUserAdmin"
           :ingredient-category-by-name="ingredientCategoryByName"
           :category-tag-style="categoryTagStyle"
@@ -1928,5 +1922,5 @@ onBeforeUnmount(() => {
         />
       </template>
     </section>
-  </LabBaseSection>
+  </div>
 </template>

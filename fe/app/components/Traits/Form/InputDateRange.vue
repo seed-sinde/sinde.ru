@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-1">
     <div class="flex flex-col gap-2">
-      <LabField label="Начало" :for-id="startId">
+      <LabBaseField label="Начало" :for-id="startId">
         <TraitsFormDateTextInput
           :id="startId"
           v-model="start"
@@ -9,8 +9,8 @@
           :aria-label="startLabel"
           :invalid="Boolean(start) && !startValid"
         />
-      </LabField>
-      <LabField label="Конец" :for-id="endId">
+      </LabBaseField>
+      <LabBaseField label="Конец" :for-id="endId">
         <TraitsFormDateTextInput
           :id="endId"
           v-model="end"
@@ -18,7 +18,7 @@
           :aria-label="endLabel"
           :invalid="Boolean(end) && !endValid"
         />
-      </LabField>
+      </LabBaseField>
     </div>
     <LabErrorMessage v-if="(start && !startValid) || (end && !endValid)" :text="`Неверный формат: ${placeholder}`" />
     <LabErrorMessage v-else-if="isRangeInvalid" text="Начало не может быть позже конца." />

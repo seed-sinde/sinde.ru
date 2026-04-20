@@ -31,6 +31,7 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
     "three": "^0.184.0",
+    "typescript": "~5.7.3",
     "ufo": "^1.6.3",
     "vue": "^3.5.32"
   },
@@ -41,7 +42,6 @@
     "prettier": "3.8.2",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "terser": "^5.46.1",
-    "typescript": "^6.0.2",
     "vue-tsc": "^3.2.6",
     "workbox-cacheable-response": "^7.4.0",
     "workbox-core": "^7.4.0",

@@ -20,7 +20,7 @@ const syncing = ref(false)
 const errorMessage = ref('')
 const order = ref<PaymentOrderView | null>(null)
 
-const sectionClass = 'bg-(--lab-bg-elevated) p-5 sm:p-6'
+const sectionClass = 'bg-(--lab-bg-elevated) p-4 '
 
 const orderId = computed(() => String(route.query.order_id || '').trim())
 const token = computed(() => String(route.query.token || '').trim())
@@ -136,15 +136,15 @@ await loadOrder(true)
   <div class="space-y-6">
     <LabNavHeader :title="t('success.title')" />
 
-    <LabBaseSection v-if="loading" variant="plain" :section-class="sectionClass">
+    <div v-if="loading" variant="plain" :section-class="sectionClass">
       <p class="text-sm text-(--lab-text-secondary)">{{ t('lookup.retrying') }}</p>
-    </LabBaseSection>
+    </div>
 
-    <LabBaseSection
+    <div
       v-else-if="errorMessage"
       :title="t('lookup.error_title')"
       variant="plain"
-      section-class="bg-(--lab-danger)/10 p-5 sm:p-6"
+      section-class="bg-(--lab-danger)/10 p-4 "
       content-class="space-y-4"
     >
       <p class="text-sm leading-6 text-(--lab-text-primary)">
@@ -152,27 +152,13 @@ await loadOrder(true)
       </p>
 
       <div class="flex flex-wrap gap-3">
-        <LabBaseButton
-          variant="secondary"
-          size="lg"
-          :label="t('lookup.retry')"
-          :button-style="{ borderWidth: '0px' }"
-          button-class=""
-          @click="loadOrder(true)"
-        />
-        <LabBaseButton
-          variant="plain"
-          size="lg"
-          :label="t('lookup.back')"
-          :button-style="{ borderWidth: '0px' }"
-          button-class=""
-          @click="navigateTo('/payments')"
-        />
+        <LabBaseButton variant="secondary" size="lg" :label="t('lookup.retry')" class="" @click="loadOrder(true)" />
+        <LabBaseButton variant="plain" size="lg" :label="t('lookup.back')" class="" @click="navigateTo('/payments')" />
       </div>
-    </LabBaseSection>
+    </div>
 
     <template v-else-if="order">
-      <LabBaseSection variant="plain" :section-class="sectionClass" content-class="space-y-4">
+      <div variant="plain" :section-class="sectionClass" content-class="space-y-4">
         <div class="space-y-3">
           <p class="text-xs tracking-[0.22em] text-(--lab-success) uppercase">{{ t('success.title') }}</p>
           <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ statusTitle }}</h1>
@@ -191,8 +177,7 @@ await loadOrder(true)
               variant="primary"
               size="lg"
               :label="t('lookup.continue')"
-              :button-style="{ borderWidth: '0px' }"
-              button-class=""
+              class=""
               @click="navigateTo(nextPath)"
             />
 
@@ -201,8 +186,7 @@ await loadOrder(true)
               variant="primary"
               size="lg"
               :label="t('lookup.account')"
-              :button-style="{ borderWidth: '0px' }"
-              button-class=""
+              class=""
               @click="navigateTo('/account')"
             />
 
@@ -211,10 +195,8 @@ await loadOrder(true)
               variant="secondary"
               size="lg"
               :loading="syncing"
-              :loading-label="t('lookup.retrying')"
               :label="t('lookup.retry_short')"
-              :button-style="{ borderWidth: '0px' }"
-              button-class=""
+              class=""
               @click="loadOrder(true)"
             />
 
@@ -222,15 +204,14 @@ await loadOrder(true)
               variant="plain"
               size="lg"
               :label="t('lookup.back')"
-              :button-style="{ borderWidth: '0px' }"
-              button-class=""
+              class=""
               @click="navigateTo('/payments')"
             />
           </div>
         </div>
-      </LabBaseSection>
+      </div>
 
-      <LabBaseSection
+      <div
         :title="t('index.latest_order_title')"
         variant="plain"
         :section-class="sectionClass"
@@ -240,32 +221,27 @@ await loadOrder(true)
           <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.order') }}</p>
           <p class="mt-2 text-sm wrap-break-word text-(--lab-text-primary)">{{ order.order_id }}</p>
         </div>
-
         <div>
           <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.status') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ orderStatusLabel }}</p>
         </div>
-
         <div>
           <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.amount') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ amountText }}</p>
         </div>
-
         <div>
           <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.plan') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ planLabel }}</p>
         </div>
-
         <div>
           <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.created') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ createdAtText }}</p>
         </div>
-
         <div>
           <p class="text-xs tracking-[0.18em] text-(--lab-success) uppercase">{{ t('lookup.paid') }}</p>
           <p class="mt-2 text-sm text-(--lab-text-primary)">{{ paidAtText }}</p>
         </div>
-      </LabBaseSection>
+      </div>
     </template>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <template>
-  <div class="inline-block" @mouseenter="onEnter" @mouseleave="onLeave" @click="onClick">
-    <slot :display="display" :label-style="labelStyle" />
+  <div class="inline-block" :style="copyHoverStyle" @mouseenter="onEnter" @mouseleave="onLeave" @click="onClick">
+    <slot :display="display" />
   </div>
 </template>
 
@@ -30,11 +30,8 @@ const maxChars = Math.max(props.idle.length, props.hover.length, props.done.leng
 const iconReserve = props.hasIcon ? 2 : 0 // reserve space for icon in ch
 const paddingReserve = '0rem' // keep padding on button; exclude from text width
 
-const labelStyle = computed(() => ({
-  width: `calc(${maxChars + iconReserve}ch + ${paddingReserve})`,
-  fontFamily: 'monospace',
-  display: 'inline-block', // to make width work
-  textAlign: 'left'
+const copyHoverStyle = computed(() => ({
+  '--copy-hover-width': `calc(${maxChars + iconReserve}ch + ${paddingReserve})`
 }))
 
 const display = computed(() => (copied.value ? props.done : hovered.value ? props.hover : props.idle))

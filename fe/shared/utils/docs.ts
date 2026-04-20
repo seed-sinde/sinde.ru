@@ -53,10 +53,7 @@ export const DOCS_SCHEMA: Record<DocsSlug, DocsSchema> = {
     ]
   },
   terms: {
-    introItems: [
-      {key: "purpose"},
-      {key: "related_documents"}
-    ],
+    introItems: [{key: "purpose"}, {key: "related_documents"}],
     sections: [
       {key: "1_access_and_account"},
       {key: "2_acceptable_use"},
@@ -110,8 +107,12 @@ export const getDocsTabItems = (titles: Record<DocsSlug, string>): LabTabItem[] 
 export const getDocsTabRouteMap = (): Record<string, string> =>
   Object.fromEntries(DOCS_SLUGS.map(slug => [slug, getDocsHref(slug)]))
 
-export const getDocsI18nKey = (slug: DocsSlug, section: "intro" | "sections", item: DocsItemSchema, field: "label" | "value") =>
-  `${slug}.${section}.items.${item.key}.${field}`
+export const getDocsI18nKey = (
+  slug: DocsSlug,
+  section: "intro" | "sections",
+  item: DocsItemSchema,
+  field: "label" | "value"
+) => `${slug}.${section}.items.${item.key}.${field}`
 
 export const mapDocsItems = (
   slug: DocsSlug,
@@ -126,6 +127,6 @@ export const mapDocsItems = (
     return {
       label: resolve(labelKey),
       value: resolve(valueKey),
-      ...(href ? { href } : {})
+      ...(href ? {href} : {})
     }
   })

@@ -1,6 +1,7 @@
 export const useInterfacePreferencesSync = () => {
   const {user, updateProfile} = useAuth()
-  const {localeCode, themePreference, setInterfaceLocale, setThemePreference, readThemePreferenceFromSettings} = useInterfacePreferences()
+  const {localeCode, themePreference, setInterfaceLocale, setThemePreference, readThemePreferenceFromSettings} =
+    useInterfacePreferences()
   const accountLocale = computed<InterfaceLocaleCode>(() =>
     normalizeInterfaceLocale(user.value?.locale || localeCode.value)
   )

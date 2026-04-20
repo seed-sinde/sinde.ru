@@ -322,7 +322,7 @@ watch(
               :alt="selectedSampleImage.alt"
               :label="selectedSampleImage.title || 'Открыть образец'"
               free-height
-              button-class="w-full"
+              class="w-full"
               frame-class="aspect-[16/9] max-h-none"
               image-class="h-full w-full object-cover"
               @preview="openImageViewer(selectedSampleImage.viewerIndex)"
@@ -424,7 +424,7 @@ watch(
             :src="resolvedSpectralImage"
             :alt="`Спектр ${currentElement.russianName}`"
             label="Открыть спектр"
-            button-class="w-full max-w-xl"
+            class="w-full max-w-xl"
             frame-class="max-h-24"
             image-class="h-full w-full object-contain"
             @preview="openImageViewer(spectralViewerIndex)"

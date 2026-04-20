@@ -259,10 +259,9 @@ export default defineEventHandler(async event => {
         }
       }
       if (!response.ok) {
-        const message =
-          isRecord(payload)
-            ? String(payload.message || response.statusText || "Unknown error")
-            : response.statusText || "Unknown error"
+        const message = isRecord(payload)
+          ? String(payload.message || response.statusText || "Unknown error")
+          : response.statusText || "Unknown error"
         const details = isRecord(payload) ? payload.details : undefined
         throw createError({
           statusCode: response.status,

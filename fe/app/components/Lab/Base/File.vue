@@ -1,19 +1,28 @@
 <template>
-  <label class="inline-block" :class="disabled ? 'cursor-not-allowed' : 'cursor-pointer'">
-    <LabBaseInput
+  <LabBaseField :label="label" :for-id="id" :class="disabled ? 'cursor-not-allowed' : 'cursor-pointer'">
+    <input
       :id="id"
+      ref="inputRef"
       :name="name"
-      type="file"
       :accept="accept"
-      class="hidden"
       :disabled="disabled"
+      type="file"
+      class="hidden"
       @change="$emit('change', $event)"
     />
-    <LabBaseButton tag="span" :variant="variant" :size="size" :disabled="disabled" :button-class="resolvedButtonClass">
-      <slot>{{ label }}</slot>
-    </LabBaseButton>
-  </label>
+    <LabBaseButton
+      :label="label"
+      :variant="variant"
+      :size="size"
+      :disabled="disabled"
+      :icon="icon"
+      :icon-only="iconOnly"
+      :class="buttonClass"
+      @click="openPicker"
+    />
+  </LabBaseField>
 </template>
+
 <script setup lang="ts">
 const props = withDefaults(
   defineProps<{
@@ -22,6 +31,8 @@ const props = withDefaults(
     accept?: string
     label?: string
     disabled?: boolean
+    icon?: string
+    iconOnly?: boolean
     buttonClass?: LabButtonClass
     variant?: LabButtonVariant
     size?: LabButtonSize
@@ -32,13 +43,19 @@ const props = withDefaults(
     accept: '',
     label: 'Выбрать файл',
     disabled: false,
+    icon: '',
+    iconOnly: false,
     buttonClass: '',
     variant: 'secondary',
     size: 'sm'
   }
 )
+
 defineEmits<{
   (e: 'change', event: Event): void
 }>()
-const resolvedButtonClass = computed(() => ['pointer-events-none', props.buttonClass].filter(Boolean).join(' '))
+
+const inputRef = ref<HTMLInputElement | null>(null)
+
+const openPicker = () => !props.disabled && inputRef.value?.click()
 </script>

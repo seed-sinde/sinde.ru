@@ -68,10 +68,12 @@ const props = withDefaults(defineProps<{
   emptyText?: string
   rowKey?: string | ((row: Row, index: number) => PropertyKey)
   title?: string
+  nowrap?: boolean
 }>(), {
   loading: false,
   emptyText: 'Ничего не найдено.',
-  rowKey: 'id'
+  rowKey: 'id',
+  nowrap: false
 })
 
 const { columns: cols, loading, emptyText } = toRefs(props)
@@ -88,16 +90,16 @@ const rk = (row: Row, i: number): PropertyKey => {
 
 const hdCls = (col: Col) => [
   'py-2 pr-3 text-left font-medium',
-  col.nowrap ? 'whitespace-nowrap' : '',
   col.widthClass || '',
-  col.headerClass || ''
+  col.headerClass || '',
+  props.nowrap || col.nowrap ? 'whitespace-nowrap' : ''
 ]
 
 const tdCls = (col: Col) => [
   'py-2 pr-3',
-  col.nowrap ? 'whitespace-nowrap' : '',
   col.widthClass || '',
-  col.cellClass || ''
+  col.cellClass || '',
+  props.nowrap || col.nowrap ? 'whitespace-nowrap' : ''
 ]
 
 const fmt = (v: unknown) => v === null || v === undefined ? '—' : typeof v === 'string' ? v || '—' : String(v)

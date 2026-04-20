@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-1">
     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-      <LabField label="С дня" :for-id="fromDayId">
+      <LabBaseField label="С дня" :for-id="fromDayId">
         <LabBaseSelect :id="fromDayId" v-model="fromDay" :aria-label="fromDayLabel" :options="weekDayOptions" />
-      </LabField>
-      <LabField label="По день" :for-id="toDayId">
+      </LabBaseField>
+      <LabBaseField label="По день" :for-id="toDayId">
         <LabBaseSelect :id="toDayId" v-model="toDay" :aria-label="toDayLabel" :options="weekDayOptions" />
-      </LabField>
-      <LabField label="С времени" :for-id="fromTimeId">
+      </LabBaseField>
+      <LabBaseField label="С времени" :for-id="fromTimeId">
         <TraitsFormDateTextInput
           :id="fromTimeId"
           v-model="fromTime"
@@ -16,8 +16,8 @@
           :aria-label="fromTimeLabel"
           :invalid="Boolean(fromTime) && !fromTimeValid"
         />
-      </LabField>
-      <LabField label="По время" :for-id="toTimeId">
+      </LabBaseField>
+      <LabBaseField label="По время" :for-id="toTimeId">
         <TraitsFormDateTextInput
           :id="toTimeId"
           v-model="toTime"
@@ -26,7 +26,7 @@
           :aria-label="toTimeLabel"
           :invalid="Boolean(toTime) && !toTimeValid"
         />
-      </LabField>
+      </LabBaseField>
     </div>
     <LabErrorMessage
       v-if="(fromTime && !fromTimeValid) || (toTime && !toTimeValid)"

@@ -8,37 +8,14 @@
     ]"
     @click="onNavBackgroundClick"
   >
-    <div v-if="showToggle" class="relative flex items-center">
-      <LabBaseButton
-        v-if="isCollapsedHoverToggle"
-        size="sm"
-        icon-only
-        variant="ghost"
-        button-class="m-1 h-8 w-8 p-0 text-(--lab-text-primary) rounded-full cursor-ew-resize"
-        :aria-label="t('expand_menu')"
-        @mouseenter="isPrimaryControlHovered = true"
-        @mouseleave="isPrimaryControlHovered = false"
-        @focus="isPrimaryControlHovered = true"
-        @blur="isPrimaryControlHovered = false"
-        @click="emit('toggle-collapse')"
-      >
-        <span aria-hidden="true" :class="collapseGlyphClass">
-          <span class="absolute inset-y-0 left-1 w-px bg-current" />
-        </span>
-      </LabBaseButton>
-      <LabNavHomeBtn
-        v-else
-        @mouseenter="isPrimaryControlHovered = true"
-        @mouseleave="isPrimaryControlHovered = false"
-        @focus="isPrimaryControlHovered = true"
-        @blur="isPrimaryControlHovered = false"
-      />
+    <div v-if="showToggle" class="relative flex h-10 w-full items-center overflow-hidden">
+      <LabNavHomeBtn />
       <LabBaseButton
         size="sm"
         icon-only
         variant="ghost"
-        :button-class="[
-          'm-1 text-(--lab-text-primary) rounded-full absolute right-1 cursor-ew-resize',
+        :class="[
+          'absolute right-1 m-1 cursor-ew-resize rounded-full text-(--lab-text-primary)',
           animate ? 'transition-[opacity,background-color] duration-200' : '',
           collapsed ? 'pointer-events-none opacity-0' : 'opacity-100'
         ]"
@@ -108,14 +85,7 @@ const props = withDefaults(
   }
 )
 const { collapsed, showToggle, animate } = toRefs(props)
-const isPrimaryControlHovered = ref(false)
-const isCollapsedHoverToggle = computed(() => showToggle.value && collapsed.value && isPrimaryControlHovered.value)
 const collapseGlyphClass = 'relative inline-block h-3.5 w-3.5 border border-current opacity-90'
-watch(collapsed, next => {
-  if (!next) {
-    isPrimaryControlHovered.value = false
-  }
-})
 const onNavBackgroundClick = (event: MouseEvent) => {
   if (!showToggle.value || !collapsed.value) return
   const target = event.target as HTMLElement | null

@@ -1,7 +1,7 @@
 <template>
   <form ref="formRef" class="flex min-w-0 flex-col gap-3" @submit.prevent="onSubmit">
     <TraitsFormKeyMeta v-model="meta" :syn="key" />
-    <LabField :label="t('add_form.key.name')" for-id="trait-key">
+    <LabBaseField :label="t('add_form.key.name')" for-id="trait-key">
       <LabBaseInput
         id="trait-key"
         ref="keyInput"
@@ -12,12 +12,17 @@
         spellcheck="false"
         inputmode="text"
       />
-    </LabField>
-    <LabField v-if="showValueLabel" :label="t('add_form.value')" :for-id="valueLabelFor">
+    </LabBaseField>
+    <LabBaseField v-if="showValueLabel" :label="t('add_form.value')" :for-id="valueLabelFor">
       <component :is="valueComponent" :id="valueInputId" v-model="valueModel" :meta="meta" />
-    </LabField>
+    </LabBaseField>
     <component :is="valueComponent" v-else :id="valueInputId" v-model="valueModel" :meta="meta" />
-    <LabBaseButton type="submit" variant="primary" :label="t('add_form.add')" :disabled="!key.trim() || !isValueFilled" />
+    <LabBaseButton
+      type="submit"
+      variant="primary"
+      :label="t('add_form.add')"
+      :disabled="!key.trim() || !isValueFilled"
+    />
   </form>
 </template>
 

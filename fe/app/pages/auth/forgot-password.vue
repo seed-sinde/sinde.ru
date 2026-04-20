@@ -39,7 +39,7 @@ const submit = async () => {
       <h1 class="text-2xl font-semibold">{{ t('forgot.title') }}</h1>
       <p class="text-sm text-(--lab-text-muted)">{{ t('forgot.description') }}</p>
       <form class="space-y-4" @submit.prevent="submit">
-        <LabField label="Email" for-id="forgot-password-email">
+        <LabBaseField label="Email" for-id="forgot-password-email">
           <LabBaseInput
             id="forgot-password-email"
             v-model="email"
@@ -47,10 +47,10 @@ const submit = async () => {
             type="email"
             autocomplete="email"
             :invalid="hasInvalidEmail"
-            input-class="w-full"
+            class="w-full"
             placeholder="email@sinde.ru"
           />
-        </LabField>
+        </LabBaseField>
         <LabBaseButton type="submit" variant="primary" size="xl" :disabled="pending">
           {{ t('forgot.submit') }}
         </LabBaseButton>

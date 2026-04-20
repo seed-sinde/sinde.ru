@@ -48,10 +48,9 @@ const selectTheme = async (value: ThemePreference) => {
         :icon="triggerIcon"
         :title="triggerTitle"
         icon-only
-        icon-size="sm"
         size="sm"
         variant="ghost"
-        button-class="h-8 w-8 rounded-full p-0"
+        class="h-8 w-8 p-0"
         @click="toggle"
       />
     </template>

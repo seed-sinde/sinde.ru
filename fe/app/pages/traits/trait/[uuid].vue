@@ -138,11 +138,7 @@ usePageSeo({
 </script>
 <template>
   <div>
-    <LabNavHeader
-      :title
-      :breadcrumb-items="breadcrumbItems"
-      :mobile-actions="mobileActions"
-    >
+    <LabNavHeader :title :breadcrumb-items="breadcrumbItems" :mobile-actions="mobileActions">
       <template #actions="{ compact }">
         <Icon
           v-if="setUuid && !compact"

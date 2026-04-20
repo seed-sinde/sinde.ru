@@ -170,7 +170,8 @@ onBeforeUnmount(() => {
     @pointermove="onPointerMove"
     @pointerup="onPointerUp"
     @pointerleave="onPointerUp"
-    @wheel.prevent="onWheel">
+    @wheel.prevent="onWheel"
+  >
     <canvas ref="canvasRef" class="h-full w-full touch-none" :aria-label="title" />
     <div v-if="src" :class="toolbarClass" @pointerdown.stop>
       <button
@@ -202,7 +203,10 @@ onBeforeUnmount(() => {
         <Icon name="ic:round-download" class="text-base" />
       </a>
     </div>
-    <div v-if="loading || error || !src" class="absolute inset-0 grid place-items-center p-4 text-center text-sm text-(--lab-text-muted)">
+    <div
+      v-if="loading || error || !src"
+      class="absolute inset-0 grid place-items-center p-4 text-center text-sm text-(--lab-text-muted)"
+    >
       {{ !src ? 'Нет модели' : loading ? 'Загрузка модели…' : error }}
     </div>
   </div>

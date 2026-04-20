@@ -58,16 +58,14 @@ const onPasteClick = () => {
     :has-icon="true"
     @click="onCopyClick"
   >
-    <template #default="{ display, labelStyle }">
+    <template #default="{ display }">
       <LabBaseButton
         :aria-label="compact ? actionLabel : display"
-        :button-class="sharedButtonClass"
+        :class="sharedButtonClass"
         :disabled="resolvedDisabled"
         :icon-only="compact"
         :icon="iconName"
         :label="compact ? '' : display"
-        label-class="truncate font-mono text-xs"
-        :label-style="compact ? undefined : labelStyle"
         :size="size"
         :variant="variant"
       />
@@ -76,7 +74,7 @@ const onPasteClick = () => {
   <LabBaseButton
     v-else
     :aria-label="actionLabel"
-    :button-class="sharedButtonClass"
+    :class="sharedButtonClass"
     :disabled="resolvedDisabled"
     :icon-only="compact"
     :icon="iconName"

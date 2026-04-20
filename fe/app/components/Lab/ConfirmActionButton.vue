@@ -5,7 +5,7 @@
       :disabled="disabled"
       :icon-only="iconOnly"
       :aria-label="resolvedAriaLabel"
-      :button-class="resolvedButtonClass"
+      :class="resolvedButtonClass"
       :title="title || undefined"
       @click="handleClick"
     >

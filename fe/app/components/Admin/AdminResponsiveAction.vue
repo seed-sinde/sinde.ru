@@ -30,19 +30,19 @@ const desktopProps = computed(() => ({
   disabled: props.disabled,
   type: props.type,
   ...(props.icon ? { icon: props.icon } : {}),
-  ...(props.buttonClass ? { buttonClass: props.buttonClass } : {}),
+  ...(props.buttonClass ? { class: props.buttonClass } : {}),
   ...(props.title ? { title: props.title } : {})
 }))
 
 const mobileProps = computed(() => ({
   iconOnly: true,
-  ariaLabel: props.ariaLabel ?? props.label,
+  'aria-label': props.ariaLabel ?? props.label,
   variant: props.variant,
   size: props.size,
   disabled: props.disabled,
   type: props.type,
   ...(props.icon ? { icon: props.icon } : {}),
-  ...(props.buttonClass ? { buttonClass: props.buttonClass } : {}),
+  ...(props.buttonClass ? { class: props.buttonClass } : {}),
   ...(props.title ? { title: props.title } : {})
 }))
 </script>

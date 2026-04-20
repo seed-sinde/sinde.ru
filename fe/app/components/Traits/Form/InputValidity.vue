@@ -31,25 +31,25 @@
       </label>
     </div>
     <div v-if="mode === 'permanent'" class="space-y-1">
-      <LabField label="С" for-id="TraitValiditySince">
+      <LabBaseField label="С" for-id="TraitValiditySince">
         <TraitsFormDateTextInput
           id="TraitValiditySince"
           v-model="since"
           :placeholder="placeholder"
           :invalid="Boolean(since) && !sinceValid"
         />
-      </LabField>
+      </LabBaseField>
       <LabErrorMessage v-if="since && !sinceValid" :text="`Неверный формат: ${placeholder}`" />
     </div>
     <div v-else class="space-y-1">
-      <LabField label="Действует до" for-id="TraitValidityUntil">
+      <LabBaseField label="Действует до" for-id="TraitValidityUntil">
         <TraitsFormDateTextInput
           id="TraitValidityUntil"
           v-model="until"
           :placeholder="placeholder"
           :invalid="Boolean(until) && (!untilValid || !isUntilNotPast)"
         />
-      </LabField>
+      </LabBaseField>
       <LabErrorMessage v-if="until && !untilValid" :text="`Неверный формат: ${placeholder}`" />
       <LabErrorMessage
         v-else-if="until && !isUntilNotPast"

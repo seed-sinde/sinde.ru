@@ -497,13 +497,13 @@ onBeforeUnmount(() => stopDonationAnimation())
               :loading="creatingPlan !== ''"
               :disabled="paymentActionDisabled"
               :label="t('index.submit')"
-              button-class="w-full !rounded-none border-none font-black uppercase tracking-widest sm:w-80"
+              class="w-full !rounded-none border-none font-black tracking-widest uppercase sm:w-80"
               @click="submitOrder()"
             />
           </div>
 
           <ul class="lab-grid-table mt-10 grid-cols-1 sm:grid-cols-3">
-            <li v-for="item in featureItems" :key="item" class="lab-grid-table-cell flex items-center gap-3 p-3">
+            <li v-for="item in featureItems" :key="item" class="lab-grid-table-cell flex items-center gap-3 p-2">
               <Icon name="ic:round-check" class="shrink-0 text-lg text-(--lab-accent)" />
               <span
                 class="text-left text-xs leading-tight font-bold wrap-break-word text-(--lab-text-primary) uppercase"

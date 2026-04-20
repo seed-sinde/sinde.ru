@@ -1,14 +1,13 @@
 <template>
   <div class="relative inline-flex max-w-full">
     <LabBaseButton
-      :button-class="[
+      :class="[
         'group inline-flex max-w-full items-center gap-2 px-2.5 py-1 text-left transition-colors duration-200',
         stateBlockClass,
         buttonClass
       ]"
       :aria-label="resolvedTitle"
       :icon="iconName"
-      :icon-class="['order-last h-4 w-4 transition-colors', iconClass]"
       :label="resolvedTitle"
       @click="copyValue"
     >
@@ -103,12 +102,6 @@ const stateBlockClass = computed(() => {
 const stateLabelClass = computed(() => {
   if (copyState.value === 'success') return 'text-(--lab-success)'
   if (copyState.value === 'error') return 'text-(--lab-danger)'
-  if (props.variant === 'dark-cyan') return 'text-(--lab-info) group-hover:text-(--lab-text-primary)'
-  return 'text-(--lab-text-muted) group-hover:text-(--lab-text-primary)'
-})
-const iconClass = computed(() => {
-  if (copyState.value === 'success') return 'animate-pulse text-(--lab-success)'
-  if (copyState.value === 'error') return 'animate-pulse text-(--lab-danger)'
   if (props.variant === 'dark-cyan') return 'text-(--lab-info) group-hover:text-(--lab-text-primary)'
   return 'text-(--lab-text-muted) group-hover:text-(--lab-text-primary)'
 })

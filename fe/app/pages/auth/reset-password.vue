@@ -33,21 +33,21 @@ const submit = async () => {
 </script>
 <template>
   <div class="px-3 py-6 md:px-5">
-    <section class="max-w-xl space-y-4 border p-5">
+    <section class="max-w-xl space-y-4 border p-4">
       <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ t('reset.title') }}</h1>
       <p class="text-sm text-(--lab-text-muted)">{{ t('reset.description') }}</p>
       <form class="space-y-4" @submit.prevent="submit">
-        <LabField label="Новый пароль" for-id="reset-password-new">
+        <LabBaseField label="Новый пароль" for-id="reset-password-new">
           <LabBaseInput
             id="reset-password-new"
             v-model="password"
             name="new_password"
             type="password"
             autocomplete="new-password"
-            input-class="w-full"
+            class="w-full"
             placeholder="Минимум 12 символов"
           />
-        </LabField>
+        </LabBaseField>
         <LabBaseButton type="submit" variant="primary" size="xl" :disabled="pending || !token">
           {{ t('reset.submit') }}
         </LabBaseButton>

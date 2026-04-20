@@ -194,7 +194,7 @@ usePageSeo({
 })
 </script>
 <template>
-  <div class="space-y-4">
+  <div>
     <LabNavHeader
       :title
       :breadcrumb-items="[
@@ -204,16 +204,13 @@ usePageSeo({
         { label: title, current: true }
       ]"
     />
-    <section class="px-3 sm:px-6">
-      <div
-        v-if="pending && !mineral && !notFound"
-        class="flex min-h-72 items-center justify-center border border-zinc-800 bg-zinc-950/70"
-      >
+    <section class="p-4">
+      <div v-if="pending && !mineral && !notFound" class="flex min-h-72 items-center justify-center">
         <div class="flex items-center gap-3 text-sm text-zinc-400">
-          <LabLoader varian="list" label="Загружаем минерал..." />
+          <LabLoader variant="list" label="Загружаем минерал..." />
         </div>
       </div>
-      <div v-else-if="error" class="border border-rose-500/30 bg-rose-950/20 p-5">
+      <div v-else-if="error" class="border border-rose-500/30 bg-rose-950/20 p-4">
         <LabErrorMessage :text="errorMessage" error-class="text-sm" />
         <div class="mt-3">
           <LabBaseButton variant="secondary" size="sm" label="Повторить" @click="refresh" />
@@ -230,10 +227,10 @@ usePageSeo({
           <LabBaseButton variant="secondary" size="sm" label="К списку минералов" @click="goToMinerals" />
         </div>
       </div>
-      <div v-else-if="mineral" class="border border-zinc-800 bg-zinc-950/70 p-4">
-        <div :class="hasMineralImages ? 'grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]' : 'space-y-4'">
-          <div class="space-y-4">
-            <div class="space-y-3">
+      <div v-else-if="mineral">
+        <div :class="hasMineralImages ? 'grid gap-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]' : 'space-y-2'">
+          <div class="space-y-2">
+            <div class="space-y-2">
               <div class="space-y-2">
                 <LabViewerLaTex v-if="showMineralNameAsFormula" :formula="mineralNameLatex" />
                 <div v-else class="text-2xl font-semibold wrap-break-word text-zinc-100 sm:text-3xl">
@@ -258,7 +255,7 @@ usePageSeo({
                 :src="mineralCoverImage?.previewSrc || mineralCoverImage?.src || ''"
                 :alt="mineralCoverImage?.alt || mineralName"
                 :label="mineralCoverImage?.title || 'Открыть изображение'"
-                button-class="w-full"
+                class="w-full"
                 frame-class="max-h-80"
                 image-class="h-full w-full object-contain"
                 @preview="openMineralImageViewer(activeImageIndex)"

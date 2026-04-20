@@ -1,73 +1,24 @@
 <script setup lang="ts">
-type SessionActivityRow = LabDataTableRow & {
-  id: string
-  device: string
-  ip: string
-  status: string
-  count: number
-  lastSeenAt: string
-  revokableSessionIds: string[]
-  hasCurrent: boolean
-  action: string
-  source: AuthSessionGroupView
-}
-type LoginAttemptRow = LabDataTableRow & {
-  id: string
-  createdAt: string
-  outcome: string
-  ip: string
-  risk: string
-  details: string
-  source: AuthLoginAttemptView
-}
-type SecurityEventRow = LabDataTableRow & {
-  id: string
-  createdAt: string
-  event: string
-  ip: string
-  payload: string
-  source: AuthSecurityEventView
-}
-
 const { locale, key, load, t } = useI18nSection('auth')
 await useAsyncData(key.value, load, { watch: [locale] })
 const route = useRoute()
 const router = useRouter()
-const { formatAbsoluteDateTime } = useLocalizedDateTime()
 const {
   user,
   ensureLoaded,
   loadMe,
-  logout,
   requestEmailChange,
-  listSessions,
-  listLoginAttempts,
-  listSecurityEvents,
-  revokeSession,
   changePassword,
   setupTwoFactor,
   enableTwoFactor,
   disableTwoFactor
 } = useAuth()
 
-const activityTabItems: LabTabItem[] = [
-  { value: 'sessions', label: t('account.activity.sessions') },
-  { value: 'attempts', label: t('account.activity.attempts') },
-  { value: 'events', label: t('account.activity.events') }
-]
 const disableCodeTabItems: LabTabItem[] = [
   { value: 'totp', label: t('account.twofa.code_label') },
   { value: 'backup', label: t('login.mfa_backup') }
 ]
 
-const activityTab = computed<'sessions' | 'attempts' | 'events'>({
-  get: () =>
-    normalizeTabRouteValue(route.query.activity, ['sessions', 'attempts', 'events'], 'sessions') as
-      | 'sessions'
-      | 'attempts'
-      | 'events',
-  set: () => {}
-})
 const disableMethodTab = computed<'totp' | 'backup'>({
   get: () => normalizeTabRouteValue(route.query.disable2fa, ['totp', 'backup'], 'totp') as 'totp' | 'backup',
   set: value => {
@@ -81,9 +32,6 @@ const disableMethodTab = computed<'totp' | 'backup'>({
 })
 const showDisable2faForm = ref(false)
 
-const sessions = ref<AuthSessionView[]>([])
-const loginAttempts = ref<AuthLoginAttemptView[]>([])
-const securityEvents = ref<AuthSecurityEventView[]>([])
 const backupCodes = ref<string[]>([])
 
 const enableCode = ref('')
@@ -94,11 +42,6 @@ const setupSecret = ref('')
 const setupOtpAuthUrl = ref('')
 const setupQrDataUrl = ref('')
 
-const activityLoading = ref(false)
-const activityLoaded = ref(false)
-const activityError = ref('')
-const actionError = ref('')
-const actionInfo = ref('')
 const twofaError = ref('')
 const twofaInfo = ref('')
 const passwordError = ref('')
@@ -122,158 +65,9 @@ const emailChangeForm = reactive({
   email: ''
 })
 
-const groupedSessions = computed<AuthSessionGroupView[]>(() => {
-  const groups = new Map<
-    string,
-    {
-      deviceLabel: string
-      ip: string
-      latestSession: AuthSessionView
-      mfaVerified: boolean
-      count: number
-      revokableSessionIds: string[]
-      currentSessionIds: string[]
-      hasCurrent: boolean
-    }
-  >()
-  for (const item of sessions.value) {
-    if (item.revoked_at) continue
-    const deviceLabel =
-      String(item.device_label || '').trim() || String(item.user_agent || '').trim() || 'Неизвестное устройство'
-    const ip = String(item.ip || '').trim() || '—'
-    const key = `${deviceLabel}::${ip}`
-    const current = groups.get(key)
-    if (!current) {
-      groups.set(key, {
-        deviceLabel,
-        ip,
-        latestSession: item,
-        mfaVerified: Boolean(item.mfa_verified),
-        count: 1,
-        revokableSessionIds: [item.session_id],
-        currentSessionIds: item.is_current ? [item.session_id] : [],
-        hasCurrent: Boolean(item.is_current)
-      })
-      continue
-    }
-    current.count += 1
-    current.revokableSessionIds.push(item.session_id)
-    if (item.is_current) {
-      current.currentSessionIds.push(item.session_id)
-      current.hasCurrent = true
-    }
-    const currentTs = new Date(current.latestSession.last_seen_at).getTime() || 0
-    const nextTs = new Date(item.last_seen_at).getTime() || 0
-    if (nextTs > currentTs) {
-      current.latestSession = item
-      current.mfaVerified = Boolean(item.mfa_verified)
-    }
-  }
-  return Array.from(groups.entries())
-    .map(([key, group]) => ({
-      key,
-      ip: group.ip,
-      deviceLabel: group.deviceLabel,
-      count: group.count,
-      mfaVerified: group.mfaVerified,
-      lastSeenAt: group.latestSession.last_seen_at,
-      revokableSessionIds: group.revokableSessionIds,
-      currentSessionIds: group.currentSessionIds,
-      hasCurrent: group.hasCurrent
-    }))
-    .sort((a, b) => (new Date(b.lastSeenAt).getTime() || 0) - (new Date(a.lastSeenAt).getTime() || 0))
-})
 const twofaStatusLabel = computed(() =>
   user.value?.is_two_factor_enabled ? t('account.twofa.enabled') : t('account.twofa.disabled')
 )
-const sessionActivityColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'device', label: 'Устройство', cellClass: 'whitespace-normal wrap-break-word' },
-  { key: 'status', label: '2FA', nowrap: true },
-  { key: 'activity', label: 'Активность', cellClass: 'whitespace-normal wrap-break-word' },
-  { key: 'action', label: 'Действие', nowrap: true }
-])
-const sessionActivityRows = computed<{
-  id: string
-  device: string
-  ip: string
-  status: string
-  count: number
-  lastSeenAt: string
-  revokableSessionIds: string[]
-  hasCurrent: boolean
-  action: string
-  source: AuthSessionGroupView
-}[]>(() =>
-  groupedSessions.value.map(item => ({
-    id: item.key,
-    device: item.deviceLabel,
-    ip: item.ip,
-    status: item.mfaVerified ? t('account.activity.mfa_verified') : t('account.activity.mfa_unverified'),
-    count: item.count,
-    lastSeenAt: item.lastSeenAt,
-    revokableSessionIds: item.revokableSessionIds,
-    hasCurrent: item.hasCurrent,
-    action:
-      item.revokableSessionIds.length === 0
-        ? t('account.activity.current')
-        : item.hasCurrent
-          ? t('account.activity.revoke_and_logout')
-          : t('account.activity.revoke'),
-    source: item
-  }))
-)
-const loginAttemptColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'createdAt', label: 'Дата', nowrap: true },
-  { key: 'outcome', label: 'Результат', nowrap: true },
-  { key: 'ip', label: 'IP', nowrap: true },
-  { key: 'risk', label: 'Риск', nowrap: true },
-  { key: 'details', label: 'Детали', cellClass: 'whitespace-normal wrap-break-word' }
-])
-const loginAttemptRows = computed<{
-  id: string
-  createdAt: string
-  outcome: string
-  ip: string
-  risk: string
-  details: string
-  source: AuthLoginAttemptView
-}[]>(() =>
-  loginAttempts.value.map(item => ({
-    id: item.attempt_id,
-    createdAt: formatDateTime(item.created_at),
-    outcome: item.outcome || '—',
-    ip: item.ip || '—',
-    risk: String(item.risk_score ?? '—'),
-    details: item.failure_reason || item.suspicious_reason || item.user_agent || '—',
-    source: item
-  }))
-)
-const securityEventColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'createdAt', label: 'Дата', nowrap: true },
-  { key: 'event', label: 'Событие', cellClass: 'whitespace-normal wrap-break-word' },
-  { key: 'ip', label: 'IP', nowrap: true },
-  { key: 'payload', label: 'Payload', cellClass: 'whitespace-normal wrap-break-word' }
-])
-const securityEventRows = computed<{
-  id: string
-  createdAt: string
-  event: string
-  ip: string
-  payload: string
-  source: AuthSecurityEventView
-}[]>(() =>
-  securityEvents.value.map(item => ({
-    id: item.event_id,
-    createdAt: formatDateTime(item.created_at),
-    event: `${item.event_type} · ${item.severity}`,
-    ip: item.ip || '—',
-    payload: JSON.stringify(item.payload || {}),
-    source: item
-  }))
-)
-
-const formatDateTime = (value?: string | null) =>
-  formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
 const clearSuccessNotice = (key: string, target?: { value: string }) => {
   const existing = successNoticeTimers.get(key)
   if (existing) {
@@ -295,36 +89,14 @@ const showSuccessNotice = (key: string, target: { value: string }, message: stri
   }, 5000)
   successNoticeTimers.set(key, timer)
 }
-const loadActivityState = async (force = false) => {
-  if (activityLoading.value) return
-  if (activityLoaded.value && !force) return
-  activityLoading.value = true
-  activityError.value = ''
-  try {
-    const [sessionRes, attemptsRes, eventsRes] = await Promise.all([
-      listSessions(),
-      listLoginAttempts(),
-      listSecurityEvents()
-    ])
-    sessions.value = sessionRes.data.items || []
-    loginAttempts.value = attemptsRes.data.items || []
-    securityEvents.value = eventsRes.data.items || []
-    activityLoaded.value = true
-  } catch (err: any) {
-    activityError.value = err?.data?.message || err?.message || 'Не удалось загрузить сессии и активность.'
-  } finally {
-    activityLoading.value = false
-  }
-}
 const refreshState = async () => {
-  actionError.value = ''
   try {
     await loadMe()
     if (user.value) {
       emailChangeForm.email = user.value.email || ''
     }
   } catch (err: any) {
-    actionError.value = err?.data?.message || err?.message || 'Не удалось загрузить аккаунт.'
+    emailChangeError.value = err?.data?.message || err?.message || 'Не удалось загрузить аккаунт.'
   }
 }
 const submitPasswordChange = async () => {
@@ -480,30 +252,6 @@ const toggleDisable2faForm = () => {
     })
   }
 }
-const revokeSessionGroup = async (group: AuthSessionGroupView) => {
-  if (!group.revokableSessionIds.length) return
-  actionError.value = ''
-  clearSuccessNotice('action', actionInfo)
-  try {
-    const currentSet = new Set(group.currentSessionIds)
-    const revokeOrder = [
-      ...group.revokableSessionIds.filter(sessionId => !currentSet.has(sessionId)),
-      ...group.currentSessionIds
-    ]
-    for (const sessionId of revokeOrder) {
-      await revokeSession(sessionId)
-    }
-    if (group.hasCurrent) {
-      await logout()
-      await router.push('/auth/login')
-      return
-    }
-    showSuccessNotice('action', actionInfo, 'Сессии устройства отозваны.')
-    await loadActivityState(true)
-  } catch (err: any) {
-    actionError.value = err?.data?.message || err?.message || 'Не удалось отозвать сессии устройства.'
-  }
-}
 const onEnableCodeInput = (value: string) => {
   enableCode.value = value
   if (twofaError.value) {
@@ -574,7 +322,6 @@ await ensureLoaded()
 if (user.value) {
   emailChangeForm.email = user.value.email || ''
 }
-await loadActivityState()
 </script>
 
 <template>
@@ -585,29 +332,25 @@ await loadActivityState()
         {{ t('account.email.description', { email: user.email }) }}
       </p>
       <div class="grid gap-3 sm:max-w-fit">
-        <LabField
-          :label="t('account.email.new_label')"
-          for-id="account-next-email"
-          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
-        >
+        <LabBaseField :label="t('account.email.new_label')" for-id="account-next-email">
           <LabBaseInput
             id="account-next-email"
             v-model="emailChangeForm.email"
             name="email"
             type="email"
             autocomplete="email"
-            input-class="w-full"
+            class="w-full"
             :placeholder="t('account.email.new_placeholder')"
             @keydown.enter.prevent="submitEmailChange"
           />
-        </LabField>
+        </LabBaseField>
       </div>
       <div class="flex flex-wrap items-center">
         <LabBaseButton
           :label="t('account.email.submit')"
           variant="primary"
           size="lg"
-          button-class="text-xs"
+          class="text-xs"
           :disabled="emailChangePending"
           @click="submitEmailChange"
         />
@@ -621,43 +364,35 @@ await loadActivityState()
       </h2>
       <span class="text-sm text-(--lab-text-muted)">{{ t('account.password.description') }}</span>
       <div class="grid gap-3 sm:max-w-fit lg:grid-rows-2">
-        <LabField
-          :label="t('account.password.current_label')"
-          for-id="account-current-password"
-          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
-        >
+        <LabBaseField :label="t('account.password.current_label')" for-id="account-current-password">
           <LabBaseInput
             id="account-current-password"
             v-model="passwordForm.current"
             name="current_password"
             type="password"
             autocomplete="current-password"
-            :input-class="['w-full', passwordCurrentInputError ? 'text-(--lab-danger)' : '']"
+            :class="['w-full', passwordCurrentInputError ? 'text-(--lab-danger)' : '']"
             :placeholder="t('account.password.current_placeholder')"
           />
-        </LabField>
-        <LabField
-          :label="t('account.password.next_label')"
-          for-id="account-next-password"
-          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
-        >
+        </LabBaseField>
+        <LabBaseField :label="t('account.password.next_label')" for-id="account-next-password">
           <LabBaseInput
             id="account-next-password"
             v-model="passwordForm.next"
             name="new_password"
             type="password"
             autocomplete="new-password"
-            input-class="w-full"
+            class="w-full"
             :placeholder="t('account.password.next_placeholder')"
           />
-        </LabField>
+        </LabBaseField>
       </div>
       <div class="flex flex-wrap items-center">
         <LabBaseButton
           :label="t('account.password.submit')"
           variant="primary"
           size="lg"
-          button-class="text-xs"
+          class="text-xs"
           @click="submitPasswordChange"
         />
       </div>
@@ -674,7 +409,7 @@ await loadActivityState()
         <LabBaseButton
           :variant="user.is_two_factor_enabled ? 'danger' : 'success'"
           size="lg"
-          button-class="text-xs"
+          class="text-xs"
           @click="user.is_two_factor_enabled ? toggleDisable2faForm() : begin2faSetup()"
         >
           {{
@@ -707,7 +442,7 @@ await loadActivityState()
             :label="t('account.twofa.copy_key_label')"
             :value="setupSecret"
             variant="dark-cyan"
-            button-class="w-full"
+            class="w-full"
             :title-idle="t('account.twofa.copy_key_idle')"
             :title-success="t('account.twofa.copy_key_success')"
             :title-error="t('account.twofa.copy_key_error')"
@@ -736,22 +471,17 @@ await loadActivityState()
           aria-hidden="true"
           class="pointer-events-none absolute -left-96 h-px w-px opacity-0"
         />
-        <LabField
-          label="Текущий пароль"
-          for-id="account-disable-2fa-password"
-          field-class="min-w-0"
-          label-class="text-(--lab-text-muted) text-xs normal-case tracking-normal"
-        >
+        <LabBaseField label="Текущий пароль" for-id="account-disable-2fa-password" field-class="min-w-0">
           <LabBaseInput
             id="account-disable-2fa-password"
             v-model="disablePassword"
             name="disable_2fa_password"
             type="password"
             autocomplete="current-password"
-            input-class="w-full"
+            class="w-full"
             placeholder="Текущий пароль"
           />
-        </LabField>
+        </LabBaseField>
         <LabNavTabs v-model="disableMethodTab" :items="disableCodeTabItems" route-query-key="disable2fa">
           <template #panel-totp>
             <AuthCodeInput
@@ -799,126 +529,6 @@ await loadActivityState()
         </div>
         <p class="text-xs leading-5">Храни их вне браузера и не передавай через мессенджеры.</p>
       </div>
-    </article>
-    <article class="space-y-3">
-      <div>
-        <h2 class="text-xl sm:text-2xl">{{ t('account.activity.title') }}</h2>
-        <p class="text-sm text-(--lab-text-muted)">{{ t('account.activity.description') }}</p>
-      </div>
-      <div class="flex flex-wrap items-baseline gap-x-6 gap-y-2">
-        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">
-            {{ t('account.activity.last_login') }}
-          </span>
-          <span class="text-sm text-(--lab-text-primary)">
-            {{ formatDateTime(user.last_login_at) }}
-          </span>
-        </div>
-        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span class="shrink-0 text-xs tracking-wide text-(--lab-text-muted) uppercase">
-            {{ t('account.activity.created_at') }}
-          </span>
-          <span class="text-sm text-(--lab-text-primary)">
-            {{ formatDateTime(user.created_at) }}
-          </span>
-        </div>
-      </div>
-      <LabNotify :text="actionError" tone="error" size="xs" />
-      <LabNotify :text="actionInfo" tone="success" size="xs" />
-      <p v-if="activityLoading" class="text-xs text-(--lab-text-muted)">Загрузка сессий и активности…</p>
-      <LabNotify v-else-if="activityError" :text="activityError" tone="error" size="xs" />
-      <LabNavTabs v-else v-model="activityTab" :items="activityTabItems" route-query-key="activity">
-        <template #tab="{ item }">
-          <span>{{ item.label }}</span>
-          <span class="ml-1 opacity-80">
-            {{
-              item.value === 'sessions'
-                ? groupedSessions.length
-                : item.value === 'attempts'
-                  ? loginAttempts.length
-                  : securityEvents.length
-            }}
-          </span>
-        </template>
-        <template #panel-sessions>
-          <LabDataTable
-            :columns="sessionActivityColumns"
-            :rows="sessionActivityRows"
-            :loading="activityLoading"
-            max-height-class="max-h-96"
-            empty-text="У вас пока нет активных сессий."
-          >
-            <template #cell-device="{ row }">
-              <div class="space-y-1">
-                <p class="text-sm">{{ (row as SessionActivityRow).device }}</p>
-                <p class="text-xs text-(--lab-text-muted)">{{ (row as SessionActivityRow).ip }}</p>
-              </div>
-            </template>
-            <template #cell-activity="{ row }">
-              <div class="space-y-1 text-xs">
-                <p>{{ t('account.activity.sessions_count', { count: (row as SessionActivityRow).count }) }}</p>
-                <p class="text-(--lab-text-muted)">
-                  {{ t('account.activity.last_activity') }}
-                  <LabRelativeTime :datetime="(row as SessionActivityRow).lastSeenAt" compact />
-                </p>
-              </div>
-            </template>
-            <template #cell-action="{ row }">
-              <LabBaseButton
-                variant="secondary"
-                size="lg"
-                button-class="text-xs"
-                :disabled="(row as SessionActivityRow).revokableSessionIds.length === 0"
-                @click="revokeSessionGroup((row as SessionActivityRow).source)"
-              >
-                {{ (row as SessionActivityRow).action }}
-              </LabBaseButton>
-            </template>
-          </LabDataTable>
-        </template>
-        <template #panel-attempts>
-          <LabDataTable
-            :columns="loginAttemptColumns"
-            :rows="loginAttemptRows"
-            :loading="activityLoading"
-            max-height-class="max-h-96"
-            empty-text="Попыток входа пока нет."
-          >
-            <template #cell-createdAt="{ row }">
-              <div class="space-y-1 text-xs">
-                <p>{{ (row as LoginAttemptRow).createdAt }}</p>
-                <p class="text-(--lab-text-muted)">
-                  <LabRelativeTime :datetime="(row as LoginAttemptRow).source.created_at" compact />
-                </p>
-              </div>
-            </template>
-            <template #cell-details="{ row }">
-              <p class="text-xs wrap-break-word">{{ (row as LoginAttemptRow).details }}</p>
-            </template>
-          </LabDataTable>
-        </template>
-        <template #panel-events>
-          <LabDataTable
-            :columns="securityEventColumns"
-            :rows="securityEventRows"
-            :loading="activityLoading"
-            max-height-class="max-h-96"
-            empty-text="Событий безопасности пока нет."
-          >
-            <template #cell-createdAt="{ row }">
-              <div class="space-y-1 text-xs">
-                <p>{{ (row as SecurityEventRow).createdAt }}</p>
-                <p class="text-(--lab-text-muted)">
-                  <LabRelativeTime :datetime="(row as SecurityEventRow).source.created_at" compact />
-                </p>
-              </div>
-            </template>
-            <template #cell-payload="{ row }">
-              <p class="text-xs wrap-break-word">{{ (row as SecurityEventRow).payload }}</p>
-            </template>
-          </LabDataTable>
-        </template>
-      </LabNavTabs>
     </article>
   </section>
 </template>

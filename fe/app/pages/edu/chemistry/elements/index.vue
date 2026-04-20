@@ -164,7 +164,7 @@ usePageSeo({
                 name="elementsSearchMobile"
                 placeholder="Поиск"
                 aria-label="Поиск элемента по периодической системе химических элементов"
-                input-class="bg-(--lab-bg-control) text-(--lab-text-primary) placeholder:text-(--lab-text-soft) !min-h-10 px-3 py-2 text-xs"
+                class="min-h-10! bg-(--lab-bg-control) px-3 py-2 text-xs text-(--lab-text-primary) placeholder:text-(--lab-text-soft)"
               />
             </div>
             <div class="min-w-0 basis-full sm:basis-56">

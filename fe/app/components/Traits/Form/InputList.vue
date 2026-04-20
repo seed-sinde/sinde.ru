@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-1">
-    <LabField label="Список" :for-id="inputId" :hint="hint">
+    <LabBaseField label="Список" :for-id="inputId" :hint="hint">
       <LabBaseTextarea
         :id="inputId"
         v-model="raw"
@@ -8,7 +8,7 @@
         rows="4"
         placeholder="Каждое значение с новой строки"
       />
-    </LabField>
+    </LabBaseField>
     <LabErrorMessage v-if="showMinItemsError" :text="`Нужно не меньше ${minItems} значений.`" />
   </div>
 </template>

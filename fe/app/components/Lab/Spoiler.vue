@@ -1,11 +1,6 @@
 <template>
   <section :class="['min-w-0', isOpen ? 'bg-(--lab-bg-surface)' : '', containerClass]">
-    <button
-      type="button"
-      :class="headerClass"
-      :aria-expanded="isOpen ? 'true' : 'false'"
-      @click="toggle"
-    >
+    <button type="button" :class="headerClass" :aria-expanded="isOpen ? 'true' : 'false'" @click="toggle">
       <span class="min-w-0">
         <span :class="labelClass">
           {{ label }}
@@ -17,11 +12,7 @@
       <span v-if="$slots.meta" :class="metaClass">
         <slot name="meta" :expanded="isOpen" />
       </span>
-      <Icon
-        :name="isOpen ? 'ic:round-expand-less' : 'ic:round-expand-more'"
-        :class="iconClass"
-        aria-hidden="true"
-      />
+      <Icon :name="isOpen ? 'ic:round-expand-less' : 'ic:round-expand-more'" :class="iconClass" aria-hidden="true" />
     </button>
     <div v-if="isOpen" :class="['min-w-0', contentClass]">
       <slot :expanded="isOpen" />

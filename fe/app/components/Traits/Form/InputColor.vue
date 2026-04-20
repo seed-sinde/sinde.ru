@@ -18,7 +18,7 @@
       </label>
     </div>
     <div v-if="mode === 'hex'" class="space-y-2">
-      <LabField label="HEX" for-id="color-hex">
+      <LabBaseField label="HEX" for-id="color-hex">
         <LabBaseInput
           id="color-hex"
           v-model="hex"
@@ -26,7 +26,7 @@
           placeholder="#aabbcc"
           pattern="^#?[0-9a-fA-F]{6}$"
         />
-      </LabField>
+      </LabBaseField>
       <TraitsColorPicker v-model="hex" />
     </div>
     <div v-else-if="mode === 'lab'" class="space-y-2">
@@ -81,7 +81,7 @@
       </div>
       <p class="pt-1 text-xs font-medium tracking-[0.08em] text-zinc-500 uppercase">Ручной ввод LAB</p>
       <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <LabField label="L" for-id="color-lab-l-input">
+        <LabBaseField label="L" for-id="color-lab-l-input">
           <LabBaseInput
             id="color-lab-l-input"
             name="color_lab_l_input"
@@ -94,8 +94,8 @@
             @update:model-value="onLabBaseInput('L', $event)"
             @blur="onLabBaseInputBlur('L')"
           />
-        </LabField>
-        <LabField label="a" for-id="color-lab-a-input">
+        </LabBaseField>
+        <LabBaseField label="a" for-id="color-lab-a-input">
           <LabBaseInput
             id="color-lab-a-input"
             name="color_lab_a_input"
@@ -108,8 +108,8 @@
             @update:model-value="onLabBaseInput('a', $event)"
             @blur="onLabBaseInputBlur('a')"
           />
-        </LabField>
-        <LabField label="b" for-id="color-lab-b-input">
+        </LabBaseField>
+        <LabBaseField label="b" for-id="color-lab-b-input">
           <LabBaseInput
             id="color-lab-b-input"
             name="color_lab_b_input"
@@ -122,7 +122,7 @@
             @update:model-value="onLabBaseInput('b', $event)"
             @blur="onLabBaseInputBlur('b')"
           />
-        </LabField>
+        </LabBaseField>
       </div>
       <div class="flex items-center gap-3">
         <div class="h-10 w-14 rounded-xl border border-zinc-700/80" :style="{ background: labPreviewColor }" />
@@ -132,9 +132,9 @@
       </div>
     </div>
     <div v-else class="space-y-2">
-      <LabField label="Категория цвета" for-id="color-spectrum">
+      <LabBaseField label="Категория цвета" for-id="color-spectrum">
         <LabBaseSelect id="color-spectrum" v-model="spectrum" name="color_spectrum" :options="spectrumSelectOptions" />
-      </LabField>
+      </LabBaseField>
       <div class="h-10 w-14 rounded-xl border border-zinc-700/80" :style="{ background: spectrumColor }" />
     </div>
   </div>

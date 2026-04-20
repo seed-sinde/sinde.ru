@@ -1,7 +1,7 @@
 <template>
   <section
     v-if="trait"
-    class="w-full p-3 sm:p-4"
+    class="w-full p-2 sm:p-4"
     :class="
       inline
         ? ''
@@ -11,12 +11,7 @@
     <form class="space-y-4" @submit.prevent="onSubmit">
       <component :is="valueComponent" :id="valueInputId" ref="valueRootRef" v-model="valueModel" :meta="resolvedMeta" />
       <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <LabBaseButton
-          variant="ghost"
-          :label="t('edit_form.cancel')"
-          :disabled="pending"
-          @click="emit('cancel')"
-        />
+        <LabBaseButton variant="ghost" :label="t('edit_form.cancel')" :disabled="pending" @click="emit('cancel')" />
         <LabBaseButton
           variant="primary"
           type="submit"

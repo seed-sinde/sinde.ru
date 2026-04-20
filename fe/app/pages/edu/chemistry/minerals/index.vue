@@ -457,53 +457,44 @@ onBeforeUnmount(() => {
         { label: title, current: true }
       ]"
     />
-    <section class="overflow-hidden border-y border-(--lab-border) bg-(--lab-bg-surface)">
+    <section class="overflow-hidden bg-(--lab-bg-surface)">
       <div class="border-b border-(--lab-border) bg-(--lab-bg-canvas) p-4">
-        <div class="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div class="min-w-0">
-            <p class="text-xs tracking-[0.18em] text-(--lab-text-muted) uppercase">Каталог минералов</p>
-            <p class="mt-1 text-sm leading-6 text-(--lab-text-secondary)">
-              Поиск по названию, фото, составу и кристаллической системе.
-            </p>
-          </div>
-          <div class="flex shrink-0 flex-wrap items-center gap-2">
-            <span class="px-1 text-xs text-(--lab-text-muted)">{{ filterMetaLabel }}</span>
-            <LabBaseButton variant="secondary" size="sm" label="Сбросить все фильтры" @click="clearAllFilters" />
-          </div>
-        </div>
-
-        <div class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-[minmax(16rem,1fr)_12rem_8rem] xl:grid-cols-[minmax(18rem,1fr)_12rem_8rem_18rem]">
-          <LabField label="Поиск минерала" for-id="minerals-search">
+        <div class="">
+          <LabBaseField label="Поиск минерала" for-id="minerals-search">
             <LabBaseInput
               id="minerals-search"
               name="minerals_search"
               :model-value="state.q"
               placeholder="Название минерала"
-              input-class="w-full bg-(--lab-bg-control) text-(--lab-text-primary)"
+              class="w-fit bg-(--lab-bg-control) text-(--lab-text-primary)"
               @update:model-value="onSearchInput"
             />
-          </LabField>
-          <LabField label="Сортировка" for-id="minerals-sort">
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+              <span class="px-1 text-xs text-(--lab-text-muted)">{{ filterMetaLabel }}</span>
+              <LabBaseButton variant="secondary" size="sm" label="Сбросить все фильтры" @click="clearAllFilters" />
+            </div>
+          </LabBaseField>
+          <LabBaseField label="Сортировка" for-id="minerals-sort">
             <LabBaseSelect
               id="minerals-sort"
               name="minerals_sort"
               :model-value="state.sort"
               :options="sortOptions"
-              select-class="w-full bg-(--lab-bg-control) text-(--lab-text-primary)"
+              select-class="bg-(--lab-bg-control) text-(--lab-text-primary)"
               @update:model-value="onSortChange"
             />
-          </LabField>
-          <LabField label="На страницу" for-id="minerals-limit">
+          </LabBaseField>
+          <LabBaseField label="На страницу" for-id="minerals-limit">
             <LabBaseSelect
               id="minerals-limit"
               name="minerals_limit"
               :model-value="String(state.limit)"
               :options="limitOptions"
-              select-class="w-full bg-(--lab-bg-control) text-(--lab-text-primary)"
+              select-class="bg-(--lab-bg-control) text-(--lab-text-primary)"
               @update:model-value="onLimitChange"
             />
-          </LabField>
-          <LabField label="Фото">
+          </LabBaseField>
+          <LabBaseField label="Фото">
             <div class="grid min-w-0 grid-cols-3 gap-1">
               <button
                 v-for="option in imageFilterOptions"
@@ -521,15 +512,46 @@ onBeforeUnmount(() => {
                 {{ option.label }}
               </button>
             </div>
-          </LabField>
+          </LabBaseField>
+          <div class="min-w-0 space-y-2 overflow-x-auto">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="text-sm font-medium text-(--lab-text-primary)">Кристаллическая система</span>
+                <LabHelpTooltip :text="crystalSystemHelpText" />
+              </div>
+              <LabBaseSwitch
+                :model-value="state.crystalSystemMode === 'all'"
+                label="совпадения"
+                false-label="или"
+                true-label="и"
+                tone="amber"
+                @update:model-value="onCrystalSystemModeChange"
+              />
+            </div>
+
+            <div class="flex w-max min-w-full gap-2">
+              <button
+                v-for="item in crystalSystemOptions"
+                :key="item.value"
+                type="button"
+                class="lab-focus shrink-0 border border-(--lab-border) px-3 py-2 text-left text-sm transition"
+                :class="state.crystalSystems.includes(item.value)
+        ? 'bg-[color-mix(in_srgb,var(--lab-warning)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-1 ring-(--lab-warning) ring-inset'
+        : 'bg-(--lab-bg-canvas) text-(--lab-text-secondary) hover:text-(--lab-text-primary) hover:ring-1 hover:ring-(--lab-border)'"
+                @click="toggleCrystalSystem(item.value)"
+              >
+                {{ crystalSystemLabel(item.value) }}
+              </button>
+            </div>
+          </div>
         </div>
 
         <LabSpoiler
           v-model="isElementsFilterOpen"
-          label="Состав и кристаллы"
+          label="Химический фильтр"
           description="Элементы выбираются прямо в таблице, кристаллические системы комбинируются через режим или/и."
           container-class="mt-4"
-          content-class="space-y-4 border-x border-b border-(--lab-border) bg-(--lab-bg-surface) p-3"
+          content-class="space-y-4 border-x border-b border-(--lab-border) bg-(--lab-bg-surface) p-2"
         >
           <template #meta>{{ detailedFiltersMetaLabel }}</template>
 
@@ -597,59 +619,36 @@ onBeforeUnmount(() => {
               @element-click="onPeriodicElementClick"
             />
           </div>
-
-          <div class="space-y-2 border-t border-(--lab-border) pt-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="inline-flex min-w-0 shrink-0 items-center gap-2 whitespace-nowrap">
-                <div class="text-sm font-medium text-(--lab-text-primary)">Кристаллическая система</div>
-                <LabHelpTooltip :text="crystalSystemHelpText" />
-              </div>
-              <LabBaseSwitch
-                :model-value="state.crystalSystemMode === 'all'"
-                label="совпадения"
-                false-label="или"
-                true-label="и"
-                tone="amber"
-                @update:model-value="onCrystalSystemModeChange"
-              />
-            </div>
-            <div class="min-w-0 overflow-x-auto">
-              <div class="flex w-max min-w-full flex-nowrap gap-2">
-                <button
-                  v-for="item in crystalSystemOptions"
-                  :key="item.value"
-                  type="button"
-                  class="lab-focus shrink-0 border border-(--lab-border) px-3 py-2 text-left text-sm transition"
-                  :class="
-                    state.crystalSystems.includes(item.value)
-                      ? 'bg-[color-mix(in_srgb,var(--lab-warning)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) ring-1 ring-(--lab-warning) ring-inset'
-                      : 'bg-(--lab-bg-canvas) text-(--lab-text-secondary) hover:text-(--lab-text-primary) hover:ring-1 hover:ring-(--lab-border)'
-                  "
-                  @click="toggleCrystalSystem(item.value)"
-                >
-                  {{ crystalSystemLabel(item.value) }}
-                </button>
-              </div>
-            </div>
-          </div>
         </LabSpoiler>
       </div>
-      <div v-if="error" class="border-b border-(--lab-border) bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-canvas))] p-4">
+      <div
+        v-if="error"
+        class="border-b border-(--lab-border) bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-canvas))] p-4"
+      >
         <LabErrorMessage :text="errorMessage" error-class="text-sm" />
         <div class="mt-3">
           <LabBaseButton variant="secondary" size="sm" label="Повторить" @click="refresh" />
         </div>
       </div>
-      <div v-else-if="pending && !minerals.length" class="flex min-h-72 items-center justify-center border-b border-(--lab-border) p-6">
-        <LabLoader size="md" variant="inline" label="Загружаем минералы..." />
+      <div
+        v-else-if="pending && !minerals.length"
+        class="flex min-h-72 items-center justify-center border-b border-(--lab-border) p-6"
+      >
+        <LabLoader variant="inline" label="Загружаем минералы..." />
       </div>
-      <div v-else-if="!minerals.length" class="border-b border-(--lab-border) p-6 text-sm leading-6 text-(--lab-text-secondary)">
+      <div
+        v-else-if="!minerals.length"
+        class="border-b border-(--lab-border) p-6 text-sm leading-6 text-(--lab-text-secondary)"
+      >
         По текущим условиям ничего не найдено. Попробуйте ослабить поиск или очистить фильтры.
       </div>
       <div v-else class="divide-y divide-(--lab-border)">
         <div class="flex items-center justify-between gap-3 px-4 py-2 text-xs text-(--lab-text-secondary)">
           <span>Показано: {{ visibleRangeLabel }}</span>
-          <span>Найдено: <span class="text-(--lab-text-primary)">{{ meta.total }}</span></span>
+          <span>
+            Найдено:
+            <span class="text-(--lab-text-primary)">{{ meta.total }}</span>
+          </span>
         </div>
         <div v-for="mineral in minerals" :key="mineral.database_id">
           <NuxtLink
@@ -666,7 +665,9 @@ onBeforeUnmount(() => {
           </NuxtLink>
         </div>
       </div>
-      <div class="flex flex-col gap-3 border-t border-(--lab-border) p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        class="flex flex-col gap-3 border-t border-(--lab-border) p-4 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div class="text-sm text-(--lab-text-secondary)">
           Страница
           <span class="text-(--lab-text-primary)">{{ currentPage }}</span>

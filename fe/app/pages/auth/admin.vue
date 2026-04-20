@@ -824,7 +824,7 @@ watch(
           description="Поиск, блокировки, смена роли и принудительный выход из сессий."
         />
         <div class="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
-          <LabField label="Поиск" for-id="admin_user_search">
+          <LabBaseField label="Поиск" for-id="admin_user_search">
             <LabBaseInput
               id="admin_user_search"
               v-model="userSearch"
@@ -832,23 +832,23 @@ watch(
               type="text"
               placeholder="email или имя"
             />
-          </LabField>
-          <LabField label="Статус" for-id="admin_user_status">
+          </LabBaseField>
+          <LabBaseField label="Статус" for-id="admin_user_status">
             <LabBaseSelect
               id="admin_user_status"
               v-model="userStatusFilter"
               name="admin_user_status"
               :options="userStatusOptions"
             />
-          </LabField>
-          <LabField label="Роль" for-id="admin_user_role_filter">
+          </LabBaseField>
+          <LabBaseField label="Роль" for-id="admin_user_role_filter">
             <LabBaseSelect
               id="admin_user_role_filter"
               v-model="userRoleFilter"
               name="admin_user_role_filter"
               :options="userRoleOptions"
             />
-          </LabField>
+          </LabBaseField>
         </div>
         <AdminNotifyStack
           :items="[
@@ -906,20 +906,26 @@ watch(
           </template>
           <template #cell-actions="{ row }">
             <div class="flex min-w-max items-center gap-1 whitespace-nowrap">
-              <span v-if="(row as AdminUserRow).status !== 'blocked' && !isAdminAccount(row as AdminUserRow)" class="max-sm:hidden">
+              <span
+                v-if="(row as AdminUserRow).status !== 'blocked' && !isAdminAccount(row as AdminUserRow)"
+                class="max-sm:hidden"
+              >
                 <LabConfirmActionButton
                   label="Блок"
                   confirm-label="Подтвердить"
                   tooltip="Подтвердить блокировку аккаунта?"
                   icon="ic:round-block"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
                   @confirm="blockUser(row as AdminUserRow)"
                 />
               </span>
-              <span v-if="(row as AdminUserRow).status !== 'blocked' && !isAdminAccount(row as AdminUserRow)" class="sm:hidden">
+              <span
+                v-if="(row as AdminUserRow).status !== 'blocked' && !isAdminAccount(row as AdminUserRow)"
+                class="sm:hidden"
+              >
                 <LabConfirmActionButton
                   icon-only
                   icon="ic:round-block"
@@ -927,7 +933,7 @@ watch(
                   confirm-aria-label="Подтвердить блокировку"
                   confirm-label="Ок"
                   tooltip="Подтвердить блокировку аккаунта?"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_42%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_12%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_18%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
@@ -959,7 +965,7 @@ watch(
                   confirm-label="Подтвердить"
                   tooltip="Подтвердить принудительный сброс всех сессий?"
                   icon="ic:round-logout"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-primary) hover:bg-(--lab-bg-surface-hover)"
                   confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
@@ -975,7 +981,7 @@ watch(
                   confirm-aria-label="Подтвердить сброс сессий"
                   confirm-label="Ок"
                   tooltip="Подтвердить принудительный сброс всех сессий?"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border-(--lab-border) bg-(--lab-bg-surface) text-(--lab-text-primary) hover:bg-(--lab-bg-surface-hover)"
                   confirm-class="border-(--lab-warning) bg-(--lab-warning) text-white hover:bg-[color-mix(in_srgb,var(--lab-warning)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-warning)_30%,transparent)]"
@@ -989,7 +995,7 @@ watch(
                   confirm-label="Подтвердить"
                   tooltip="Подтвердить удаление аккаунта?"
                   icon="ic:round-delete"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
@@ -1004,7 +1010,7 @@ watch(
                   confirm-aria-label="Подтвердить удаление аккаунта"
                   confirm-label="Ок"
                   tooltip="Подтвердить удаление аккаунта?"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border-[color-mix(in_srgb,var(--lab-danger)_46%,var(--lab-border))] bg-[color-mix(in_srgb,var(--lab-danger)_14%,var(--lab-bg-surface))] text-(--lab-text-primary) hover:bg-[color-mix(in_srgb,var(--lab-danger)_20%,var(--lab-bg-surface-hover))]"
                   confirm-class="border-(--lab-danger) bg-(--lab-danger) text-white hover:bg-[color-mix(in_srgb,var(--lab-danger)_88%,black)]"
                   progress-class="bg-[color-mix(in_srgb,var(--lab-danger)_30%,transparent)]"
@@ -1063,7 +1069,7 @@ watch(
               <LabBaseButton
                 variant="ghost"
                 size="none"
-                button-class="truncate inline-flex max-w-full items-start justify-start px-0 text-left text-zinc-300 hover:text-zinc-100"
+                class="inline-flex max-w-full items-start justify-start truncate px-0 text-left text-zinc-300 hover:text-zinc-100"
                 :disabled="moderationOwnerSavingRecipeId === (row as ModerationRow).id"
                 :label="moderationOwnerDisplay((row as ModerationRow).owner_user_id)"
                 @click="openModerationOwnerEditor(row as ModerationRow)"
@@ -1086,7 +1092,7 @@ watch(
                     :key="`owner-candidate:${(row as ModerationRow).id}:${candidate.user_id}`"
                     variant="secondary"
                     size="none"
-                    button-class="w-full justify-start px-2 py-1 text-left text-xs truncate"
+                    class="w-full justify-start truncate px-2 py-1 text-left text-xs"
                     :disabled="moderationOwnerSavingRecipeId === (row as ModerationRow).id"
                     :label="candidate.display_name || candidate.email"
                     @click="changeModerationRecipeOwner(row as ModerationRow, candidate)"
@@ -1097,7 +1103,7 @@ watch(
                 <LabBaseButton
                   variant="ghost"
                   size="xs"
-                  button-class="px-0 text-zinc-400 hover:text-zinc-200"
+                  class="px-0 text-zinc-400 hover:text-zinc-200"
                   @click="closeModerationOwnerEditor"
                 >
                   Отмена
@@ -1106,7 +1112,11 @@ watch(
             </div>
           </template>
           <template #cell-status="{ row }">
-            <LabBaseBadge :variant="moderationStatusTone((row as ModerationRow).moderation_status)" size="xs" :rounded="false">
+            <LabBaseBadge
+              :variant="moderationStatusTone((row as ModerationRow).moderation_status)"
+              size="xs"
+              :rounded="false"
+            >
               {{ moderationStatusLabel((row as ModerationRow).moderation_status) }}
             </LabBaseBadge>
           </template>
@@ -1124,14 +1134,16 @@ watch(
                 class="w-full text-xs"
                 @update:model-value="moderationNoteDrafts[(row as ModerationRow).id] = String($event || '')"
               />
-              <p v-else-if="(row as ModerationRow).moderation_note">Последняя причина: {{ (row as ModerationRow).moderation_note }}</p>
+              <p v-else-if="(row as ModerationRow).moderation_note">
+                Последняя причина: {{ (row as ModerationRow).moderation_note }}
+              </p>
               <div class="flex flex-wrap gap-1">
                 <LabConfirmActionButton
                   v-if="moderationCanApprove(row as ModerationRow)"
                   label="Одобрить"
                   confirm-label="Подтвердить"
                   tooltip="Подтвердить публикацию рецепта?"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border border-emerald-500/40 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
                   confirm-class="border border-emerald-300/90 bg-emerald-600 text-white hover:bg-emerald-500"
                   progress-class="bg-emerald-300/45"
@@ -1142,7 +1154,7 @@ watch(
                   label="Отклонить"
                   confirm-label="Подтвердить"
                   tooltip="Подтвердить отклонение рецепта?"
-                  :button-class="adminConfirmButtonClass"
+                  :class="adminConfirmButtonClass"
                   idle-class="border border-rose-500/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
                   confirm-class="border border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500"
                   progress-class="bg-rose-300/45"
@@ -1164,7 +1176,7 @@ watch(
           title="Поиск по ключам особенностей"
           description="Проверка syn, meta и количества traits для ключа."
         />
-        <LabField label="Запрос" for-id="admin_keys_query" class="max-w-xl">
+        <LabBaseField label="Запрос" for-id="admin_keys_query" class="max-w-xl">
           <LabBaseInput
             id="admin_keys_query"
             v-model="keysQuery"
@@ -1172,7 +1184,7 @@ watch(
             type="text"
             placeholder="часть названия ключа"
           />
-        </LabField>
+        </LabBaseField>
         <LabNotify :text="keysError" tone="error" size="xs" />
         <LabDataTable
           :columns="keysTableColumns"

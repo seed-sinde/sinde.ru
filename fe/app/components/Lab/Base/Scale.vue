@@ -95,7 +95,7 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 </script>
 <template>
-  <LabField :field-class="fieldClass" :label-class="labelClass">
+  <LabBaseField :field-class="fieldClass" :label-class="labelClass">
     <template #label>
       <span :id="labelId">{{ label }}</span>
     </template>
@@ -141,5 +141,5 @@ const onKeydown = (event: KeyboardEvent) => {
       </div>
     </div>
     <input v-if="name" type="hidden" :name="name" :value="normalizedValue" />
-  </LabField>
+  </LabBaseField>
 </template>

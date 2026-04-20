@@ -296,7 +296,7 @@ const elementUnavailableClass = (elementNumber: number) => {
                   ? 'saturate-125'
                   : '',
               !isElementDisabled(element.number) && interactive
-                ? 'cursor-pointer hover:ring-1 hover:ring-inset hover:ring-(--lab-accent)'
+                ? 'cursor-pointer hover:ring-1 hover:ring-(--lab-accent) hover:ring-inset'
                 : !isElementDisabled(element.number)
                   ? 'cursor-default'
                   : ''

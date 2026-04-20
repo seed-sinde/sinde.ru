@@ -343,7 +343,7 @@ onMounted(async () => {
       <h1 class="text-2xl font-semibold text-(--lab-text-primary)">{{ t('login.title') }}</h1>
       <template v-if="!mfaTicket">
         <form class="space-y-4" @submit.prevent="submitPassword">
-          <LabField :label="t('login.email')" for-id="auth-email">
+          <LabBaseField :label="t('login.email')" for-id="auth-email">
             <LabBaseInput
               id="auth-email"
               ref="emailInputRef"
@@ -354,29 +354,23 @@ onMounted(async () => {
               autocapitalize="none"
               spellcheck="false"
               :invalid="Boolean(email.trim()) && !isValidEmail(email)"
-              input-class="w-full"
+              class="w-full"
               placeholder="you@example.com"
               @input="clearVerificationState"
             />
-          </LabField>
-          <LabField :label="t('login.password')" for-id="auth-password">
+          </LabBaseField>
+          <LabBaseField :label="t('login.password')" for-id="auth-password">
             <LabBaseInput
               id="auth-password"
               v-model="password"
               name="password"
               type="password"
               autocomplete="current-password"
-              input-class="w-full"
+              class="w-full"
               placeholder="Минимум 12 символов"
             />
-          </LabField>
-          <LabBaseButton
-            type="submit"
-            variant="primary"
-            size="xl"
-            :disabled="pending"
-            :label="t('login.submit')"
-          />
+          </LabBaseField>
+          <LabBaseButton type="submit" variant="primary" size="xl" :disabled="pending" :label="t('login.submit')" />
         </form>
         <div
           v-if="verificationEmail"
@@ -402,15 +396,11 @@ onMounted(async () => {
       </template>
       <div v-else class="space-y-4">
         <div
-          class="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_8%,var(--lab-bg-surface))] p-3 text-sm text-(--lab-text-primary)"
+          class="border-[color-mix(in_srgb,var(--lab-accent)_34%,transparent)] bg-[color-mix(in_srgb,var(--lab-accent)_8%,var(--lab-bg-surface))] p-2 text-sm text-(--lab-text-primary)"
         >
           <p>{{ t('login.mfa_description') }}</p>
         </div>
-        <LabNavTabs
-          v-model="mfaMethodTab"
-          :items="mfaTabItems"
-          route-query-key="mfa"
-        >
+        <LabNavTabs v-model="mfaMethodTab" :items="mfaTabItems" route-query-key="mfa">
           <template #panel-totp>
             <AuthCodeInput
               id="auth-mfa-code"

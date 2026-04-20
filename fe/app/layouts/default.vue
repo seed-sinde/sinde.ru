@@ -186,7 +186,7 @@ onBeforeUnmount(() => {
           icon-only
           size="sm"
           variant="ghost"
-          button-class="m-1 rounded-full"
+          class="m-1 rounded-full"
           @click="isMobileMenuOpen = true"
         />
         <div class="min-w-0 flex-1">

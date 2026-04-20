@@ -64,7 +64,12 @@ export const DATA_TYPE_LABELS: Record<DataType, string> = {
   "datetime-range": "диапазон",
   "geo-point": "гео"
 }
-export const BOOLEAN_DISPLAY_OPTIONS: Array<{value: TraitBooleanDisplay; label: string; trueLabel: string; falseLabel: string}> = [
+export const BOOLEAN_DISPLAY_OPTIONS: Array<{
+  value: TraitBooleanDisplay
+  label: string
+  trueLabel: string
+  falseLabel: string
+}> = [
   {value: "truth", label: "Истина/Ложь", trueLabel: "Истина", falseLabel: "Ложь"},
   {value: "answer", label: "Да/Нет", trueLabel: "Да", falseLabel: "Нет"},
   {value: "state", label: "Вкл/Выкл", trueLabel: "Вкл", falseLabel: "Выкл"},
@@ -569,7 +574,12 @@ export const normalizeMetaForEquality = (meta?: KeyMeta | null): KeyMeta => {
     next.booleanTrueLabel = String(normalized.booleanTrueLabel || labels.trueLabel).trim() || labels.trueLabel
     next.booleanFalseLabel = String(normalized.booleanFalseLabel || labels.falseLabel).trim() || labels.falseLabel
   }
-  if (normalized.dataType === "datetime" || normalized.dataType === "interval" || normalized.dataType === "schedule" || normalized.dataType === "validity") {
+  if (
+    normalized.dataType === "datetime" ||
+    normalized.dataType === "interval" ||
+    normalized.dataType === "schedule" ||
+    normalized.dataType === "validity"
+  ) {
     next.timezone = String(normalized.timezone || "UTC").trim() || "UTC"
   }
   return next
@@ -707,9 +717,11 @@ export const validateValue = (value: unknown, meta: KeyMeta): boolean => {
           const start = String(parsed?.start || "").trim()
           const end = String(parsed?.end || "").trim()
           const rangeType = resolveRangeValueType(meta.rangeType)
-          if (rangeType === "number") return re.number.test(start) && re.number.test(end) && Number(start) <= Number(end)
+          if (rangeType === "number")
+            return re.number.test(start) && re.number.test(end) && Number(start) <= Number(end)
           if (rangeType === "time") return isCanonicalTimeRangeValid(start, end)
-          if (rangeType === "date") return /^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end) && start <= end
+          if (rangeType === "date")
+            return /^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end) && start <= end
           return isCanonicalRangeValid(start, end)
         } catch {
           return false
@@ -774,7 +786,13 @@ export const validateValue = (value: unknown, meta: KeyMeta): boolean => {
         return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
       }
       try {
-        const parsed = JSON.parse(v) as {type?: string; lat?: string; lng?: string; points?: Array<{lat?: string; lng?: string}>; radius?: string}
+        const parsed = JSON.parse(v) as {
+          type?: string
+          lat?: string
+          lng?: string
+          points?: Array<{lat?: string; lng?: string}>
+          radius?: string
+        }
         const geoType = resolveGeoType(parsed?.type || meta.geoType)
         if (geoType === "point") {
           const lat = Number(parsed?.lat)
@@ -797,7 +815,10 @@ export const validateValue = (value: unknown, meta: KeyMeta): boolean => {
           )
         }
         const points = Array.isArray(parsed?.points) ? parsed.points : []
-        return points.length >= 3 && points.every(point => Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng)))
+        return (
+          points.length >= 3 &&
+          points.every(point => Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng)))
+        )
       } catch {
         return false
       }
@@ -844,12 +865,20 @@ export const validateValue = (value: unknown, meta: KeyMeta): boolean => {
     case "surface": {
       if (typeof v !== "string" || !v.trim().startsWith("{")) return false
       try {
-        const parsed = JSON.parse(v) as {glossCategory?: string; glossGU?: number | string; reliefType?: string; microReliefHeight?: number | string}
+        const parsed = JSON.parse(v) as {
+          glossCategory?: string
+          glossGU?: number | string
+          reliefType?: string
+          microReliefHeight?: number | string
+        }
         const glossCategory = String(parsed?.glossCategory || "").trim()
         const glossGU = String(parsed?.glossGU ?? "").trim()
         const reliefType = String(parsed?.reliefType || "").trim()
         const microReliefHeight = String(parsed?.microReliefHeight ?? "").trim()
-        return Boolean((glossCategory && (re.number.test(glossGU) || !glossGU)) || (reliefType && (re.number.test(microReliefHeight) || !microReliefHeight)))
+        return Boolean(
+          (glossCategory && (re.number.test(glossGU) || !glossGU)) ||
+          (reliefType && (re.number.test(microReliefHeight) || !microReliefHeight))
+        )
       } catch {
         return false
       }

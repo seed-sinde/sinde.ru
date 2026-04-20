@@ -730,7 +730,7 @@ onBeforeUnmount(() => {
                   :title="t('viewer.flip_x')"
                   :aria-label="t('viewer.flip_x')"
                   variant="secondary"
-                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  class="h-8 shrink-0 rounded-full bg-(--lab-bg-control) px-2.5 text-sm hover:border-(--lab-border-strong) hover:bg-(--lab-bg-control-hover)"
                   @click="toggleFlipX"
                 />
                 <LabBaseButton
@@ -739,7 +739,7 @@ onBeforeUnmount(() => {
                   :title="t('viewer.flip_y')"
                   :aria-label="t('viewer.flip_y')"
                   variant="secondary"
-                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  class="h-8 shrink-0 rounded-full bg-(--lab-bg-control) px-2.5 text-sm hover:border-(--lab-border-strong) hover:bg-(--lab-bg-control-hover)"
                   @click="toggleFlipY"
                 />
                 <LabBaseButton
@@ -748,7 +748,7 @@ onBeforeUnmount(() => {
                   :title="t('viewer.rotate_left')"
                   :aria-label="t('viewer.rotate_left')"
                   variant="secondary"
-                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  class="h-8 shrink-0 rounded-full bg-(--lab-bg-control) px-2.5 text-sm hover:border-(--lab-border-strong) hover:bg-(--lab-bg-control-hover)"
                   @click="rotateLeft"
                 />
                 <LabBaseButton
@@ -757,7 +757,7 @@ onBeforeUnmount(() => {
                   :title="t('viewer.rotate_right')"
                   :aria-label="t('viewer.rotate_right')"
                   variant="secondary"
-                  button-class="rounded-full h-8 shrink-0 bg-(--lab-bg-control) px-2.5 text-sm  hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong)"
+                  class="h-8 shrink-0 rounded-full bg-(--lab-bg-control) px-2.5 text-sm hover:border-(--lab-border-strong) hover:bg-(--lab-bg-control-hover)"
                   @click="rotateRight"
                 />
               </div>
@@ -779,7 +779,7 @@ onBeforeUnmount(() => {
                 :title="t('viewer.close')"
                 :aria-label="t('viewer.close')"
                 variant="secondary"
-                button-class="rounded-full bg-(--lab-bg-control) text-(--lab-text-primary) hover:bg-(--lab-bg-control-hover) hover:text-(--lab-text-primary) hover:border-(--lab-border-strong)"
+                class="rounded-full bg-(--lab-bg-control) text-(--lab-text-primary) hover:border-(--lab-border-strong) hover:bg-(--lab-bg-control-hover) hover:text-(--lab-text-primary)"
                 @click="close"
               />
             </div>
@@ -808,7 +808,7 @@ onBeforeUnmount(() => {
             :title="t('viewer.previous')"
             :aria-label="t('viewer.previous')"
             variant="secondary"
-            button-class="pointer-events-auto h-full w-16 cursor-pointer rounded-none border-y-0 border-l-0 bg-(--lab-bg-control) opacity-100 hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong) sm:w-32"
+            class="pointer-events-auto h-full w-16 cursor-pointer rounded-none border-y-0 border-l-0 bg-(--lab-bg-control) opacity-100 hover:border-(--lab-border-strong) hover:bg-(--lab-bg-control-hover) sm:w-32"
             @click.stop="showPreviousImage"
           />
         </div>
@@ -822,7 +822,7 @@ onBeforeUnmount(() => {
             :title="t('viewer.next')"
             :aria-label="t('viewer.next')"
             variant="secondary"
-            button-class="pointer-events-auto h-full w-16 cursor-pointer rounded-none border-y-0 border-r-0 bg-(--lab-bg-control)  opacity-100 hover:bg-(--lab-bg-control-hover) hover:border-(--lab-border-strong) sm:w-32"
+            class="pointer-events-auto h-full w-16 cursor-pointer rounded-none border-y-0 border-r-0 bg-(--lab-bg-control) opacity-100 hover:border-(--lab-border-strong) hover:bg-(--lab-bg-control-hover) sm:w-32"
             @click.stop="showNextImage"
           />
         </div>
@@ -860,7 +860,7 @@ onBeforeUnmount(() => {
               </Transition>
 
               <div v-if="!imageLoaded" class="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span class="inline-flex bg-(--lab-bg-canvas) p-3 text-(--lab-text-primary)">
+                <span class="inline-flex bg-(--lab-bg-canvas) p-2 text-(--lab-text-primary)">
                   <LabLoader variant="icon" />
                 </span>
               </div>

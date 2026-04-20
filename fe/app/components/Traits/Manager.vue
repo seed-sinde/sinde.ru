@@ -2,12 +2,7 @@
   <section class="grid grid-cols-1 items-start gap-3 xl:grid-cols-[22rem_minmax(0,1fr)]">
     <aside class="min-w-0 space-y-2">
       <TraitsFormAdd @add="onAdd" />
-      <LabNotify
-        :text="error"
-        tone="error"
-        as="div"
-        class-name="px-3 py-2 text-sm text-rose-300"
-      />
+      <LabNotify :text="error" tone="error" as="div" class-name="px-3 py-2 text-sm text-rose-300" />
     </aside>
     <section class="min-w-0 space-y-2">
       <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">

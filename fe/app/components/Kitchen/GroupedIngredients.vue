@@ -26,14 +26,12 @@
             <div v-if="showActions" class="flex items-center gap-1">
               <LabBaseButton
                 icon="ic:round-edit"
-                icon-class="h-3.5 w-3.5"
                 icon-only
                 :title="`Редактировать ингредиент: ${ingredientLine(entry.item)}`"
                 @click="emit('edit', entry.index)"
               />
               <LabBaseButton
                 icon="ic:round-delete-outline"
-                icon-class="h-3.5 w-3.5"
                 icon-only
                 :title="`Удалить ингредиент: ${ingredientLine(entry.item)}`"
                 @click="emit('delete', entry.index)"

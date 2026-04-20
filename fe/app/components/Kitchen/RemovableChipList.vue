@@ -3,9 +3,8 @@
     <LabBaseButton
       v-for="item in items"
       :key="item.key"
-      button-class="group relative inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs transition hover:border-rose-500/50! hover:bg-rose-500/10! hover:text-rose-300!"
+      class="group relative inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs transition hover:border-rose-500/50! hover:bg-rose-500/10! hover:text-rose-300!"
       icon="ic:round-delete-outline"
-      icon-class="pointer-events-none absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100"
       :style="resolveItemStyle(item)"
       :disabled="Boolean(item.disabled)"
       :title="resolveItemTitle(item)"

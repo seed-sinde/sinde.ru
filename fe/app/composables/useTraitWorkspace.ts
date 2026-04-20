@@ -536,7 +536,11 @@ export const useTraitActions = () => {
         await applyNextUuid(previousUuid, createdTrait.t_uuid)
         return {action: "added" as const, traitUuid: createdTrait.t_uuid}
       }
-      const {s_uuid, t_uuid: createdUuid, trait: createdTrait} = await createOrGetSet(currentUuid.value, {
+      const {
+        s_uuid,
+        t_uuid: createdUuid,
+        trait: createdTrait
+      } = await createOrGetSet(currentUuid.value, {
         t_key: key,
         t_value: value,
         meta: targetMeta

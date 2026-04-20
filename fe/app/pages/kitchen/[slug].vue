@@ -270,7 +270,6 @@ useHead(() => {
   <div>
     <LabNavHeader
       :title="recipe?.title || 'Кухня'"
-      :description="recipe?.description || 'Полная версия рецепта.'"
       :breadcrumb-items="[
         { label: 'Кухня', to: '/kitchen/recipes' },
         { label: recipe?.title || 'Рецепт', current: true }
@@ -283,15 +282,12 @@ useHead(() => {
         <div class="flex flex-wrap items-center gap-2">
           <LabBaseButton
             v-if="isAuthenticated"
-            :button-class="[
-              'inline-flex h-9 items-center gap-2 border px-3 text-xs transition',
+            :class="[
               isFavoriteRecipe
-                ? 'border-rose-500/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25'
-                : 'border-(--lab-border) bg-zinc-900 text-zinc-200 hover:bg-zinc-800'
+                && 'border-rose-500/50 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25'
             ]"
             :disabled="favoritePending"
             :icon="isFavoriteRecipe ? 'ic:round-favorite' : 'ic:round-favorite-border'"
-            icon-class="h-4 w-4"
             @click="toggleRecipeFavorite"
           >
             {{ isFavoriteRecipe ? 'В избранном' : 'В избранное' }}
@@ -299,7 +295,7 @@ useHead(() => {
           <div v-if="canManageRecipe" class="flex flex-wrap items-center gap-2">
             <NuxtLink
               :to="recipeEditLink"
-              class="inline-flex h-9 items-center border border-(--lab-border) bg-zinc-900 px-3 text-xs text-zinc-200 hover:bg-zinc-800"
+              class="inline-flex h-9 items-center border border-(--lab-border) px-3 text-xs"
             >
               Редактировать
             </NuxtLink>
@@ -307,7 +303,7 @@ useHead(() => {
               label="Удалить"
               confirm-label="Подтвердить"
               tooltip="Подтвердить удаление рецепта?"
-              button-class="h-9 px-3 text-xs"
+              class="h-9 px-3 text-xs"
               idle-class="border border-rose-500/50 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
               confirm-class="border border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500"
               progress-class="bg-rose-300/45"
@@ -338,7 +334,7 @@ useHead(() => {
               :src="buildStepImageUrl(recipe.cover_image_key)"
               alt="Фото готового блюда"
               step-format
-              button-class="block w-full max-w-sm"
+              class="block w-full max-w-sm"
               label="Посмотреть"
               @preview="openImagePreview(buildStepImageUrl(recipe.cover_image_key), 'Фото готового блюда')"
             />
@@ -350,7 +346,7 @@ useHead(() => {
               <div
                 v-for="item in recipeMetaItems"
                 :key="`meta:${item.label}`"
-                class="rounded-md border border-zinc-800 bg-zinc-900/60 px-3 py-2"
+                class="rounded-md border px-3 py-2"
                 :class="item.label === 'Порций' ? 'cursor-text' : ''"
                 @click="item.label === 'Порций' && !servingsEditing ? startServingsEditing() : undefined"
               >
@@ -371,7 +367,7 @@ useHead(() => {
                       :id="SERVINGS_INPUT_ID"
                       v-model="servingsInput"
                       type="text"
-                      input-class="h-8 min-h-0 rounded-md px-2 py-1 text-sm"
+                      class="h-8 min-h-0 rounded-md px-2 py-1 text-sm"
                       @blur="commitServingsEditing"
                       @keydown.enter.prevent="commitServingsEditing"
                       @keydown.esc.prevent="cancelServingsEditing"
@@ -387,7 +383,7 @@ useHead(() => {
               <span
                 v-for="tag in recipe.tags"
                 :key="`tag:${tag}`"
-                class="rounded border border-(--lab-border) bg-zinc-900 px-2 py-0.5 text-xs text-zinc-300"
+                class="rounded border border-(--lab-border) px-2 py-0.5 text-xs text-zinc-300"
               >
                 {{ tag }}
               </span>
@@ -400,7 +396,7 @@ useHead(() => {
             <li
               v-for="step in recipe.steps"
               :key="`step:${step.order}`"
-              class="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0"
+              class="border-t pt-3 first:border-t-0 first:pt-0"
             >
               <div class="mb-2 flex items-start gap-2">
                 <div
@@ -416,7 +412,7 @@ useHead(() => {
                 alt="Фото шага"
                 compact
                 step-format
-                button-class="block w-40"
+                class="block w-40"
                 label="Посмотреть"
                 @preview="openImagePreview(buildStepImageUrl(step.image_key), `Фото шага ${step.order}`)"
               />

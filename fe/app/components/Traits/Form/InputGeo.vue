@@ -1,30 +1,35 @@
 <template>
   <div class="space-y-2">
     <template v-if="geoType === 'point'">
-      <LabField label="Широта" :for-id="`${baseId}-lat`">
+      <LabBaseField label="Широта" :for-id="`${baseId}-lat`">
         <LabBaseInput :id="`${baseId}-lat`" v-model="pointLat" inputmode="decimal" placeholder="59.934280" />
-      </LabField>
-      <LabField label="Долгота" :for-id="`${baseId}-lng`">
+      </LabBaseField>
+      <LabBaseField label="Долгота" :for-id="`${baseId}-lng`">
         <LabBaseInput :id="`${baseId}-lng`" v-model="pointLng" inputmode="decimal" placeholder="30.335099" />
-      </LabField>
-      <LabField label="Высота" :for-id="`${baseId}-height`">
+      </LabBaseField>
+      <LabBaseField label="Высота" :for-id="`${baseId}-height`">
         <LabBaseInput :id="`${baseId}-height`" v-model="height" inputmode="decimal" placeholder="0" />
-      </LabField>
+      </LabBaseField>
     </template>
     <template v-else-if="geoType === 'zone'">
-      <LabField label="Широта" :for-id="`${baseId}-lat`">
+      <LabBaseField label="Широта" :for-id="`${baseId}-lat`">
         <LabBaseInput :id="`${baseId}-lat`" v-model="pointLat" inputmode="decimal" placeholder="59.934280" />
-      </LabField>
-      <LabField label="Долгота" :for-id="`${baseId}-lng`">
+      </LabBaseField>
+      <LabBaseField label="Долгота" :for-id="`${baseId}-lng`">
         <LabBaseInput :id="`${baseId}-lng`" v-model="pointLng" inputmode="decimal" placeholder="30.335099" />
-      </LabField>
-      <LabField label="Радиус" :for-id="`${baseId}-radius`">
+      </LabBaseField>
+      <LabBaseField label="Радиус" :for-id="`${baseId}-radius`">
         <LabBaseInput :id="`${baseId}-radius`" v-model="radius" inputmode="decimal" placeholder="10" />
-      </LabField>
+      </LabBaseField>
     </template>
-    <LabField v-else label="Точки полигона" :for-id="`${baseId}-points`" hint="По одной точке на строку: широта,долгота">
+    <LabBaseField
+      v-else
+      label="Точки полигона"
+      :for-id="`${baseId}-points`"
+      hint="По одной точке на строку: широта,долгота"
+    >
       <LabBaseTextarea :id="`${baseId}-points`" v-model="rawPoints" rows="4" placeholder="59.93,30.33" />
-    </LabField>
+    </LabBaseField>
   </div>
 </template>
 

@@ -7,7 +7,6 @@
   "vueIndentScriptAndStyle": false,
   "plugins": ["prettier-plugin-tailwindcss"],
   "tailwindStylesheet": "./app/assets/css/main.css",
-  "tailwindPreserveWhitespace": true,
   "bracketSpacing": false,
   "arrowParens": "avoid",
   "proseWrap": "never",

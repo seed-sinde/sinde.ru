@@ -1,5 +1,5 @@
 <template>
-  <LabField label="Значение" :for-id="inputId">
+  <LabBaseField label="Значение" :for-id="inputId">
     <LabBaseInput
       :id="inputId"
       v-model="model"
@@ -11,7 +11,7 @@
     <datalist :id="listId">
       <option v-for="opt in options" :key="opt" :value="opt" />
     </datalist>
-  </LabField>
+  </LabBaseField>
 </template>
 <script setup lang="ts">
 import { useId } from 'vue'

@@ -75,16 +75,10 @@ watch(localeTag, nextLocale => {
         <p class="text-sm text-(--lab-text-muted)">{{ t('register.description') }}</p>
       </div>
       <form class="space-y-2" @submit.prevent="submit">
-        <LabField :label="t('register.name')" for-id="register-name">
-          <LabBaseInput
-            id="register-name"
-            v-model="form.display_name"
-            name="display_name"
-            type="text"
-            input-class="w-full"
-          />
-        </LabField>
-        <LabField :label="t('register.email')" for-id="register-email">
+        <LabBaseField :label="t('register.name')" for-id="register-name">
+          <LabBaseInput id="register-name" v-model="form.display_name" name="display_name" type="text" class="w-full" />
+        </LabBaseField>
+        <LabBaseField :label="t('register.email')" for-id="register-email">
           <LabBaseInput
             id="register-email"
             v-model="form.email"
@@ -92,20 +86,20 @@ watch(localeTag, nextLocale => {
             type="email"
             autocomplete="email"
             :invalid="hasInvalidEmail"
-            input-class="w-full"
+            class="w-full"
           />
-        </LabField>
-        <LabField :label="t('register.password')" for-id="register-password">
+        </LabBaseField>
+        <LabBaseField :label="t('register.password')" for-id="register-password">
           <LabBaseInput
             id="register-password"
             v-model="form.password"
             name="password"
             type="password"
             autocomplete="new-password"
-            input-class="w-full"
+            class="w-full"
             :placeholder="`Минимум ${passwordMinLength} символов`"
           />
-          <div class="p-3">
+          <div class="p-2">
             <p class="text-xs text-(--lab-text-muted)">{{ t('register.password_rules') }}</p>
             <ul class="mt-2 space-y-1">
               <li
@@ -134,13 +128,13 @@ watch(localeTag, nextLocale => {
               </li>
             </ul>
           </div>
-        </LabField>
+        </LabBaseField>
         <LabBaseButton
           type="submit"
           variant="primary"
           size="xl"
           :disabled="pending || !canSubmit"
-          button-class="text-sm font-medium"
+          class="text-sm font-medium"
         >
           {{ t('register.submit') }}
         </LabBaseButton>

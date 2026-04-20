@@ -3,7 +3,7 @@ definePageMeta({
   path: '/auth/account/:account?',
   validate: route => {
     const account = Array.isArray(route.params.account) ? route.params.account[0] : route.params.account
-    return !account || ['profile', 'balance', 'security', 'admin'].includes(String(account))
+    return !account || ['profile', 'balance', 'security', 'activity', 'admin'].includes(String(account))
   }
 })
 
@@ -28,19 +28,21 @@ usePageSeo({
   description
 })
 const route = useRoute()
-const accountTabPathMap: Record<'profile' | 'balance' | 'security' | 'admin', string> = {
+type AccountTab = 'profile' | 'balance' | 'security' | 'activity' | 'admin'
+const accountTabPathMap: Record<AccountTab, string> = {
   profile: '/auth/account/profile',
   balance: '/auth/account/balance',
   security: '/auth/account/security',
+  activity: '/auth/account/activity',
   admin: '/auth/admin/users'
 }
 const routeAccountParam = Array.isArray(route.params.account) ? route.params.account[0] : route.params.account
 const routeAccountQuery = Array.isArray(route.query.account) ? route.query.account[0] : route.query.account
 const routeAccountTarget = normalizeTabRouteValue(
   routeAccountParam || routeAccountQuery,
-  ['profile', 'balance', 'security', 'admin'],
+  ['profile', 'balance', 'security', 'activity', 'admin'],
   'profile'
-) as 'profile' | 'balance' | 'security' | 'admin'
+) as AccountTab
 if (routeAccountTarget === 'admin') {
   await navigateTo('/auth/admin/users', {
     redirectCode: 301,
@@ -110,32 +112,26 @@ const accountTabItems = computed<LabTabItem[]>(() => [
   { value: 'profile', label: t('auth.account.tab.profile') },
   { value: 'balance', label: t('auth.account.tab.balance') },
   { value: 'security', label: t('auth.account.tab.security') },
+  { value: 'activity', label: t('auth.account.activity.title') },
   ...(isAdmin.value ? [{ value: 'admin', label: t('auth.account.admin') }] : [])
 ])
 const accountTabRouteTargetMap = computed<TabRouteTargetMap>(() => ({
   profile: '/auth/account/profile',
   balance: '/auth/account/balance',
   security: '/auth/account/security',
+  activity: '/auth/account/activity',
   admin: '/auth/admin/users'
 }))
 const accountTabValues = computed(() => accountTabItems.value.map(item => item.value))
-const _activityTabItems = computed<LabTabItem[]>(() => [
-  { value: 'sessions', label: t('auth.account.activity.sessions') },
-  { value: 'attempts', label: t('auth.account.activity.attempts') },
-  { value: 'events', label: t('auth.account.activity.events') }
-])
 const _disableCodeTabItems = computed<LabTabItem[]>(() => [
   { value: 'totp', label: t('auth.account.twofa.code_label') },
   { value: 'backup', label: t('auth.login.mfa_backup') }
 ])
 
-const accountTab = computed<'profile' | 'balance' | 'security' | 'admin'>({
+const accountTab = computed<AccountTab>({
   get: () =>
     normalizeTabRouteValue(route.params.account || route.query.account, accountTabValues.value, 'profile') as
-      | 'profile'
-      | 'balance'
-      | 'security'
-      | 'admin',
+      AccountTab,
   set: () => {}
 })
 const accountBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
@@ -145,7 +141,6 @@ const accountBreadcrumbItems = computed<BreadcrumbItem[]>(() => {
     { label: currentLabel, current: true, kind: 'tab' }
   ]
 })
-const _activityTab = ref<'sessions' | 'attempts' | 'events'>('sessions')
 const disableMethodTab = ref<'totp' | 'backup'>('totp')
 
 const initialLoading = ref(!loaded.value)
@@ -272,65 +267,6 @@ const _paymentHistoryRows = computed(() =>
     canRefund: item.can_refund
   }))
 )
-const _sessionActivityColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'device', label: 'Устройство', cellClass: 'whitespace-normal wrap-break-word' },
-  { key: 'status', label: '2FA', nowrap: true },
-  { key: 'activity', label: 'Активность', cellClass: 'whitespace-normal wrap-break-word' },
-  { key: 'action', label: 'Действие', nowrap: true }
-])
-const _sessionActivityRows = computed(() =>
-  groupedSessions.value.map(item => ({
-    id: item.key,
-    device: item.deviceLabel,
-    ip: item.ip,
-    status: item.mfaVerified ? t('auth.account.activity.mfa_verified') : t('auth.account.activity.mfa_unverified'),
-    count: item.count,
-    lastSeenAt: item.lastSeenAt,
-    revokableSessionIds: item.revokableSessionIds,
-    hasCurrent: item.hasCurrent,
-    action:
-      item.revokableSessionIds.length === 0
-        ? t('auth.account.activity.current')
-        : item.hasCurrent
-          ? t('auth.account.activity.revoke_and_logout')
-          : t('auth.account.activity.revoke'),
-    source: item
-  }))
-)
-const _loginAttemptColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'createdAt', label: 'Дата', nowrap: true },
-  { key: 'outcome', label: 'Результат', nowrap: true },
-  { key: 'ip', label: 'IP', nowrap: true },
-  { key: 'risk', label: 'Риск', nowrap: true },
-  { key: 'details', label: 'Детали', cellClass: 'whitespace-normal wrap-break-word' }
-])
-const _loginAttemptRows = computed(() =>
-  loginAttempts.value.map(item => ({
-    id: item.attempt_id,
-    createdAt: formatDateTime(item.created_at),
-    outcome: item.outcome || '—',
-    ip: item.ip || '—',
-    risk: String(item.risk_score ?? '—'),
-    details: item.failure_reason || item.suspicious_reason || item.user_agent || '—',
-    source: item
-  }))
-)
-const _securityEventColumns = computed<LabDataTableColumn[]>(() => [
-  { key: 'createdAt', label: 'Дата', nowrap: true },
-  { key: 'event', label: 'Событие', cellClass: 'whitespace-normal wrap-break-word' },
-  { key: 'ip', label: 'IP', nowrap: true },
-  { key: 'payload', label: 'Payload', cellClass: 'whitespace-normal wrap-break-word' }
-])
-const _securityEventRows = computed(() =>
-  securityEvents.value.map(item => ({
-    id: item.event_id,
-    createdAt: formatDateTime(item.created_at),
-    event: `${item.event_type} · ${item.severity}`,
-    ip: item.ip || '—',
-    payload: JSON.stringify(item.payload || {}),
-    source: item
-  }))
-)
 const avatarGallery = computed(() => getAuthAvatarGallery(user.value))
 const avatarGalleryItems = computed(() => avatarGallery.value.items)
 const avatarPrimaryItemId = computed(() => avatarGallery.value.primaryId)
@@ -357,68 +293,6 @@ const displayNameText = computed(() => profileForm.display_name.trim() || 'Им�
 const _twofaStatusLabel = computed(() =>
   user.value?.is_two_factor_enabled ? t('auth.account.twofa.enabled') : t('auth.account.twofa.disabled')
 )
-const groupedSessions = computed<AuthSessionGroupView[]>(() => {
-  const groups = new Map<
-    string,
-    {
-      deviceLabel: string
-      ip: string
-      latestSession: AuthSessionView
-      mfaVerified: boolean
-      count: number
-      revokableSessionIds: string[]
-      currentSessionIds: string[]
-      hasCurrent: boolean
-    }
-  >()
-  for (const item of sessions.value) {
-    if (item.revoked_at) continue
-    const deviceLabel =
-      String(item.device_label || '').trim() || String(item.user_agent || '').trim() || 'Неизвестное устройство'
-    const ip = String(item.ip || '').trim() || '—'
-    const key = `${deviceLabel}::${ip}`
-    const current = groups.get(key)
-    if (!current) {
-      groups.set(key, {
-        deviceLabel,
-        ip,
-        latestSession: item,
-        mfaVerified: Boolean(item.mfa_verified),
-        count: 1,
-        revokableSessionIds: [item.session_id],
-        currentSessionIds: item.is_current ? [item.session_id] : [],
-        hasCurrent: Boolean(item.is_current)
-      })
-      continue
-    }
-    current.count += 1
-    current.revokableSessionIds.push(item.session_id)
-    if (item.is_current) {
-      current.currentSessionIds.push(item.session_id)
-      current.hasCurrent = true
-    }
-    const currentTs = new Date(current.latestSession.last_seen_at).getTime() || 0
-    const nextTs = new Date(item.last_seen_at).getTime() || 0
-    if (nextTs > currentTs) {
-      current.latestSession = item
-      current.mfaVerified = Boolean(item.mfa_verified)
-    }
-  }
-  return Array.from(groups.entries())
-    .map(([key, group]) => ({
-      key,
-      ip: group.ip,
-      deviceLabel: group.deviceLabel,
-      count: group.count,
-      mfaVerified: group.mfaVerified,
-      lastSeenAt: group.latestSession.last_seen_at,
-      revokableSessionIds: group.revokableSessionIds,
-      currentSessionIds: group.currentSessionIds,
-      hasCurrent: group.hasCurrent
-    }))
-    .sort((a, b) => (new Date(b.lastSeenAt).getTime() || 0) - (new Date(a.lastSeenAt).getTime() || 0))
-})
-
 const formatDateTime = (value?: string | null) =>
   formatAbsoluteDateTime(value, { dateStyle: 'medium', timeStyle: 'short' })
 const scheduleClientFrame = (cb: () => void) => {
@@ -1066,7 +940,7 @@ watch(
   [accountTab, user],
   ([tab, currentUser]) => {
     if (!currentUser) return
-    if (tab === 'security') {
+    if (tab === 'activity') {
       void loadActivityState()
     }
     if (tab === 'balance') {
@@ -1114,31 +988,20 @@ watch(
             <div class="flex shrink-0 flex-col items-start gap-3">
               <div class="relative overflow-hidden">
                 <LabAvatar version="profile" :user="user" clickable @click="openAvatarPreview()" />
-                <label
+                <LabBaseFile
+                  id="account-avatar-file"
+                  name="account_avatar_file"
+                  :accept="AVATAR_IMAGE_ACCEPT"
+                  :disabled="avatarUploading"
+                  icon="ic:round-photo-camera"
+                  icon-only
+                  size="lg"
+                  variant="secondary"
                   class="absolute right-2 bottom-2"
-                  :class="avatarUploading ? 'cursor-not-allowed' : 'cursor-pointer'"
-                >
-                  <LabBaseInput
-                    id="account-avatar-file"
-                    name="account_avatar_file"
-                    type="file"
-                    :accept="AVATAR_IMAGE_ACCEPT"
-                    class="hidden"
-                    :disabled="avatarUploading"
-                    @change="onAvatarFileChange"
-                  />
-                  <LabBaseButton
-                    tag="span"
-                    variant="secondary"
-                    size="lg"
-                    button-class="rounded-full pointer-events-none"
-                    icon="ic:round-photo-camera"
-                    icon-only
-                    title="Загрузить новую аватарку"
-                    aria-label="Загрузить новую аватарку"
-                    :disabled="avatarUploading"
-                  />
-                </label>
+                  aria-label="Загрузить новую аватарку"
+                  title="Загрузить новую аватарку"
+                  @change="onAvatarFileChange"
+                />
               </div>
               <div
                 v-if="avatarSecondaryGalleryItems.length"
@@ -1211,7 +1074,7 @@ watch(
                             icon-only
                             variant="ghost"
                             size="sm"
-                            button-class="h-8 w-8 rounded-full border-transparent text-orange-300 hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)"
+                            class="h-8 w-8 border-transparent hover:bg-(--lab-bg-surface-hover) focus:bg-(--lab-bg-surface-hover) focus-visible:bg-(--lab-bg-surface-hover)"
                             aria-label="Статус подписки"
                           />
                         </template>
@@ -1244,7 +1107,6 @@ watch(
                           icon-only
                           variant="secondary"
                           size="sm"
-                          button-class="text-(--lab-text-secondary) hover:text-(--lab-info) focus-visible:text-(--lab-info) h-8 w-8"
                           title="Сохранить никнейм"
                           aria-label="Сохранить никнейм"
                           @click="saveProfile"
@@ -1285,7 +1147,7 @@ watch(
                     variant="danger"
                     size="lg"
                     :label="t('auth.account.logout')"
-                    button-class="text-xs"
+                    class="text-xs"
                     @click="toggle"
                   />
                 </template>
@@ -1294,7 +1156,7 @@ watch(
                   size="lg"
                   block
                   :label="t('auth.account.logout.current')"
-                  button-class="justify-start text-xs"
+                  class="justify-start text-xs"
                   @click="leave(false)"
                 />
                 <LabBaseButton
@@ -1302,7 +1164,7 @@ watch(
                   size="lg"
                   block
                   :label="t('auth.account.logout.all')"
-                  button-class="justify-start text-xs"
+                  class="justify-start text-xs"
                   @click="leave(true)"
                 />
               </LabDropdown>
@@ -1314,6 +1176,26 @@ watch(
         </template>
         <template #panel-security>
           <LazyAuthAccountSecurityPanel v-if="accountTab === 'security'" />
+        </template>
+        <template #panel-activity>
+          <section class="space-y-3">
+            <div>
+              <h2 class="text-xl sm:text-2xl">{{ t('auth.account.activity.title') }}</h2>
+              <p class="text-sm text-(--lab-text-muted)">{{ t('auth.account.activity.description') }}</p>
+            </div>
+            <AuthAccountActivityTables
+              :sessions="sessions"
+              :login-attempts="loginAttempts"
+              :security-events="securityEvents"
+              :loading="activityLoading"
+              :error="activityError"
+              :action-error="actionError"
+              :action-info="actionInfo"
+              :user="user"
+              allow-revoke
+              @revoke="_revokeSessionGroup"
+            />
+          </section>
         </template>
       </LabNavTabs>
       <LazyLabCropperModal
@@ -1349,8 +1231,8 @@ watch(
               confirm-icon="ic:round-check"
               label="Удалить фотографию"
               title="Удалить текущую фотографию профиля"
-              idle-class="lab-button lab-button-secondary"
-              confirm-class="lab-button lab-button-danger text-white hover:text-white hover:bg-rose-500"
+              idle-class="lab-button-secondary"
+              confirm-class="lab-button-danger text-white hover:text-white hover:bg-rose-500"
               progress-class="bg-rose-300/30"
               aria-label="Удалить текущую фотографию профиля"
               confirm-aria-label="Подтвердить удаление текущей фотографии профиля"

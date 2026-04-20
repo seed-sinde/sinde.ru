@@ -45,14 +45,13 @@ const selectLocale = async (code: InterfaceLocaleCode) => {
           :title="triggerTitle"
           icon="ic:round-language"
           icon-only
-          icon-size="sm"
           size="sm"
           variant="ghost"
-          button-class="h-8 w-8 rounded-full p-0"
+          class="h-8 w-8 rounded-full p-0"
           @click="toggle"
         />
         <span
-          class="h-2.8 pointer-events-none absolute top-1.5 -right-0.5 inline-flex min-w-1 items-center justify-center border border-zinc-600 bg-zinc-900 px-0.5 text-[8px] leading-none text-zinc-200"
+          class="h-2.8 pointer-events-none absolute top-1.5 -right-0.5 inline-flex min-w-1 items-center justify-center border px-0.5 text-[8px] leading-none"
         >
           {{ selectedLocaleBadge }}
         </span>

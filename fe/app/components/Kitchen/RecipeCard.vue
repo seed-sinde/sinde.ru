@@ -39,13 +39,13 @@ const emit = defineEmits<{
 }>()
 </script>
 <template>
-  <article class="space-y-3 bg-zinc-900/70 p-4">
+  <article class="space-y-3">
     <NuxtLink v-if="coverSrc" :to="to" class="group relative block">
       <img :src="coverSrc" alt="Фото готового блюда" class="h-36 w-full border border-zinc-700 object-cover" />
       <LabBaseButton
         v-if="showFavorite"
-        :button-class="[
-          'absolute left-2 top-2 inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border transition',
+        :class="[
+          'absolute top-2 left-2 inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border transition',
           favorite ? 'border-rose-300/90 text-white' : 'border-zinc-600/90 text-rose-200 hover:border-rose-400/80'
         ]"
         :aria-label="
@@ -53,7 +53,6 @@ const emit = defineEmits<{
         "
         :disabled="favoritePending"
         :icon="favorite ? 'ic:round-favorite' : 'ic:round-favorite-border'"
-        icon-class="relative z-1 h-4.5 w-4.5"
         icon-only
         @click.stop.prevent="emit('toggleFavorite')"
       >
@@ -67,18 +66,17 @@ const emit = defineEmits<{
     <div class="flex items-start gap-2">
       <LabBaseButton
         v-if="showFavorite && !coverSrc"
-        :button-class="[
+        :class="[
           'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
           favorite
             ? 'border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500'
-            : 'border-zinc-700 bg-zinc-900 text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
+            : 'border-zinc-700 text-rose-300 hover:border-rose-500/70 hover:bg-rose-500/10'
         ]"
         :aria-label="
           favorite ? `Убрать рецепт ${recipe.title} из избранного` : `Добавить рецепт ${recipe.title} в избранное`
         "
         :disabled="favoritePending"
         :icon="favorite ? 'ic:round-favorite' : 'ic:round-favorite-border'"
-        icon-class="h-4.5 w-4.5"
         icon-only
         @click="emit('toggleFavorite')"
       />
@@ -91,17 +89,14 @@ const emit = defineEmits<{
           Причина отклонения: {{ moderationNote }}
         </p>
         <div v-if="canManage" class="flex flex-wrap gap-2">
-          <LabBaseButton
-            button-class="h-7 border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-200 transition hover:bg-zinc-800"
-            @click="emit('edit')"
-          >
+          <LabBaseButton class="h-7 border px-2.5 py-1 text-xs text-zinc-200 transition" @click="emit('edit')">
             {{ editLabel }}
           </LabBaseButton>
           <LabConfirmActionButton
             label="Удалить"
             confirm-label="Подтвердить"
             tooltip="Подтвердить удаление рецепта?"
-            button-class="h-7 w-[112px] px-2.5 py-1 text-xs"
+            class="h-7 w-28 px-2.5 py-1 text-xs"
             idle-class="border border-rose-500/50 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
             confirm-class="border border-rose-300/90 bg-rose-600 text-white hover:bg-rose-500"
             progress-class="bg-rose-300/45"
@@ -119,7 +114,7 @@ const emit = defineEmits<{
       <span
         v-for="ing in recipe.ingredients.slice(0, 8)"
         :key="`${recipe.id}:${ing.name}`"
-        class="border border-zinc-700 px-2 py-0.5 text-xs text-zinc-200"
+        class="border px-2 py-0.5 text-xs text-zinc-200"
       >
         {{ ing.name }}
       </span>

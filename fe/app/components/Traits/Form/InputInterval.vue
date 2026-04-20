@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-1">
     <div class="flex flex-col gap-2">
-      <LabField label="Начало события" :for-id="startId">
+      <LabBaseField label="Начало события" :for-id="startId">
         <TraitsFormDateTextInput
           :id="startId"
           v-model="start"
@@ -9,8 +9,8 @@
           :aria-label="startLabel"
           :invalid="Boolean(start) && !startValid"
         />
-      </LabField>
-      <LabField label="Конец события" :for-id="endId">
+      </LabBaseField>
+      <LabBaseField label="Конец события" :for-id="endId">
         <TraitsFormDateTextInput
           :id="endId"
           v-model="end"
@@ -18,10 +18,10 @@
           :aria-label="endLabel"
           :invalid="Boolean(end) && !endValid"
         />
-      </LabField>
-      <LabField label="Единица длительности" :for-id="unitId">
+      </LabBaseField>
+      <LabBaseField label="Единица длительности" :for-id="unitId">
         <LabBaseSelect :id="unitId" v-model="unit" :aria-label="unitLabel" :options="intervalUnitOptions" />
-      </LabField>
+      </LabBaseField>
     </div>
     <LabErrorMessage
       v-if="(start && !startValid) || (end && !endValid)"

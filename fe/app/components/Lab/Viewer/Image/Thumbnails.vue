@@ -3,10 +3,10 @@
     <LabBaseButton
       v-for="(item, index) in items"
       :key="item.key"
-      :button-class="[
-        'p-0! relative h-14 w-14 shrink-0 overflow-hidden border transition ring-1 ring-inset',
+      :class="[
+        'relative h-14 w-14 shrink-0 overflow-hidden border p-0! ring-1 transition ring-inset',
         index === activeIndex
-          ? 'border-zinc-100 ring-zinc-100 bg-zinc-100/10'
+          ? 'border-zinc-100 bg-zinc-100/10 ring-zinc-100'
           : 'border-zinc-700 ring-zinc-800 hover:border-zinc-500 hover:ring-zinc-600'
       ]"
       :aria-label="`Показать изображение ${index + 1}`"

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-1">
     <div class="grid gap-2">
-      <LabField label="Начало" :for-id="startId">
+      <LabBaseField label="Начало" :for-id="startId">
         <LabBaseInput
           v-if="rangeType === 'number'"
           :id="startId"
@@ -17,8 +17,8 @@
           :placeholder="placeholder"
           :invalid="Boolean(model.start) && !startValid"
         />
-      </LabField>
-      <LabField label="Конец" :for-id="endId">
+      </LabBaseField>
+      <LabBaseField label="Конец" :for-id="endId">
         <LabBaseInput
           v-if="rangeType === 'number'"
           :id="endId"
@@ -34,7 +34,7 @@
           :placeholder="placeholder"
           :invalid="Boolean(model.end) && !endValid"
         />
-      </LabField>
+      </LabBaseField>
     </div>
     <LabErrorMessage v-if="hasFormatError" :text="formatError" />
     <LabErrorMessage v-else-if="isRangeInvalid" text="Начало не может быть больше конца." />

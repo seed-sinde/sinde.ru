@@ -1,5 +1,5 @@
 <template>
-  <LabField label="Координаты (широта, долгота)" :for-id="inputId">
+  <LabBaseField label="Координаты (широта, долгота)" :for-id="inputId">
     <LabBaseInput
       :id="inputId"
       v-model="raw"
@@ -10,7 +10,7 @@
       @blur="normalize"
     />
     <LabHint v-if="message" :text="message" hint-class="text-amber-400" />
-  </LabField>
+  </LabBaseField>
 </template>
 <script setup lang="ts">
 import { normalizeGeoPoint, parseGeoCoordinate, GEO_MIN_DECIMALS } from '../../../utils/traitValueCodec'

@@ -403,7 +403,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Повернуть влево"
                   aria-label="Повернуть влево"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="rotateLeft"
                 />
@@ -412,7 +412,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Повернуть вправо"
                   aria-label="Повернуть вправо"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="rotateRight"
                 />
@@ -421,7 +421,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Отразить по горизонтали"
                   aria-label="Отразить по горизонтали"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="flipHorizontal"
                 />
@@ -430,7 +430,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Отразить по вертикали"
                   aria-label="Отразить по вертикали"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="flipVertical"
                 />
@@ -439,7 +439,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Уменьшить"
                   aria-label="Уменьшить"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="zoomOut"
                 />
@@ -448,7 +448,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Увеличить"
                   aria-label="Увеличить"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="zoomIn"
                 />
@@ -470,7 +470,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Сбросить"
                   aria-label="Сбросить"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="resetCropper"
                 />
@@ -479,7 +479,7 @@ onBeforeUnmount(() => {
                   icon-only
                   title="Вместить"
                   aria-label="Вместить"
-                  :button-class="controlButtonClass"
+                  :class="controlButtonClass"
                   :disabled="loading"
                   @click="fitToViewport"
                 />
@@ -499,7 +499,7 @@ onBeforeUnmount(() => {
                     icon-only
                     title="Инвертировать формат"
                     aria-label="Инвертировать формат"
-                    :button-class="controlButtonClass"
+                    :class="controlButtonClass"
                     :disabled="loading"
                     @click="invertAspectRatio"
                   />
@@ -519,7 +519,7 @@ onBeforeUnmount(() => {
                     min="0.01"
                     step="0.01"
                     aria-label="Ширина пользовательского формата"
-                    input-class="h-9 w-16 px-2 text-sm"
+                    class="h-9 w-16 px-2 text-sm"
                   />
                   <span class="text-sm text-(--lab-text-muted)">:</span>
                   <LabBaseInput
@@ -530,7 +530,7 @@ onBeforeUnmount(() => {
                     min="0.01"
                     step="0.01"
                     aria-label="Высота пользовательского формата"
-                    input-class="h-9 w-16 px-2 text-sm"
+                    class="h-9 w-16 px-2 text-sm"
                   />
                 </div>
               </div>
@@ -538,15 +538,14 @@ onBeforeUnmount(() => {
                 <LabBaseButton
                   label="Отмена"
                   variant="secondary"
-                  :button-class="actionButtonClass"
+                  :class="actionButtonClass"
                   :disabled="loading"
                   @click="emit('cancel')"
                 />
                 <LabBaseButton
                   label="Загрузить"
-                  loading-label="Загрузка..."
                   variant="success"
-                  :button-class="actionButtonClass"
+                  :class="actionButtonClass"
                   :loading="loading"
                   @click="applyCrop"
                 />

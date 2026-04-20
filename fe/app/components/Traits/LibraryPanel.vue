@@ -188,7 +188,7 @@ watch(
           :label="t('library.make_primary')"
           variant="secondary"
           size="sm"
-          button-class="text-amber-100"
+          class="text-(--lab-text-primary)"
           :disabled="primaryPending"
           @click="setAsPrimary(currentTraitUuid)"
         />
@@ -203,15 +203,15 @@ watch(
           </div>
           <div v-if="currentTraitUuid" class="space-y-3">
             <div class="max-w-2xl space-y-3">
-              <LabField :label="t('library.name.label')" for-id="traits-library-name">
+              <LabBaseField :label="t('library.name.label')" for-id="traits-library-name">
                 <LabBaseInput
                   id="traits-library-name"
                   v-model="formName"
                   :placeholder="t('library.name.placeholder')"
                   maxlength="120"
                 />
-              </LabField>
-              <LabField
+              </LabBaseField>
+              <LabBaseField
                 :label="t('library.description.label')"
                 for-id="traits-library-description"
                 :hint="t('library.description.hint')"
@@ -223,7 +223,7 @@ watch(
                   maxlength="280"
                   :placeholder="t('library.description.placeholder')"
                 />
-              </LabField>
+              </LabBaseField>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <LabBaseButton
@@ -253,25 +253,15 @@ watch(
             }}
           </span>
         </div>
-        <div
-          v-if="savedSets.length === 0"
-          class="px-4 py-3 text-sm text-(--lab-text-muted)"
-        >
+        <div v-if="savedSets.length === 0" class="px-4 py-3 text-sm text-(--lab-text-muted)">
           {{ t('library.empty') }}
         </div>
         <div v-else class="space-y-2">
-          <div
-            v-for="item in savedSets"
-            :key="item.saved_set_id"
-            class="px-2 py-2"
-          >
+          <div v-for="item in savedSets" :key="item.saved_set_id" class="px-2 py-2">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0 flex-1 space-y-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <NuxtLink
-                    :to="`/traits/${item.set_uuid}`"
-                    class="lab-focus min-w-0 truncate text-sm font-medium"
-                  >
+                  <NuxtLink :to="`/traits/${item.set_uuid}`" class="lab-focus min-w-0 truncate text-sm font-medium">
                     {{ item.name }}
                   </NuxtLink>
                   <span

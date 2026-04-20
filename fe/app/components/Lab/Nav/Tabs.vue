@@ -49,7 +49,7 @@
       />
     </div>
 
-    <div v-if="renderPanels && activeValue !== null" class="m-2 space-y-4 p-2">
+    <div v-if="renderPanels && activeValue !== null">
       <div :key="String(activeValue)">
         <slot :name="`panel-${String(activeValue)}`" :value="activeValue" />
       </div>

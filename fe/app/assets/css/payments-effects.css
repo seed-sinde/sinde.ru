@@ -71,4 +71,12 @@
       transform: translateY(0);
     }
   }
+
+  .payments-gold-flicker {
+    @apply animate-[payments-gold-flicker_0.1s_infinite_steps(2)];
+  }
+
+  .payments-fade-in {
+    @apply animate-[payments-fade-in_0.3s_ease-out_forwards];
+  }
 }

@@ -20,7 +20,7 @@ const readThemePreferenceFromSettings = (settings: unknown): ThemePreference => 
 export const useInterfacePreferences = () => {
   const runtimeConfig = useRuntimeConfig()
   const store = useUiPreferencesStore()
-  const showTranslationKeys = useState('interface-show-translation-keys', () => false)
+  const showTranslationKeys = useState("interface-show-translation-keys", () => false)
   const systemTheme = useState<"dark" | "light">("interface-system-theme", () => "dark")
   const syncSystemTheme = () => {
     if (!import.meta.client) return
