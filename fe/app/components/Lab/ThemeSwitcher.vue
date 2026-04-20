@@ -50,7 +50,6 @@ const selectTheme = async (value: ThemePreference) => {
         icon-only
         size="sm"
         variant="ghost"
-        class="h-8 w-8 p-0"
         @click="toggle"
       />
     </template>

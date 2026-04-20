@@ -1828,26 +1828,21 @@ onBeforeUnmount(() => {
       </div>
     </section>
     <section v-if="showRecipeManageSection" class="space-y-4 p-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <LabBaseButton
-          v-if="showMyRecipesList && authUiReady && isAuthenticated"
-          variant="primary"
-          size="md"
-          class="self-start"
-          @click="openNewRecipeForm"
-        >
-          Новый рецепт
-        </LabBaseButton>
-      </div>
-      <div v-if="!authUiReady" class="rounded-lg border border-zinc-700 p-4 text-sm text-zinc-400">
-        Проверяем сессию...
-      </div>
+      <LabBaseButton
+        v-if="showMyRecipesList && authUiReady && isAuthenticated"
+        variant="primary"
+        size="md"
+        class="self-start"
+        label="Новый рецепт"
+        @click="openNewRecipeForm"
+      />
+      <div v-if="!authUiReady" class="rounded-lg border p-4 text-sm">Проверяем сессию...</div>
       <AuthFeatureGateNotice
         v-else-if="!isAuthenticated"
         message="Войдите в аккаунт, чтобы создавать, редактировать и сохранять свои рецепты."
       />
       <template v-else>
-        <div v-if="showMyRecipesList" class="space-y-3 p-2">
+        <div v-if="showMyRecipesList" class="space-y-2 p-2">
           <div
             v-if="userAttentionSummary?.has_unread && userAttentionRecipes.length"
             class="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2"
@@ -1874,7 +1869,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <LabNotify v-if="myRecipesError" :text="myRecipesError" tone="error" size="xs" />
-          <p v-else-if="myRecipesLoading" class="text-xs text-zinc-500">Загрузка ваших рецептов...</p>
+          <p v-else-if="myRecipesLoading" class="text-xs text-zinc-500">Загрузка рецептов...</p>
           <div v-else-if="myRecipes.length" class="grid gap-2 lg:grid-cols-2">
             <KitchenRecipeCard
               v-for="recipe in myRecipes"

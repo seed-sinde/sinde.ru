@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@theme {
+  --variant-dark: selector(.dark);
+}
+@layer base {
+  :root {
+    --bg: oklch(1 0 0);
+    --text: oklch(0 0 0);
+    --border-color: oklch(0.82 0.015 260);
+  }
+  html,
+  body {
+    @apply h-full overflow-x-hidden overflow-y-auto bg-(--bg) text-(--text);
+  }
+  html.light {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  html.dark {
+    --bg: oklch(0 0 0);
+    --text: oklch(1 0 0);
+    --border-color: oklch(0.42 0.02 260);
+  }
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border-color);
+  }
+}

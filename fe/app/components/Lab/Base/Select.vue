@@ -136,13 +136,11 @@ const isOpen = ref(false)
 const highlightedIndex = ref(-1)
 const canScrollDown = ref(false)
 const optionRefs = ref<Array<HTMLElement | null>>([])
-const { panelStyle, schedulePositionUpdate, cancelScheduledUpdate, resetPosition } = useFloatingPanelPosition({
+const { panelStyle, schedulePositionUpdate, resetPosition } = useFloatingPanelPosition({
   triggerRef,
   panelRef: dropdownRef,
   side: 'bottom',
-  align: 'left',
   offset: computed(() => props.offset),
-  crossAxisOffset: computed(() => props.crossAxisOffset),
   viewportPadding: 12,
   matchTriggerWidth: computed(() => props.matchTriggerWidth)
 })
@@ -363,7 +361,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentPointerDown, true)
   window.removeEventListener('resize', onViewportChange)
   window.removeEventListener('scroll', onViewportChange, true)
-  cancelScheduledUpdate()
 })
 watch(
   () => props.disabled,

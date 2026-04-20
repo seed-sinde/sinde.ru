@@ -1,0 +1,41 @@
+{
+  "name": "fe2",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint --fix .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@nuxt/eslint": "1.15.2",
+    "@nuxt/fonts": "0.14.0",
+    "@nuxt/icon": "2.2.1",
+    "@pinia/nuxt": "0.11.3",
+    "@tailwindcss/vite": "^4.2.2",
+    "@vite-pwa/nuxt": "1.1.1",
+    "cropperjs": "1.6.2",
+    "nuxt": "^4.4.2",
+    "nuxt-security": "2.5.1",
+    "pinia": "^3.0.4",
+    "tailwindcss": "^4.2.2",
+    "typescript": "~5.7.3",
+    "vue": "^3.5.32",
+    "vue-router": "^5.0.4"
+  },
+  "engines": {
+    "node": "24.x",
+    "pnpm": "10.x"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "@iconify-json/ic": "^1.2.4",
+    "@types/node": "^25.6.0",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.7.2"
+  }
+}

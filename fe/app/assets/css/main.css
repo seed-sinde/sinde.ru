@@ -13,42 +13,24 @@
     --lab-bg-control: rgb(9 9 11 / 0.8);
     --lab-bg-control-hover: rgb(24 24 27 / 0.92);
     --lab-bg-overlay: rgb(9 9 11 / 0.92);
+
     --lab-border: rgb(63 63 70 / 0.82);
     --lab-border-strong: rgb(113 113 122 / 0.92);
+
     --lab-text-primary: rgb(244 244 245);
     --lab-text-secondary: rgb(212 212 216);
     --lab-text-muted: rgb(161 161 170);
     --lab-text-soft: rgb(113 113 122);
-    --lab-accent: rgb(255, 147, 47);
-    --lab-accent-hover: rgb(245 158 11);
+
+    --lab-accent: rgb(255 147 47);
     --lab-success: rgb(5 150 105);
-    --lab-success-hover: rgb(16 185 129);
     --lab-danger: rgb(190 24 93);
-    --lab-danger-hover: rgb(225 29 72);
     --lab-info: rgb(8 145 178);
-    --lab-info-hover: rgb(6 182 212);
     --lab-warning: rgb(180 83 9);
-    --lab-warning-hover: rgb(217 119 6);
+
     --lab-focus-ring: rgb(245 158 11 / 0.34);
     --lab-button-primary-text: rgb(255 255 255);
-    --lab-button-danger-light-border: color-mix(in srgb, var(--lab-danger) 38%, transparent);
-    --lab-button-danger-light-bg: color-mix(in srgb, var(--lab-danger) 14%, white);
-    --lab-button-danger-light-text: color-mix(in srgb, var(--lab-danger) 78%, black 26%);
-    --lab-button-danger-light-hover-border: color-mix(in srgb, var(--lab-danger-hover) 44%, transparent);
-    --lab-button-danger-light-hover-bg: color-mix(in srgb, var(--lab-danger-hover) 18%, white);
-    --lab-button-danger-light-hover-text: color-mix(in srgb, var(--lab-danger-hover) 82%, black 30%);
-    --lab-badge-info-border: color-mix(in srgb, var(--lab-info) 34%, transparent);
-    --lab-badge-info-bg: color-mix(in srgb, var(--lab-info) 10%, transparent);
-    --lab-badge-info-text: color-mix(in srgb, var(--lab-info) 78%, white 22%);
-    --lab-badge-success-border: color-mix(in srgb, var(--lab-success) 34%, transparent);
-    --lab-badge-success-bg: color-mix(in srgb, var(--lab-success) 10%, transparent);
-    --lab-badge-success-text: color-mix(in srgb, var(--lab-success) 78%, white 22%);
-    --lab-badge-warning-border: color-mix(in srgb, var(--lab-warning) 34%, transparent);
-    --lab-badge-warning-bg: color-mix(in srgb, var(--lab-warning) 10%, transparent);
-    --lab-badge-warning-text: color-mix(in srgb, var(--lab-warning) 78%, white 22%);
-    --lab-badge-danger-border: color-mix(in srgb, var(--lab-danger) 34%, transparent);
-    --lab-badge-danger-bg: color-mix(in srgb, var(--lab-danger) 10%, transparent);
-    --lab-badge-danger-text: color-mix(in srgb, var(--lab-danger) 78%, white 22%);
+
     --lab-scrollbar-track: rgb(24 24 27);
     --lab-scrollbar-thumb: rgb(63 63 70);
     --lab-scrollbar-thumb-hover: rgb(82 82 91);
@@ -66,47 +48,30 @@
   html.theme-light {
     color-scheme: light;
   }
-
   html.theme-light {
-    --lab-bg-canvas: rgb(244 244 245);
-    --lab-bg-surface: rgb(255 255 255 / 0.96);
-    --lab-bg-surface-muted: rgb(250 250 250 / 0.98);
-    --lab-bg-surface-subtle: rgb(228 228 231 / 0.6);
-    --lab-bg-surface-hover: rgb(228 228 231 / 0.92);
-    --lab-bg-control: rgb(255 255 255 / 0.98);
-    --lab-bg-control-hover: rgb(250 250 250 / 0.98);
+    --lab-bg-canvas: rgb(255 255 255);
+    --lab-bg-surface: rgb(244 244 245 / 0.88);
+    --lab-bg-surface-muted: rgb(244 244 245 / 0.72);
+    --lab-bg-surface-subtle: rgb(228 228 231 / 0.5);
+    --lab-bg-control: rgb(255 255 255 / 0.9);
     --lab-bg-overlay: rgb(255 255 255 / 0.95);
+
     --lab-border: rgb(212 212 216 / 0.9);
-    --lab-border-strong: rgb(161 161 170 / 0.95);
+    --lab-border-strong: rgb(161 161 170);
+
     --lab-text-primary: rgb(24 24 27);
     --lab-text-secondary: rgb(63 63 70);
-    --lab-text-muted: rgb(82 82 91);
-    --lab-text-soft: rgb(113 113 122);
-    --lab-accent: rgb(240, 118, 77);
-    --lab-accent-hover: rgb(214, 111, 32);
-    --lab-success: rgb(4 120 87);
-    --lab-success-hover: rgb(5 150 105);
-    --lab-danger: rgb(190 24 93);
-    --lab-danger-hover: rgb(225 29 72);
-    --lab-info: rgb(14 116 144);
-    --lab-info-hover: rgb(8 145 178);
-    --lab-warning: rgb(146 64 14);
-    --lab-warning-hover: rgb(180 83 9);
-    --lab-focus-ring: rgb(217 119 6 / 0.22);
-    --lab-button-primary-text: rgb(255 255 255);
-    --lab-button-danger-light-border: color-mix(in srgb, var(--lab-danger) 38%, transparent);
-    --lab-button-danger-light-bg: color-mix(in srgb, var(--lab-danger) 14%, white);
-    --lab-button-danger-light-text: color-mix(in srgb, var(--lab-danger) 78%, black 26%);
-    --lab-button-danger-light-hover-border: color-mix(in srgb, var(--lab-danger-hover) 44%, transparent);
-    --lab-button-danger-light-hover-bg: color-mix(in srgb, var(--lab-danger-hover) 18%, white);
-    --lab-button-danger-light-hover-text: color-mix(in srgb, var(--lab-danger-hover) 82%, black 30%);
-    --lab-badge-info-text: var(--lab-info);
-    --lab-badge-success-text: color-mix(in srgb, var(--lab-success) 82%, black 18%);
-    --lab-badge-warning-text: var(--lab-warning);
-    --lab-badge-danger-text: color-mix(in srgb, var(--lab-danger) 82%, black 18%);
-    --lab-scrollbar-track: rgb(228 228 231);
+    --lab-text-muted: rgb(113 113 122);
+    --lab-text-soft: rgb(161 161 170);
+
+    --lab-accent: rgb(234 88 12);
+    --lab-success: rgb(22 163 74);
+    --lab-danger: rgb(225 29 72);
+    --lab-info: rgb(2 132 199);
+    --lab-warning: rgb(202 138 4);
+
+    --lab-focus-ring: rgb(234 88 12 / 0.25);
     --lab-scrollbar-thumb: rgb(161 161 170);
-    --lab-scrollbar-thumb-hover: rgb(113 113 122);
   }
 
   input:-webkit-autofill,
@@ -126,25 +91,6 @@
   textarea:-moz-autofill,
   select:-moz-autofill {
     color: rgb(244 244 245) !important;
-  }
-
-  html.theme-light input:-webkit-autofill,
-  html.theme-light input:-webkit-autofill:hover,
-  html.theme-light input:-webkit-autofill:focus,
-  html.theme-light textarea:-webkit-autofill,
-  html.theme-light textarea:-webkit-autofill:hover,
-  html.theme-light textarea:-webkit-autofill:focus,
-  html.theme-light select:-webkit-autofill,
-  html.theme-light select:-webkit-autofill:hover,
-  html.theme-light select:-webkit-autofill:focus {
-    -webkit-text-fill-color: rgb(24 24 27) !important;
-    caret-color: rgb(24 24 27);
-  }
-
-  html.theme-light input:-moz-autofill,
-  html.theme-light textarea:-moz-autofill,
-  html.theme-light select:-moz-autofill {
-    color: rgb(24 24 27) !important;
   }
 }
 

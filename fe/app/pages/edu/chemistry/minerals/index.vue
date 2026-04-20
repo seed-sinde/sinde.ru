@@ -517,7 +517,18 @@ onBeforeUnmount(() => {
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex min-w-0 items-center gap-2">
                 <span class="text-sm font-medium text-(--lab-text-primary)">Кристаллическая система</span>
-                <LabHelpTooltip :text="crystalSystemHelpText" />
+                <LabBaseTooltip
+                  v-if="crystalSystemHelpText"
+                  :text="crystalSystemHelpText"
+                  side="right"
+                  align="left"
+                  :offset="10"
+                  :cross-axis-offset="0"
+                >
+                  <template #trigger>
+                    <Icon name="ic:round-help" />
+                  </template>
+                </LabBaseTooltip>
               </div>
               <LabBaseSwitch
                 :model-value="state.crystalSystemMode === 'all'"

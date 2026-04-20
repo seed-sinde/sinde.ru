@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { FloatingPanelAlign, FloatingPanelSide } from '~/composables/useFloatingPanelPosition'
+import type { FloatingPanelSide } from '~/composables/useFloatingPanelPosition'
 const props = withDefaults(
   defineProps<{
     modelValue?: boolean
-    align?: FloatingPanelAlign
     side?: FloatingPanelSide
     widthClass?: string
     panelClass?: string
@@ -15,7 +14,6 @@ const props = withDefaults(
     matchTriggerWidth?: boolean
   }>(),
   {
-    align: 'right',
     side: 'bottom',
     widthClass: 'w-56',
     panelClass: '',
@@ -35,14 +33,12 @@ const emit = defineEmits<{
 const triggerRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLElement | null>(null)
 const localOpen = ref(false)
-const { panelStyle, resolvedSide, resolvedAlign, updatePosition, schedulePositionUpdate, resetPosition } =
+const { panelStyle, resolvedSide,  updatePosition, schedulePositionUpdate, resetPosition } =
   useFloatingPanelPosition({
     triggerRef,
     panelRef,
     side: computed(() => props.side),
-    align: computed(() => props.align),
     offset: computed(() => props.offset),
-    crossAxisOffset: computed(() => props.crossAxisOffset),
     viewportPadding: computed(() => props.viewportPadding),
     matchTriggerWidth: computed(() => props.matchTriggerWidth)
   })
@@ -118,7 +114,7 @@ watch(isOpen, async value => {
   }
 })
 watch(
-  () => [props.align, props.side, props.offset, props.crossAxisOffset, props.viewportPadding, props.matchTriggerWidth],
+  () => [props.side, props.offset, props.crossAxisOffset, props.viewportPadding, props.matchTriggerWidth],
   () => {
     if (!isOpen.value) return
     schedulePositionUpdate()
@@ -141,15 +137,7 @@ defineExpose({
 <template>
   <div class="inline-flex">
     <div ref="triggerRef" class="inline-flex" :aria-expanded="isOpen ? 'true' : 'false'" aria-haspopup="menu">
-      <slot
-        name="trigger"
-        :open="isOpen"
-        :toggle="toggle"
-        :close="close"
-        :disabled="disabled"
-        :side="resolvedSide"
-        :align="resolvedAlign"
-      />
+      <slot name="trigger" :open="isOpen" :toggle="toggle" :close="close" :disabled="disabled" :side="resolvedSide" />
     </div>
     <Teleport to="body">
       <transition
@@ -168,7 +156,7 @@ defineExpose({
           :class="['lab-dropdown-panel z-50 rounded-2xl', widthClass, panelClass]"
           @click="handlePanelClick"
         >
-          <slot :open="isOpen" :close="close" :toggle="toggle" :side="resolvedSide" :align="resolvedAlign" />
+          <slot :open="isOpen" :close="close" :toggle="toggle" :side="resolvedSide" />
         </div>
       </transition>
     </Teleport>
