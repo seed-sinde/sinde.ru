@@ -1,5 +1,4 @@
-<script setup lang="ts"></script>
 <template>
-  <ThemeSwitcher />
-  <slot></slot>
+  <Nav />
+  <slot />
 </template>

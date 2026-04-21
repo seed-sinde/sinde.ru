@@ -1,24 +1,25 @@
+type ThemeMode = "light" | "dark" | "system"
+
+const isThemeMode = (v: unknown): v is ThemeMode => v === "light" || v === "dark" || v === "system"
+
 export const useTheme = () => {
-  const mode = useState<"light" | "dark" | "system">("theme", () => "system");
+  const cookie = useCookie<ThemeMode>("theme", {
+    default: () => "system",
+    path: "/"
+  })
 
-  const apply = (v: typeof mode.value) =>
-    document.documentElement.classList.toggle(
-      "dark",
-      v === "dark" ||
-        (v === "system" && matchMedia("(prefers-color-scheme: dark)").matches),
-    );
+  const mode = useState<ThemeMode>("theme", () => (isThemeMode(cookie.value) ? cookie.value : "system"))
 
-  const set = (v: typeof mode.value) => (
-    (mode.value = v),
-    localStorage.setItem("theme", v),
-    apply(v)
-  );
+  const isDark = () =>
+    mode.value === "dark" || (mode.value === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
 
-  if (import.meta.client)
-    apply(
-      (mode.value =
-        (localStorage.getItem("theme") as typeof mode.value) ?? "system"),
-    );
+  const apply = () => document.documentElement.classList.toggle("dark", isDark())
 
-  return { mode, set };
-};
+  const set = (v: ThemeMode) => {
+    mode.value = v
+    cookie.value = v
+    apply()
+  }
+  const toggle = () => set(mode.value === "light" ? "dark" : mode.value === "dark" ? "system" : "light")
+  return {mode, set, toggle, apply, isDark}
+}
