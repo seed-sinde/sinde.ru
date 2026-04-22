@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex gap-1 border-b p-1 text-sm">
+  <nav class="flex items-center gap-1 border-b p-1 text-sm">
     <Button label="Главная" to="/" />
     <Button label="Мастерская" to="/lab" />
     <Button label="Особенности" to="/traits" />

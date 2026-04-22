@@ -9,12 +9,12 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint --fix .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@nuxt/eslint": "1.15.2",
     "@nuxt/fonts": "0.14.0",
-    "@nuxt/icon": "2.2.1",
     "@pinia/nuxt": "0.11.3",
     "@tailwindcss/vite": "^4.2.2",
     "@vite-pwa/nuxt": "1.1.1",
@@ -24,6 +24,7 @@
     "pinia": "^3.0.4",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.7.3",
+    "ufo": "^1.6.3",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"
   },
@@ -36,6 +37,8 @@
     "@iconify-json/ic": "^1.2.4",
     "@types/node": "^25.6.0",
     "prettier": "^3.8.3",
-    "prettier-plugin-tailwindcss": "^0.7.2"
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "unplugin-icons": "^23.0.1",
+    "vue-tsc": "^3.2.7"
   }
 }

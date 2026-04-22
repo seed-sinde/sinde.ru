@@ -2,9 +2,9 @@
   <section class="leading-none">
     <Button
       :aria-expanded="isOpen"
-      icon="ic:baseline-arrow-right"
+      :icon="IcBaselineArrowRight"
       :icon-tooltip="['Показать', 'Скрыть']"
-      :icon-class="['text-xl transition-transform origin-center inline-block', {'rotate-90': isOpen}]"
+      :icon-class="['text-lg transition-transform origin-center inline-block', {'rotate-90': isOpen}]"
       @click="toggle"
     >
       {{ label }}
@@ -15,6 +15,7 @@
   </section>
 </template>
 <script setup lang="ts">
+import IcBaselineArrowRight from "~icons/ic/baseline-arrow-right"
 interface Props {
   label?: string
   modelValue?: boolean

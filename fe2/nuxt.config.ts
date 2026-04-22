@@ -5,7 +5,7 @@ import {pwaConfig} from "./config/nuxt-pwa"
 import {viteConfig} from "./config/nuxt-vite"
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
-  modules: ["@nuxt/fonts", "@nuxt/icon", "nuxt-security", "@pinia/nuxt", "@vite-pwa/nuxt", "@nuxt/eslint"],
+  modules: ["@nuxt/fonts", "unplugin-icons/nuxt", "nuxt-security", "@pinia/nuxt", "@vite-pwa/nuxt", "@nuxt/eslint"],
   ssr: true,
   devtools: {enabled: false},
   experimental: {
@@ -16,16 +16,6 @@ export default defineNuxtConfig({
     checker: !isDev,
     config: {
       stylistic: false
-    }
-  },
-  icon: {
-    serverBundle: {
-      collections: ["ic"],
-      externalizeIconsJson: !isDev
-    },
-    localApiEndpoint: "/_nuxt_icon",
-    clientBundle: {
-      scan: true
     }
   },
   security: {

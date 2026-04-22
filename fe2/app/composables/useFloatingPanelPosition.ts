@@ -10,6 +10,8 @@ interface Options {
 export function useFloatingPanelPosition({triggerRef, panelRef, side = () => "top", offset = 8}: Options) {
   const panelStyle = ref<Record<string, string>>({})
 
+  const clamp = (v: number, max: number) => Math.max(8, Math.min(v, max - 8))
+
   const updatePosition = () => {
     const trigger = triggerRef.value
     const panel = panelRef.value
@@ -18,55 +20,40 @@ export function useFloatingPanelPosition({triggerRef, panelRef, side = () => "to
     const t = trigger.getBoundingClientRect()
     const p = panel.getBoundingClientRect()
 
-    let top = 0
-    let left = 0
+    const s = side()
 
-    switch (side()) {
-      case "top":
-        top = t.top - p.height - offset
-        left = t.left + (t.width - p.width) / 2
-        break
-      case "bottom":
-        top = t.bottom + offset
-        left = t.left + (t.width - p.width) / 2
-        break
-      case "left":
-        top = t.top + (t.height - p.height) / 2
-        left = t.left - p.width - offset
-        break
-      case "right":
-        top = t.top + (t.height - p.height) / 2
-        left = t.right + offset
-        break
-    }
+    const isVertical = s === "top" || s === "bottom"
 
-    const vw = window.innerWidth
-    left = Math.max(8, Math.min(left, vw - p.width - 8))
+    const top = isVertical
+      ? s === "top"
+        ? t.top - p.height - offset
+        : t.bottom + offset
+      : t.top + (t.height - p.height) / 2
 
-    const vh = window.innerHeight
-    top = Math.max(8, Math.min(top, vh - p.height - 8))
+    const left = !isVertical
+      ? s === "left"
+        ? t.left - p.width - offset
+        : t.right + offset
+      : t.left + (t.width - p.width) / 2
 
     panelStyle.value = {
       position: "fixed",
-      top: `${top}px`,
-      left: `${left}px`
+      top: `${clamp(top, window.innerHeight - p.height)}px`,
+      left: `${clamp(left, window.innerWidth - p.width)}px`
     }
   }
 
-  const onScrollOrResize = () => updatePosition()
+  const handler = () => updatePosition()
 
   onMounted(() => {
-    window.addEventListener("scroll", onScrollOrResize, true)
-    window.addEventListener("resize", onScrollOrResize)
+    window.addEventListener("scroll", handler, true)
+    window.addEventListener("resize", handler)
   })
 
   onBeforeUnmount(() => {
-    window.removeEventListener("scroll", onScrollOrResize, true)
-    window.removeEventListener("resize", onScrollOrResize)
+    window.removeEventListener("scroll", handler, true)
+    window.removeEventListener("resize", handler)
   })
 
-  return {
-    panelStyle,
-    updatePosition
-  }
+  return {panelStyle, updatePosition}
 }

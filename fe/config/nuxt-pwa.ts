@@ -65,7 +65,7 @@ const pwaConfig = {
   injectManifest: {
     maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
     globPatterns: ["**/*.{js,css,ico,svg,webmanifest,txt,woff2}"],
-    globIgnores: ["**/*.glb", "**/avatars/**/*", "**/recipes/**/*", "**/uploads/**/*", "**/user-content/**/*"]
+    globIgnores: []
   },
   devOptions: {
     enabled: false,

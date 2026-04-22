@@ -1,8 +1,15 @@
 import tailwindcss from "@tailwindcss/vite"
+import Icons from "unplugin-icons/vite"
 import {isDev} from "./nuxt-env"
 const viteConfig = {
   clearScreen: false,
-  plugins: [tailwindcss()],
+  plugins: [
+    tailwindcss(),
+    Icons({
+      autoInstall: true,
+      scale: 1
+    })
+  ],
   build: {
     chunkSizeWarningLimit: 3500
   },
