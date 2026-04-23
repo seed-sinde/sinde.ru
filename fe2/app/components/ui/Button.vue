@@ -35,9 +35,9 @@ const tag = computed(() => {
 })
 const isDisabled = computed(() => props.disabled || props.loading)
 const buttonClass = computed(() => [
-  "cursor-pointer text-sm hover:ring hover:ring-(--accent)",
+  "leading-none rounded-md bg-(--elevated) cursor-pointer text-sm hover:ring hover:ring-(--accent)",
   hasContent.value ? "px-2 py-1" : "p-1",
-  hasContent.value && props.icon && "inline-flex items-center justify-center gap-1",
+  hasContent.value && props.icon && "flex items-center justify-center gap-1",
   props.icon && props.iconPosition === "right" && "flex-row-reverse",
   isActive.value && "ring ring-(--accent)"
 ])

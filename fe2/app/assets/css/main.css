@@ -8,7 +8,7 @@
     --bg: oklch(1 0 0);
     --elevated: oklch(0.94 0 0);
     --text: oklch(0 0 0);
-    --danger: oklch(1 1 60);
+    --danger: oklch(62.793% 0.25768 29.223);
     --border-color: oklch(0.82 0.015 260);
     --accent: oklch(0.7 0.15 232);
   }
@@ -27,9 +27,8 @@
     --bg: oklch(0.25 0 0);
     --elevated: oklch(0.3 0 0);
     --text: oklch(1 0 0);
-    --danger: oklch(1 1 60);
     --border-color: oklch(0.42 0.02 260);
-    --accent: oklch(0.8 0.42 190);
+    --accent: oklch(51.574% 0.10595 232.556);
   }
   *,
   ::before,

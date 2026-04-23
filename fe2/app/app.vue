@@ -73,6 +73,7 @@ useSeoMeta({
 <template>
   <VitePwaManifest />
   <NuxtLayout>
+    <UiNav />
     <NuxtPage />
   </NuxtLayout>
 </template>

@@ -1,6 +1,3 @@
 <template>
-  <div>
-    <UiNav />
-    <slot />
-  </div>
+  <slot />
 </template>
