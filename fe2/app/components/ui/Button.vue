@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type {HTMLAttributes, Component} from "vue"
-import Tooltip from "~/components/Tooltip.vue"
 import {NuxtLink} from "#components"
 interface Props {
   ariaExpanded?: boolean
@@ -15,7 +14,6 @@ interface Props {
   tooltipIndex?: number
   to?: string
 }
-
 const props = withDefaults(defineProps<Props>(), {
   ariaExpanded: false,
   type: "button",
@@ -24,30 +22,24 @@ const props = withDefaults(defineProps<Props>(), {
   iconPosition: "left",
   iconTooltip: () => []
 })
-
 const slots = useSlots()
 const route = useRoute()
-
 const isActive = computed(() => route.path === props.to)
 const hasContent = computed(() => !!(props.label || slots.default))
 const tooltip = computed(() => props.iconTooltip?.[props.tooltipIndex ?? +props.ariaExpanded])
 const hasTooltip = computed(() => !!tooltip.value)
-
 const isExternal = computed(() => /^(https?:|mailto:|tel:)/.test(props.to || ""))
-
 const tag = computed(() => {
   if (!props.to) return "button"
   return isExternal.value ? "a" : NuxtLink
 })
-
 const isDisabled = computed(() => props.disabled || props.loading)
-
 const buttonClass = computed(() => [
-  "cursor-pointer rounded-md text-sm hover:bg-(--elevated)",
+  "cursor-pointer text-sm hover:ring hover:ring-(--accent)",
   hasContent.value ? "px-2 py-1" : "p-1",
   hasContent.value && props.icon && "inline-flex items-center justify-center gap-1",
   props.icon && props.iconPosition === "right" && "flex-row-reverse",
-  isActive.value && "bg-(--footed)"
+  isActive.value && "ring ring-(--accent)"
 ])
 const preventIfDisabled = (e: Event) => {
   if (tag.value !== "button" && isDisabled.value) {
@@ -76,10 +68,10 @@ const preventIfDisabled = (e: Event) => {
     </template>
     <template v-else>
       <template v-if="icon">
-        <Tooltip v-if="hasTooltip" :text="tooltip">
+        <UiTooltip v-if="hasTooltip" :text="tooltip">
           <component :is="icon" aria-hidden="true" :class="iconClass" />
-        </Tooltip>
-        <component v-else :is="icon" aria-hidden="true" :class="iconClass" />
+        </UiTooltip>
+        <component :is="icon" v-else aria-hidden="true" :class="iconClass" />
       </template>
       <slot v-if="hasContent">{{ label }}</slot>
     </template>

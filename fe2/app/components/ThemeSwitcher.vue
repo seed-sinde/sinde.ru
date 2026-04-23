@@ -9,7 +9,7 @@ const icon = computed(() =>
 const modeIndex = computed(() => (mode.value === "light" ? 0 : mode.value === "dark" ? 1 : 2))
 </script>
 <template>
-  <Button
+  <UiButton
     :icon="icon"
     icon-class="text-lg"
     :icon-tooltip="['Theme: Light', 'Theme: Dark', 'Theme: System']"

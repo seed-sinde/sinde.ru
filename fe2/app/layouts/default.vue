@@ -1,4 +1,6 @@
 <template>
-  <Nav />
-  <slot />
+  <div>
+    <UiNav />
+    <slot />
+  </div>
 </template>

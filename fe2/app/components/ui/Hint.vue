@@ -6,7 +6,7 @@ const props = withDefaults(defineProps<Props>(), {text: ""})
 </script>
 
 <template>
-  <p v-if="props.text" role="alert" class="text-xs text-red-500">
+  <p v-if="props.text" class="text-xs opacity-70">
     {{ props.text }}
   </p>
 </template>

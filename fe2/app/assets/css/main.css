@@ -10,7 +10,7 @@
     --text: oklch(0 0 0);
     --danger: oklch(1 1 60);
     --border-color: oklch(0.82 0.015 260);
-    --accent: oklch(69.71% 0.14147 232.565);
+    --accent: oklch(0.7 0.15 232);
   }
   html,
   body {
@@ -29,7 +29,7 @@
     --text: oklch(1 0 0);
     --danger: oklch(1 1 60);
     --border-color: oklch(0.42 0.02 260);
-    --accent: oklch(0.2 0.6 190);
+    --accent: oklch(0.8 0.42 190);
   }
   *,
   ::before,
@@ -40,19 +40,10 @@
   a:focus-visible,
   input:focus-visible,
   textarea:focus-visible {
-    outline: none;
+    outline: 1px solid var(--accent);
     background-color: var(--elevated);
-    box-shadow: 0 0 0 1px inset var(--accent);
   }
-  button,
-  img,
-  svg,
-  video,
-  canvas {
+  button {
     display: block;
-  }
-  img,
-  svg {
-    vertical-align: top;
   }
 }

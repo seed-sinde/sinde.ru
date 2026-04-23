@@ -1,14 +1,13 @@
 <template>
   <section class="leading-none">
-    <Button
+    <UiButton
+      :label="label"
       :aria-expanded="isOpen"
       :icon="IcBaselineArrowRight"
       :icon-tooltip="['Показать', 'Скрыть']"
-      :icon-class="['text-lg transition-transform origin-center inline-block', {'rotate-90': isOpen}]"
+      :icon-class="['text-lg transition-transform', {'rotate-90': isOpen}]"
       @click="toggle"
-    >
-      {{ label }}
-    </Button>
+    />
     <div v-show="isOpen">
       <slot :expanded="isOpen" />
     </div>
