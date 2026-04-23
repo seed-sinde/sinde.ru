@@ -5,7 +5,7 @@ import {pwaConfig} from "./config/nuxt-pwa"
 import {viteConfig} from "./config/nuxt-vite"
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
-  modules: ["@nuxt/fonts", "unplugin-icons/nuxt", "nuxt-security", "@pinia/nuxt", "@vite-pwa/nuxt", "@nuxt/eslint"],
+  modules: ["unplugin-icons/nuxt", "nuxt-security", "@pinia/nuxt", "@vite-pwa/nuxt", "@nuxt/eslint"],
   ssr: true,
   devtools: {enabled: false},
   experimental: {
