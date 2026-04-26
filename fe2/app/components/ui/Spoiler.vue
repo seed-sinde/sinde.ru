@@ -1,17 +1,29 @@
 <template>
-  <section class="leading-none">
-    <UiButton
-      :label="label"
-      :aria-expanded="isOpen"
-      :icon="IcBaselineArrowRight"
-      :icon-tooltip="['Показать', 'Скрыть']"
-      :icon-class="['text-lg transition-transform', {'rotate-90': isOpen}]"
-      @click="toggle"
-    />
-    <div v-show="isOpen">
-      <slot :expanded="isOpen" />
-    </div>
-  </section>
+  <UiButton
+    variant="ghost"
+    :aria-expanded="isOpen"
+    :aria-controls="contentId"
+    @click="isOpen = !isOpen"
+  >
+    <template v-if="isIconPositionLeft" #left>
+      <UiTooltip :text="isOpen ? 'Закрыть' : 'Открыть'">
+        <IcBaselineArrowRight
+          :class="['h-5 w-5 shrink-0 transition-transform', isOpen && 'rotate-90']"
+        />
+      </UiTooltip>
+    </template>
+    <template v-else #right>
+      <UiTooltip :text="isOpen ? 'Закрыть' : 'Открыть'">
+        <IcBaselineArrowRight
+          :class="['h-5 w-5 shrink-0 transition-transform', isOpen && 'rotate-90']"
+        />
+      </UiTooltip>
+    </template>
+    {{ label }}
+  </UiButton>
+  <div v-show="isOpen" :id="contentId" class="mt-4 rounded-xl bg-(--elevated) p-4 leading-none">
+    <slot />
+  </div>
 </template>
 <script setup lang="ts">
 import IcBaselineArrowRight from "~icons/ic/baseline-arrow-right"
@@ -19,32 +31,31 @@ interface Props {
   label?: string
   modelValue?: boolean
   defaultExpanded?: boolean
+  iconPosition?: "left" | "right"
 }
 const props = withDefaults(defineProps<Props>(), {
   label: "Спойлер",
-  defaultExpanded: false
+  defaultExpanded: false,
+  iconPosition: "left"
 })
-
 const emit = defineEmits<{
   "update:modelValue": [value: boolean]
   toggle: [value: boolean]
 }>()
-
-const internalOpen = ref(props.modelValue ?? props.defaultExpanded)
-watch(
-  () => props.modelValue,
-  v => {
-    if (typeof v === "boolean") internalOpen.value = v
-  },
-  {immediate: true}
-)
-
-const isOpen = computed(() => internalOpen.value)
-
-const setOpen = (value: boolean) => {
-  internalOpen.value = value
-  emit("update:modelValue", value)
-  emit("toggle", value)
-}
-const toggle = () => setOpen(!isOpen.value)
+const triggerLayout = useLayoutUpdateTrigger()
+const contentId = `spoiler-${useId()}`
+const isIconPositionLeft = computed(() => props.iconPosition === "left")
+const isOpen = computed({
+  get: () => props.modelValue ?? internal.value,
+  set: v => {
+    internal.value = v
+    emit("update:modelValue", v)
+    emit("toggle", v)
+  }
+})
+const internal = ref(props.defaultExpanded)
+watch(isOpen, async () => {
+  await nextTick()
+  triggerLayout()
+})
 </script>

@@ -1,16 +1,17 @@
 @import "tailwindcss";
-@theme {
-  --variant-dark: selector(.dark);
-}
+@custom-variant dark (&:where(.dark, .dark *));
 @layer base {
   :root {
-    --footed: oklch(0.9 0 0);
-    --bg: oklch(1 0 0);
-    --elevated: oklch(0.94 0 0);
-    --text: oklch(0 0 0);
+    --bg: oklch(0.98 0.01 260);
+    --text: oklch(0.2 0.02 260);
+    --accent: oklch(0.6 0.15 260);
+    --elevated: oklch(0.92 0.01 260);
+    --border-color: oklch(0.85 0.01 260);
+    --toggle-off-bg: oklch(0.85 0.02 260);
+    --toggle-thumb: oklch(1 0 0);
     --danger: oklch(62.793% 0.25768 29.223);
-    --border-color: oklch(0.82 0.015 260);
-    --accent: oklch(0.7 0.15 232);
+    --mantis: oklch(71.704% 0.15273 141.885);
+    --tooltip-bg: oklch(21% 0.006 285.885);
   }
   html,
   body {
@@ -23,26 +24,27 @@
     color-scheme: dark;
   }
   html.dark {
-    --footed: oklch(0.1 0 0);
-    --bg: oklch(0.25 0 0);
-    --elevated: oklch(0.3 0 0);
-    --text: oklch(1 0 0);
-    --border-color: oklch(0.42 0.02 260);
-    --accent: oklch(51.574% 0.10595 232.556);
+    --bg: oklch(0.18 0.02 260);
+    --text: oklch(0.92 0.01 260);
+    --accent: oklch(0.7 0.16 260);
+    --elevated: oklch(0.26 0.02 260);
+    --border-color: oklch(0.34 0.02 260);
+    --toggle-off-bg: oklch(0.32 0.02 260);
+    --toggle-thumb: oklch(0.98 0.01 260);
   }
   *,
   ::before,
   ::after {
-    border-color: var(--border-color);
+    @apply border-(--border-color) outline-(--accent);
   }
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible {
-    outline: 1px solid var(--accent);
-    background-color: var(--elevated);
+}
+@layer components {
+  .ui-focus {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent);
   }
-  button {
-    display: block;
+  .ui-focus-manual,
+  .peer:focus + .ui-focus-peer,
+  .peer:focus ~ .ui-focus-peer {
+    @apply outline-2 outline-offset-2 outline-(--accent);
   }
 }

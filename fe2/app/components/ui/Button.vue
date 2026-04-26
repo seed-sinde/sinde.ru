@@ -1,48 +1,75 @@
 <script setup lang="ts">
-import type {HTMLAttributes, Component} from "vue"
 import {NuxtLink} from "#components"
+type Tag = "button" | "a" | typeof NuxtLink
 interface Props {
-  ariaExpanded?: boolean
   type?: "button" | "submit" | "reset"
-  label?: string
   loading?: boolean
   disabled?: boolean
-  icon?: Component
-  iconClass?: HTMLAttributes["class"]
-  iconPosition?: "left" | "right"
-  iconTooltip?: string[]
-  tooltipIndex?: number
   to?: string
+  variant?: "default" | "ghost"
 }
+defineOptions({inheritAttrs: true})
 const props = withDefaults(defineProps<Props>(), {
-  ariaExpanded: false,
   type: "button",
   loading: false,
   disabled: false,
-  iconPosition: "left",
-  iconTooltip: () => []
+  variant: "default"
 })
 const slots = useSlots()
+const attrs = useAttrs()
 const route = useRoute()
-const isActive = computed(() => route.path === props.to)
-const hasContent = computed(() => !!(props.label || slots.default))
-const tooltip = computed(() => props.iconTooltip?.[props.tooltipIndex ?? +props.ariaExpanded])
-const hasTooltip = computed(() => !!tooltip.value)
-const isExternal = computed(() => /^(https?:|mailto:|tel:)/.test(props.to || ""))
-const tag = computed(() => {
-  if (!props.to) return "button"
-  return isExternal.value ? "a" : NuxtLink
+const isHttp = computed(() => /^https?:/i.test(props.to || ""))
+const isExternal = computed(() => /^(https?:\/\/|mailto:|tel:)/i.test(props.to || ""))
+const isActive = computed(() => {
+  if (!props.to) return false
+  return route.path === props.to
 })
+const hasContent = computed(() => !!slots.default?.().length)
+const tag = computed<Tag>(() => (!props.to ? "button" : isExternal.value ? "a" : NuxtLink))
+const isLink = computed(() => tag.value !== "button")
 const isDisabled = computed(() => props.disabled || props.loading)
+const isDisabledLink = computed(() => isDisabled.value && isLink.value)
+const tabIndex = computed(() =>
+  isDisabledLink.value ? -1 : (attrs.tabindex as string | number | undefined)
+)
+const variantClass = computed(() => {
+  if (props.variant === "ghost") {
+    return isActive.value
+      ? [
+          "bg-transparent text-(--accent)",
+          "hover:bg-[color-mix(in_oklch,var(--accent)_15%,transparent)]",
+          "active:bg-[color-mix(in_oklch,var(--accent)_22%,transparent)]"
+        ]
+      : [
+          "bg-transparent text-(--text)",
+          "hover:bg-[color-mix(in_oklch,var(--elevated),var(--text)_8%)]",
+          "active:bg-[color-mix(in_oklch,var(--elevated),var(--text)_13%)]"
+        ]
+  }
+
+  // default
+  return isActive.value
+    ? [
+        "bg-[color-mix(in_oklch,var(--accent)_18%,var(--bg))] text-(--accent)",
+        "hover:bg-[color-mix(in_oklch,var(--accent)_25%,var(--bg))]",
+        "active:bg-[color-mix(in_oklch,var(--accent)_32%,var(--bg))]"
+      ]
+    : [
+        "bg-(--elevated) text-(--text)",
+        "hover:bg-[color-mix(in_oklch,var(--elevated),var(--text)_8%)]",
+        "active:bg-[color-mix(in_oklch,var(--elevated),var(--text)_13%)]"
+      ]
+})
 const buttonClass = computed(() => [
-  "leading-none rounded-md bg-(--elevated) cursor-pointer text-sm hover:ring hover:ring-(--accent)",
-  hasContent.value ? "px-2 py-1" : "p-1",
-  hasContent.value && props.icon && "flex items-center justify-center gap-1",
-  props.icon && props.iconPosition === "right" && "flex-row-reverse",
-  isActive.value && "ring ring-(--accent)"
+  "ui-focus flex items-center justify-center",
+  "leading-none text-sm font-medium select-none",
+  hasContent.value ? "rounded-xl px-2 py-1.5 gap-1.5" : "rounded-full p-1",
+  variantClass.value,
+  isDisabled.value && ["opacity-50", "hover:bg-(--elevated) active:bg-(--elevated)"],
+  props.loading ? "cursor-wait" : isDisabled.value && "cursor-not-allowed"
 ])
 const preventIfDisabled = (e: Event) => {
-  if (tag.value !== "button" && isDisabled.value) {
+  if (isDisabledLink.value) {
     e.preventDefault()
     e.stopPropagation()
   }
@@ -52,28 +79,24 @@ const preventIfDisabled = (e: Event) => {
 <template>
   <component
     :is="tag"
-    :to="!isExternal ? to : undefined"
-    :href="tag === 'a' ? to : undefined"
-    :type="tag === 'button' ? type : undefined"
-    :disabled="tag === 'button' && isDisabled"
-    :aria-disabled="tag !== 'button' && isDisabled ? 'true' : undefined"
-    :tabindex="tag !== 'button' && isDisabled ? -1 : undefined"
-    :target="isExternal && to?.startsWith('http') ? '_blank' : undefined"
-    :rel="isExternal && to?.startsWith('http') ? 'noopener noreferrer' : undefined"
+    v-bind="$attrs"
+    :to="tag === NuxtLink ? props.to : undefined"
+    :href="tag === 'a' ? props.to : undefined"
+    :type="!isLink ? props.type : undefined"
+    :disabled="!isLink ? isDisabled : undefined"
+    :aria-disabled="isDisabledLink ? 'true' : undefined"
+    :aria-busy="props.loading || undefined"
+    :tabindex="tabIndex"
+    :target="isHttp ? '_blank' : undefined"
+    :rel="isHttp ? 'noopener noreferrer' : undefined"
     :class="buttonClass"
     @click="preventIfDisabled"
   >
-    <template v-if="loading">
-      <slot name="loader">...</slot>
-    </template>
-    <template v-else>
-      <template v-if="icon">
-        <UiTooltip v-if="hasTooltip" :text="tooltip">
-          <component :is="icon" aria-hidden="true" :class="iconClass" />
-        </UiTooltip>
-        <component :is="icon" v-else aria-hidden="true" :class="iconClass" />
-      </template>
-      <slot v-if="hasContent">{{ label }}</slot>
-    </template>
+    <UiLoader v-show="props.loading" />
+    <span class="flex items-center gap-1.5 text-nowrap">
+      <slot name="left" />
+      <slot />
+      <slot name="right" />
+    </span>
   </component>
 </template>

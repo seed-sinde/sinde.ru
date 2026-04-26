@@ -4,7 +4,13 @@ type FetchOptions = NonNullable<Parameters<typeof $fetch>[1]>
 type BasicFetch = <T>(request: string, options?: FetchOptions) => Promise<T>
 type HeaderMap = Record<string, string>
 
-const SSR_HEADER_NAMES = ["cookie", "user-agent", "accept-language", "x-forwarded-for", "x-real-ip"] as const
+const SSR_HEADER_NAMES = [
+  "cookie",
+  "user-agent",
+  "accept-language",
+  "x-forwarded-for",
+  "x-real-ip"
+] as const
 
 const toPath = (p: string) => (p.startsWith("/") ? p : `/${p}`)
 
@@ -115,7 +121,11 @@ export const useAPI = () => {
     })
   }
 
-  const stream = async (path: string, onLine: (line: unknown) => void, options: RequestInit = {}): Promise<void> => {
+  const stream = async (
+    path: string,
+    onLine: (line: unknown) => void,
+    options: RequestInit = {}
+  ): Promise<void> => {
     const p = toPath(path)
 
     const base = import.meta.client ? "" : ssrOrigin || config?.public.baseURL || ""

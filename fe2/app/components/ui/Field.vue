@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const baseId = props.forId || `field-${useId()}`
 provide("field-id", baseId)
+const error = computed(() => (Array.isArray(props.error) ? props.error[0] : props.error))
 </script>
 
 <template>
@@ -26,6 +27,6 @@ provide("field-id", baseId)
       <UiHint v-if="hint" :text="hint" class="text-xs text-(--text) opacity-70" />
     </div>
     <slot />
-    <MessageError v-if="error" :text="Array.isArray(error) ? error[0] : error" />
+    <MessageError v-if="error" :text="error" />
   </div>
 </template>

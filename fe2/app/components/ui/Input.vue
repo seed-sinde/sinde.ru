@@ -9,7 +9,7 @@
     :placeholder="placeholder"
     :aria-label="ariaLabel"
     :aria-invalid="invalid || undefined"
-    class="bg-(--elevated) p-2 px-3 focus:ring focus:ring-(--accent) focus:outline-none"
+    class="ui-focus bg-(--elevated) p-2 px-3"
     @input="onInput"
     @blur="emit('blur', $event)"
     @focus="emit('focus', $event)"

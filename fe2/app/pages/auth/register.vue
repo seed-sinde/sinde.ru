@@ -80,9 +80,19 @@ const submit = async () => {
         />
       </UiField>
       <UiField label="Пароль" hint="Минимум 12 символов" for-id="register-password">
-        <UiInput id="register-password" v-model="form.password" type="password" autocomplete="new-password" />
+        <UiInput
+          id="register-password"
+          v-model="form.password"
+          type="password"
+          autocomplete="new-password"
+        />
       </UiField>
-      <UiButton type="submit" label="Зарегистрироваться" :loading="pending" :disabled="pending || !canSubmit" />
+      <UiButton
+        type="submit"
+        label="Зарегистрироваться"
+        :loading="pending"
+        :disabled="pending || !canSubmit"
+      />
     </form>
 
     <MessageError :text="errorText" />

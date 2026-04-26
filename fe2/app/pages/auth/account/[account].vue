@@ -11,7 +11,9 @@ const buildLoginPath = (next: string) => `/auth/login?next=${encodeURIComponent(
 
 definePageMeta({
   validate: route => {
-    const account = Array.isArray(route.params.account) ? route.params.account[0] : route.params.account
+    const account = Array.isArray(route.params.account)
+      ? route.params.account[0]
+      : route.params.account
     return account === "profile"
   }
 })

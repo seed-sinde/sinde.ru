@@ -48,7 +48,12 @@ const submit = async () => {
 
     <form class="flex flex-col items-start gap-3" @submit.prevent="submit">
       <UiField label="Новый пароль" hint="Минимум 12 символов" for-id="reset-password-new">
-        <UiInput id="reset-password-new" v-model="password" type="password" autocomplete="new-password" />
+        <UiInput
+          id="reset-password-new"
+          v-model="password"
+          type="password"
+          autocomplete="new-password"
+        />
       </UiField>
       <UiButton
         label="Обновить пароль"

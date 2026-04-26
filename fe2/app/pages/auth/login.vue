@@ -36,7 +36,9 @@ const mfaCode = ref("")
 const pending = ref(false)
 const errorText = ref("")
 const nextTarget = computed(
-  () => normalizeAuthNextPath(typeof route.query.next === "string" ? route.query.next : "") || "/auth/account/profile"
+  () =>
+    normalizeAuthNextPath(typeof route.query.next === "string" ? route.query.next : "") ||
+    "/auth/account/profile"
 )
 
 const submitPassword = async () => {
@@ -88,9 +90,19 @@ const submitMfa = async () => {
         <UiInput id="login-email" v-model="email" type="email" autocomplete="username" />
       </UiField>
       <UiField label="Пароль" for-id="login-password">
-        <UiInput v-model="password" id="login-password" type="password" autocomplete="current-password" />
+        <UiInput
+          id="login-password"
+          v-model="password"
+          type="password"
+          autocomplete="current-password"
+        />
       </UiField>
-      <UiButton type="submit" label="Войти" :loading="pending" :disabled="pending || !email || !password" />
+      <UiButton
+        type="submit"
+        label="Войти"
+        :loading="pending"
+        :disabled="pending || !email || !password"
+      />
     </form>
 
     <form v-else class="flex flex-col gap-2" @submit.prevent="submitMfa">

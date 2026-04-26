@@ -26,7 +26,9 @@ type AuthUser = {
   settings: Record<string, unknown>
 }
 
-type AuthUserPatch = Partial<Pick<AuthUser, "display_name" | "locale" | "timezone" | "profile" | "settings">>
+type AuthUserPatch = Partial<
+  Pick<AuthUser, "display_name" | "locale" | "timezone" | "profile" | "settings">
+>
 
 type ApiError = Error & {
   status?: number
@@ -64,7 +66,10 @@ export const hasAuthSessionHint = (cookieHeader?: string | null) => {
   const scope = globalThis as typeof globalThis & {
     [AUTH_SESSION_RUNTIME_KEY]?: boolean
   }
-  return Boolean(scope[AUTH_SESSION_RUNTIME_KEY]) || hasNamedCookie(document.cookie, AUTH_CLIENT_COOKIE_NAMES)
+  return (
+    Boolean(scope[AUTH_SESSION_RUNTIME_KEY]) ||
+    hasNamedCookie(document.cookie, AUTH_CLIENT_COOKIE_NAMES)
+  )
 }
 
 const syncAuthSessionHint = (enabled: boolean) => {
@@ -76,7 +81,8 @@ const syncAuthSessionHint = (enabled: boolean) => {
   scope[AUTH_SESSION_RUNTIME_KEY] = enabled
 
   const secure = window.location.protocol === "https:" ? "; Secure" : ""
-  const preferredName = window.location.protocol === "https:" ? "__Host-auth_session_hint" : "auth_session_hint"
+  const preferredName =
+    window.location.protocol === "https:" ? "__Host-auth_session_hint" : "auth_session_hint"
 
   if (enabled) {
     document.cookie = `${preferredName}=1; Path=/; SameSite=Strict${secure}`
@@ -88,7 +94,8 @@ const syncAuthSessionHint = (enabled: boolean) => {
   }
 }
 
-const errorStatus = (err: unknown) => Number((err as ApiError)?.status || (err as ApiError)?.statusCode || 0)
+const errorStatus = (err: unknown) =>
+  Number((err as ApiError)?.status || (err as ApiError)?.statusCode || 0)
 
 const applyAuthUserPatch = (user: AuthUser, patch: AuthUserPatch): AuthUser => ({
   ...user,
@@ -104,7 +111,9 @@ export const useAuth = () => {
   const user = useState<AuthUser | null>("auth-user", () => null)
   const loaded = useState("auth-loaded", () => false)
   const sessionRestoreHint = useState("auth-session-restore-hint", () =>
-    import.meta.server ? hasAuthSessionHint(useRequestHeaders(["cookie"])?.cookie) : hasAuthSessionHint()
+    import.meta.server
+      ? hasAuthSessionHint(useRequestHeaders(["cookie"])?.cookie)
+      : hasAuthSessionHint()
   )
   const mfaTicket = useState<string | null>("auth-mfa-ticket", () => null)
   const mfaExpiresAt = useState<string | null>("auth-mfa-expires-at", () => null)
@@ -136,9 +145,12 @@ export const useAuth = () => {
   }
 
   const refresh = async () => {
-    const res = await json<ApiResponseWithData<{user: AuthUser; csrf_token?: string}>>("/auth/refresh", {
-      method: "POST"
-    })
+    const res = await json<ApiResponseWithData<{user: AuthUser; csrf_token?: string}>>(
+      "/auth/refresh",
+      {
+        method: "POST"
+      }
+    )
     user.value = res.data.user
     loaded.value = true
     setSessionHint(true)
@@ -213,8 +225,12 @@ export const useAuth = () => {
     })
 
     loaded.value = true
-    mfaTicket.value = res.data.mfa_required ? String(res.data.mfa_ticket || "").trim() || null : null
-    mfaExpiresAt.value = res.data.mfa_required ? String(res.data.mfa_expires_at || "").trim() || null : null
+    mfaTicket.value = res.data.mfa_required
+      ? String(res.data.mfa_ticket || "").trim() || null
+      : null
+    mfaExpiresAt.value = res.data.mfa_required
+      ? String(res.data.mfa_expires_at || "").trim() || null
+      : null
     if (!res.data.mfa_required) setSessionHint(true)
     if (res.data.user) user.value = res.data.user
     return res
@@ -224,10 +240,13 @@ export const useAuth = () => {
     const ticket = String(mfaTicket.value || "").trim()
     if (!ticket) throw new Error("Сессия 2FA не найдена.")
 
-    const res = await json<ApiResponseWithData<{user: AuthUser; csrf_token?: string}>>("/auth/login/2fa", {
-      method: "POST",
-      body: {ticket, code}
-    })
+    const res = await json<ApiResponseWithData<{user: AuthUser; csrf_token?: string}>>(
+      "/auth/login/2fa",
+      {
+        method: "POST",
+        body: {ticket, code}
+      }
+    )
 
     user.value = res.data.user
     loaded.value = true
@@ -260,13 +279,17 @@ export const useAuth = () => {
     })
 
   const verifyEmail = async (token: string) =>
-    await json<ApiResponseWithData<{verified: boolean; action?: string; email?: string; session_hints?: boolean}>>(
-      "/auth/verify-email/confirm",
-      {
-        method: "POST",
-        body: {token}
-      }
-    )
+    await json<
+      ApiResponseWithData<{
+        verified: boolean
+        action?: string
+        email?: string
+        session_hints?: boolean
+      }>
+    >("/auth/verify-email/confirm", {
+      method: "POST",
+      body: {token}
+    })
 
   const requestEmailChange = async (email: string) =>
     await json<ApiResponseWithData<{queued: boolean}>>("/auth/email/change/request", {

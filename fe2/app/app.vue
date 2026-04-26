@@ -59,16 +59,6 @@ useHead({
     {key: "twitter:image", name: "twitter:image", content: "/favicon.svg"}
   ]
 })
-const seoMeta = {
-  title: "sinde.ru",
-  description: "Коллективная разработка и проектирование"
-}
-useSeoMeta({
-  title: seoMeta.title,
-  description: seoMeta.description,
-  ogTitle: seoMeta.title,
-  ogDescription: seoMeta.description
-})
 </script>
 <template>
   <VitePwaManifest />

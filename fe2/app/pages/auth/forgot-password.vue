@@ -53,10 +53,10 @@ const submit = async () => {
         hint="Введите email, чтобы получить ссылку на сброс пароля."
       >
         <UiInput
+          id="forgot-password-email"
           v-model="email"
           placeholder="seed@sinde.ru"
           type="email"
-          id="forgot-password-email"
           autocomplete="username"
         />
       </UiField>
