@@ -9,3 +9,4 @@ be/seeds-import
 be/storage/
 .runtime-cache
 .vscode
+AGENTS.md

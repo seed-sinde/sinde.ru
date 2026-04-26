@@ -24,24 +24,30 @@
     "pinia": "^3.0.4",
     "three": "^0.184.0",
     "ufo": "^1.6.3",
-    "vue": "^3.5.32",
-    "vue-router": "^5.0.4"
+    "vue": "^3.5.33",
+    "vue-router": "^5.0.6"
   },
   "engines": {
     "node": "24.x",
     "pnpm": "10.x"
   },
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@10.33.2+sha512.a90faf6feeab71ad6c6e57f94e0fe1a12f5dcc22cd754db40ae9593eb6a3e0b6b12e3540218bb37ae083404b1f2ce6db2a4121e979829b4aff94b99f49da1cf8",
   "devDependencies": {
-    "@tailwindcss/vite": "^4.2.2",
-    "@nuxt/eslint": "1.15.2",
     "@iconify-json/ic": "^1.2.4",
+    "@nuxt/eslint": "^1.15.2",
+    "@tailwindcss/vite": "^4.2.4",
     "@types/node": "^25.6.0",
-    "tailwindcss": "^4.2.2",
-    "typescript": "~5.7.3",
     "prettier": "^3.8.3",
-    "prettier-plugin-tailwindcss": "^0.7.2",
+    "prettier-plugin-tailwindcss": "^0.7.3",
+    "tailwindcss": "^4.2.4",
+    "typescript": "~5.7.3",
     "unplugin-icons": "^23.0.1",
-    "vue-tsc": "^3.2.7"
+    "vue-tsc": "^3.2.7",
+    "workbox-cacheable-response": "7.4.0",
+    "workbox-core": "7.4.0",
+    "workbox-expiration": "7.4.0",
+    "workbox-precaching": "7.4.0",
+    "workbox-routing": "7.4.0",
+    "workbox-strategies": "7.4.0"
   }
 }

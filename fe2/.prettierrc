@@ -1,7 +1,7 @@
 {
   "semi": false,
   "singleQuote": false,
-  "printWidth": 120,
+  "printWidth": 100,
   "tabWidth": 2,
   "trailingComma": "none",
   "vueIndentScriptAndStyle": false,
@@ -10,7 +10,7 @@
   "bracketSpacing": false,
   "arrowParens": "avoid",
   "proseWrap": "never",
-  "htmlWhitespaceSensitivity": "strict",
+  "htmlWhitespaceSensitivity": "css",
   "singleAttributePerLine": false,
   "embeddedLanguageFormatting": "auto"
 }

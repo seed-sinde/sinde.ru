@@ -7,7 +7,8 @@ const viteConfig = {
     tailwindcss(),
     Icons({
       autoInstall: true,
-      scale: 1
+      scale: 1,
+      defaultClass: "text-lg h-5 w-5 shrink-0"
     })
   ],
   build: {
